@@ -3,8 +3,15 @@ import 'package:provider/provider.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
 
-class BuildProductsScreen extends StatelessWidget {
+class BuildProductsScreen extends StatefulWidget {
   const BuildProductsScreen({super.key});
+
+  @override
+  State<BuildProductsScreen> createState() => _BuildProductsScreenState();
+}
+
+class _BuildProductsScreenState extends State<BuildProductsScreen> {
+  bool _isProductionExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -107,50 +114,56 @@ class BuildProductsScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Active Productions:',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isProductionExpanded = !_isProductionExpanded;
+                            });
+                          },
+                          child: Row(
+                            children: [
+                              const Text(
+                                'Active Productions:',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                _isProductionExpanded 
+                                    ? Icons.expand_less 
+                                    : Icons.expand_more,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 8),
-                        ...gameService.state.activeProductions.map((production) {
-                          final product = gameService.allProducts
-                              .firstWhere((p) => p.id == production.productId);
-                          final progress = (production.progress * 100).toInt();
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${product.emoji} ${product.name} x${production.quantity}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                LinearProgressIndicator(
-                                  value: production.progress,
-                                  backgroundColor: Colors.grey[600],
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.orange[400]!,
-                                  ),
-                                ),
-                                Text(
-                                  '$progress% complete',
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+                        if (_isProductionExpanded)
+                          // Show all productions when expanded
+                          SizedBox(
+                            height: 200,
+                            child: ListView.builder(
+                              itemCount: gameService.state.activeProductions.length,
+                              itemBuilder: (context, index) {
+                                final production = gameService.state.activeProductions[index];
+                                return _buildProductionItem(production, gameService);
+                              },
                             ),
-                          );
-                        }),
+                          )
+                        else
+                          // Show only the next production to finish when collapsed
+                          Builder(
+                            builder: (context) {
+                              // Find the production that will finish first (highest progress)
+                              final nextProduction = gameService.state.activeProductions
+                                  .reduce((a, b) => a.progress > b.progress ? a : b);
+                              return _buildProductionItem(nextProduction, gameService);
+                            },
+                          ),
                       ],
                     ),
                   ),
@@ -219,7 +232,7 @@ class BuildProductsScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Production Time: ${(product.productionTimeSeconds/60).toStringAsFixed(1)} minutes',
+                        'Base Production Time: ${(product.productionTimeSeconds/60).toStringAsFixed(1)} min per item',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[500],
@@ -293,6 +306,12 @@ class BuildProductsScreen extends StatelessWidget {
     }
     final canProduceQuantity = gameService.state.hasMaterialsFor(requiredMaterials);
     
+    // Calculate total production time for this quantity
+    final totalTimeMinutes = (product.productionTimeSeconds * quantity / 60);
+    final timeText = totalTimeMinutes < 60 
+        ? '${totalTimeMinutes.toStringAsFixed(1)}m'
+        : '${(totalTimeMinutes / 60).toStringAsFixed(1)}h';
+    
     return ElevatedButton(
       onPressed: canProduceQuantity
           ? () => gameService.startProduction(product.id, quantity)
@@ -301,7 +320,108 @@ class BuildProductsScreen extends StatelessWidget {
         backgroundColor: canProduceQuantity ? Colors.blue[600] : Colors.grey[600],
         foregroundColor: Colors.white,
       ),
-      child: Text('Build $quantity'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Build $quantity'),
+          Text(
+            timeText,
+            style: const TextStyle(fontSize: 10),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildProductionItem(dynamic production, ProductionGameService gameService) {
+    final product = gameService.allProducts
+        .firstWhere((p) => p.id == production.productId);
+    final progress = (production.progress * 100).toInt();
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '${product.emoji} ${product.name} x${production.quantity}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$progress%',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            tween: Tween<double>(
+              begin: 0,
+              end: production.progress,
+            ),
+            builder: (context, value, child) {
+              return LinearProgressIndicator(
+                value: value,
+                backgroundColor: Colors.grey[600],
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Colors.orange[400]!,
+                ),
+                minHeight: 6,
+              );
+            },
+          ),
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              Icon(
+                Icons.access_time,
+                size: 12,
+                color: Colors.white60,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                _getRemainingTime(production),
+                style: const TextStyle(
+                  color: Colors.white60,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getRemainingTime(dynamic production) {
+    final elapsed = DateTime.now().difference(production.startTime).inSeconds;
+    final total = production.durationSeconds;
+    final remaining = total - elapsed;
+    
+    if (remaining <= 0) return 'Completing...';
+    
+    if (remaining < 60) {
+      return '${remaining}s left';
+    } else if (remaining < 3600) {
+      final minutes = (remaining / 60).floor();
+      final seconds = remaining % 60;
+      return '${minutes}m ${seconds}s left';
+    } else {
+      final hours = (remaining / 3600).floor();
+      final minutes = ((remaining % 3600) / 60).floor();
+      return '${hours}h ${minutes}m left';
+    }
   }
 }

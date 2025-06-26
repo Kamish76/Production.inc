@@ -68,7 +68,7 @@ class ProductionGameService extends ChangeNotifier {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       productId: productId,
       startTime: DateTime.now(),
-      durationSeconds: product.productionTimeSeconds,
+      durationSeconds: product.productionTimeSeconds * quantity,
       quantity: quantity,
     );
     
@@ -113,7 +113,7 @@ class ProductionGameService extends ChangeNotifier {
   void updateProductions() {
     final completedTasks = <ProductionTask>[];
     final activeTasks = <ProductionTask>[];
-    
+
     for (final task in _state.activeProductions) {
       if (task.isCompleted) {
         completedTasks.add(task);
@@ -121,21 +121,22 @@ class ProductionGameService extends ChangeNotifier {
         activeTasks.add(task);
       }
     }
-    
-    if (completedTasks.isEmpty) return;
-    
-    // Add completed products to inventory
-    final newProducts = Map<String, int>.from(_state.products);
-    for (final task in completedTasks) {
-      newProducts[task.productId] = (newProducts[task.productId] ?? 0) + task.quantity;
+
+    // Always notify listeners if there are active productions for progress updates
+    if (completedTasks.isNotEmpty || _state.activeProductions.isNotEmpty) {
+      // Add completed products to inventory
+      final newProducts = Map<String, int>.from(_state.products);
+      for (final task in completedTasks) {
+        newProducts[task.productId] = (newProducts[task.productId] ?? 0) + task.quantity;
+      }
+
+      _state = _state.copyWith(
+        products: newProducts,
+        activeProductions: activeTasks,
+      );
+
+      notifyListeners();
     }
-    
-    _state = _state.copyWith(
-      products: newProducts,
-      activeProductions: activeTasks,
-    );
-    
-    notifyListeners();
   }
   
   // Get material info
