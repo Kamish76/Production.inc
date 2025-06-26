@@ -43,7 +43,7 @@ class Machine {
   final String id;
   final String name;
   final String description;
-  final double purchasePrice;
+  final Map<String, int> requiredMaterials; // materialId -> quantity needed to craft
   final String emoji;
   final MachineType type;
 
@@ -51,7 +51,7 @@ class Machine {
     required this.id,
     required this.name,
     required this.description,
-    required this.purchasePrice,
+    required this.requiredMaterials,
     required this.emoji,
     required this.type,
   });

@@ -1,0 +1,123 @@
+# Production.INC - Version Updates & Features
+## Game Version: 1.0.0+1
+
+### 🎮 Game Overview
+**Production.INC** is a production management game built with Flutter where players buy materials, produce items, and sell products to grow their business empire.
+
+---
+
+## ✨ Current Features (Version 1.0.0)
+
+### 🏗️ Core Game Architecture
+- **Flutter-based mobile game** with cross-platform support (Android, iOS, Windows, macOS, Linux, Web)
+- **State management** using Provider pattern for reactive game state
+- **Navigation** with GoRouter for smooth screen transitions
+- **Dark theme** with modern UI design
+- **Portrait orientation** optimized for mobile gameplay
+
+### 🛒 Material Management System
+- **Buy Materials Screen**: Purchase raw materials needed for production
+  - Current material: **Cardboard** (📄) - $1.00 per unit
+  - Real-time inventory tracking
+  - Cost calculation and affordability validation
+  - Bulk purchasing capability
+
+### 🏭 Production System
+- **Build Products Screen**: Transform materials into valuable products
+  - Current product: **Box** (📦) - Sells for $5.00
+  - Recipe system: 3 Cardboard → 1 Box
+  - **Real-time production tracking** with progress indicators
+  - Production timer: 3 seconds per box
+  - Batch production support
+  - Material consumption validation
+  - Active production queue management
+
+### 💰 Sales Management
+- **Sell Products Screen**: Convert finished products into profit
+  - Product inventory display
+  - Bulk selling capabilities
+  - Real-time revenue calculation
+  - Profit margin optimization (300% markup on cardboard to box)
+
+### ⚙️ Game Settings
+- **Settings Screen**: Game configuration and preferences
+- Accessible through tabbed navigation
+
+### 🎯 User Interface Features
+- **Tabbed navigation** with 4 main screens:
+  1. Buy Materials (🛒)
+  2. Build Products (🏭) 
+  3. Sell Products (💰)
+  4. Settings (⚙️)
+- **Gradient backgrounds** with modern dark theme
+- **Emoji-based icons** for visual appeal
+- **Real-time updates** across all screens
+- **Responsive design** for various screen sizes
+
+### 🔧 Technical Implementation
+- **Game State Management**: Centralized state using GameState model
+- **Service Layer**: ProductionGameService handles all game logic
+- **Data Models**: Structured game data with Material, Product, and Machine classes
+- **Timer System**: 500ms update cycle for production progress
+- **Memory Management**: Proper disposal of timers and resources
+
+### 📊 Game Economy
+- **Starting Money**: Players begin with initial capital
+- **Material Cost**: Cardboard - $1.00 per unit
+- **Product Value**: Box - $5.00 per unit
+- **Production Cost**: $3.00 in materials per box
+- **Profit Margin**: $2.00 profit per box (67% margin)
+- **Production Time**: 3 seconds per box
+
+### 🛠️ Development Features
+- **Hot reload** support for rapid development
+- **Comprehensive testing** setup with widget tests
+- **Build system** with multiple platform targets
+- **Asset management** for images and audio
+- **Linting** with flutter_lints for code quality
+
+---
+
+## 🚀 Planned Features (Future Versions)
+
+### 🤖 Automation System (Coming Soon)
+- **Auto Materials Buyer** (🤖): Automatically purchases materials
+  - Cost: 5 boxes to build
+  - Capacity: 10 materials per cycle
+- **Basic Parts Manufacturer** (🏭): Automated production
+  - Cost: 10 boxes to build
+  - Auto-produces until set amount reached
+- **Basic Parts Seller** (🛒): Automated sales
+  - Cost: 7 boxes to build
+  - Sells surplus products automatically
+
+### 📈 Expansion Features
+- Additional materials and products
+- Complex production chains
+- Research and development system
+- Achievement system
+- Statistics and analytics dashboard
+
+---
+
+## 🎲 Game Mechanics Summary
+1. **Buy** cardboard materials with starting money
+2. **Build** boxes using 3 cardboard pieces (3-second production time)
+3. **Sell** completed boxes for profit
+4. **Reinvest** profits to scale production
+5. **Prepare** for automation unlock system
+
+---
+
+## 🛡️ Technical Stack
+- **Framework**: Flutter 3.7.2+
+- **Game Engine**: Flame 1.20.0 (prepared for future 2D features)
+- **Audio**: Flame Audio 2.2.0 (ready for sound effects)
+- **Physics**: Flame Forge2D 0.18.0 (for future physics gameplay)
+- **Maps**: Flame Tiled 3.0.3 (for potential world/factory layouts)
+- **State Management**: Provider 6.1.2
+- **Navigation**: GoRouter 14.6.1
+- **Storage**: SharedPreferences 2.3.2 & SQLite 2.4.1
+- **Math**: Vector Math 2.1.4 for game calculations
+
+**Last Updated**: June 26, 2025
