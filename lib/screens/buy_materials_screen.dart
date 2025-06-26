@@ -10,22 +10,39 @@ class BuyMaterialsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ProductionGameService>(
       builder: (context, gameService, child) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Buy Materials'),
-            backgroundColor: Colors.green[600],
-            foregroundColor: Colors.white,
-          ),
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-              ),
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
             ),
+          ),
+          child: SafeArea(
             child: Column(
               children: [
+                // Screen title
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.shopping_cart,
+                        color: Colors.green[400],
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Buy Materials',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 // Money display
                 Container(
                   width: double.infinity,

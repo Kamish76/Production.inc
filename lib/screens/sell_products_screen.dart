@@ -10,22 +10,39 @@ class SellProductsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ProductionGameService>(
       builder: (context, gameService, child) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Sell Products'),
-            backgroundColor: Colors.purple[600],
-            foregroundColor: Colors.white,
-          ),
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-              ),
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
             ),
+          ),
+          child: SafeArea(
             child: Column(
               children: [
+                // Screen title
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.attach_money,
+                        color: Colors.purple[400],
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Sell Products',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 // Money and inventory display
                 Container(
                   width: double.infinity,
@@ -44,53 +61,72 @@ class SellProductsScreen extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Current Products',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
-                      if (gameService.state.products.isEmpty)
-                        Text(
-                          'No products to sell',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[300],
-                          ),
-                        )
-                      else
-                        ...gameService.allProducts.map((product) {
-                          final count = gameService.state.getProductCount(product.id);
-                          if (count > 0) {
-                            return Text(
-                              '${product.emoji} ${product.name}: $count',
-                              style: const TextStyle(color: Colors.white),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        }),
+                      Text(
+                        'Total Products: ${gameService.state.products.values.fold(0, (sum, count) => sum + count)}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ],
                   ),
                 ),
                 
-                // Products to sell
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: gameService.allProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = gameService.allProducts[index];
-                      final available = gameService.state.getProductCount(product.id);
-                      
-                      return _buildProductCard(context, product, available, gameService);
-                    },
+                // Products inventory
+                if (gameService.state.products.isEmpty || 
+                    gameService.state.products.values.every((count) => count == 0))
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 80,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'No Products to Sell',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Build some products first to sell them here!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[400],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  // Products list
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: gameService.allProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = gameService.allProducts[index];
+                        final available = gameService.state.getProductCount(product.id);
+                        
+                        if (available <= 0) return const SizedBox.shrink();
+                        
+                        return _buildProductCard(context, product, available, gameService);
+                      },
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -143,7 +179,7 @@ class SellProductsScreen extends StatelessWidget {
                         'Sell Price: \$${product.sellPrice.toStringAsFixed(2)} | Available: $available',
                         style: TextStyle(
                           fontSize: 14,
-                          color: available > 0 ? Colors.green[300] : Colors.grey[300],
+                          color: Colors.grey[300],
                         ),
                       ),
                     ],
@@ -151,39 +187,21 @@ class SellProductsScreen extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
             
-            if (available > 0) ...[
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildSellButton(context, product, 1, gameService, available),
-                  if (available >= 5)
-                    _buildSellButton(context, product, 5, gameService, available),
-                  if (available >= 10)
-                    _buildSellButton(context, product, 10, gameService, available),
-                  _buildSellButton(context, product, available, gameService, available, label: 'All'),
-                ],
-              ),
-            ] else ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[700],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'No ${product.name.toLowerCase()}s available to sell',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
+            // Sell buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildSellButton(context, product, 1, gameService, available),
+                if (available >= 5)
+                  _buildSellButton(context, product, 5, gameService, available),
+                if (available >= 10) 
+                  _buildSellButton(context, product, 10, gameService, available),
+                _buildSellButton(context, product, available, gameService, available, 
+                    label: 'Sell All'),
+              ],
+            ),
           ],
         ),
       ),

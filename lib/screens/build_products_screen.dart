@@ -10,35 +10,53 @@ class BuildProductsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ProductionGameService>(
       builder: (context, gameService, child) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Build Products'),
-            backgroundColor: Colors.blue[600],
-            foregroundColor: Colors.white,
-          ),
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-              ),
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
             ),
+          ),
+          child: SafeArea(
             child: Column(
               children: [
+                // Screen title
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.build,
+                        color: Colors.blue[400],
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Build Products',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 // Current materials display
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: Colors.blue[800],
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Current Materials',
+                        'Current Materials:',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -46,19 +64,38 @@ class BuildProductsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ...gameService.allMaterials.map((material) {
-                        final count = gameService.state.getMaterialCount(material.id);
-                        return Text(
-                          '${material.emoji} ${material.name}: $count',
-                          style: const TextStyle(color: Colors.white),
-                        );
-                      }),
+                      if (gameService.state.materials.isEmpty)
+                        const Text(
+                          'No materials available. Buy some materials first!',
+                          style: TextStyle(color: Colors.white70),
+                        )
+                      else
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: gameService.state.materials.entries
+                              .where((entry) => entry.value > 0)
+                              .map((entry) {
+                            final materialId = entry.key;
+                            final count = entry.value;
+                            final material = gameService.allMaterials
+                                .firstWhere((m) => m.id == materialId);
+                            return Chip(
+                              avatar: Text(material.emoji),
+                              label: Text('${material.name}: $count'),
+                              backgroundColor: Colors.grey[700],
+                              labelStyle: const TextStyle(color: Colors.white),
+                            );
+                          }).toList(),
+                        ),
                     ],
                   ),
                 ),
                 
-                // Active productions
-                if (gameService.state.activeProductions.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                
+                // Production status
+                if (gameService.state.activeProductions.isNotEmpty)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -68,9 +105,10 @@ class BuildProductsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Active Productions',
+                          'Active Productions:',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -78,29 +116,36 @@ class BuildProductsScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        ...gameService.state.activeProductions.map((task) {
-                          final product = gameService.getProduct(task.productId);
+                        ...gameService.state.activeProductions.map((production) {
+                          final product = gameService.allProducts
+                              .firstWhere((p) => p.id == production.productId);
+                          final progress = (production.progress * 100).toInt();
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      '${product?.emoji} ${product?.name} x${task.quantity}',
-                                      style: const TextStyle(color: Colors.white),
-                                    ),
-                                    Text(
-                                      '${(task.progress * 100).toInt()}%',
-                                      style: const TextStyle(color: Colors.white),
-                                    ),
-                                  ],
+                                Text(
+                                  '${product.emoji} ${product.name} x${production.quantity}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
+                                const SizedBox(height: 4),
                                 LinearProgressIndicator(
-                                  value: task.progress,
+                                  value: production.progress,
                                   backgroundColor: Colors.grey[600],
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.orange[300]!),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.orange[400]!,
+                                  ),
+                                ),
+                                Text(
+                                  '$progress% complete',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ],
                             ),
@@ -109,10 +154,10 @@ class BuildProductsScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                ],
                 
-                // Products to build
+                const SizedBox(height: 16),
+                
+                // Products list
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
@@ -136,6 +181,7 @@ class BuildProductsScreen extends StatelessWidget {
     game.Product product,
     ProductionGameService gameService,
   ) {
+    // Check if we can produce this product
     final canProduce = gameService.state.hasMaterialsFor(product.requiredMaterials);
     
     return Card(
@@ -173,10 +219,10 @@ class BuildProductsScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Sell Price: \$${product.sellPrice.toStringAsFixed(2)} | Time: ${product.productionTimeSeconds}s',
+                        'Production Time: ${(product.productionTimeSeconds/60).toStringAsFixed(1)} minutes',
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[300],
+                          fontSize: 12,
+                          color: Colors.grey[500],
                         ),
                       ),
                     ],
@@ -184,39 +230,47 @@ class BuildProductsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             
             // Required materials
-            Text(
+            const Text(
               'Required Materials:',
               style: TextStyle(
-                fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[300],
+                color: Colors.white,
               ),
             ),
-            ...product.requiredMaterials.entries.map((entry) {
-              final material = gameService.getMaterial(entry.key);
-              final needed = entry.value;
-              final have = gameService.state.getMaterialCount(entry.key);
-              final hasEnough = have >= needed;
-              
-              return Text(
-                '  ${material?.emoji} ${material?.name}: $have/$needed',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: hasEnough ? Colors.green[300] : Colors.red[300],
-                ),
-              );
-            }),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: product.requiredMaterials.entries.map((entry) {
+                final materialId = entry.key;
+                final required = entry.value;
+                final material = gameService.allMaterials
+                    .firstWhere((m) => m.id == materialId);
+                final owned = gameService.state.getMaterialCount(materialId);
+                final hasEnough = owned >= required;
+                
+                return Chip(
+                  avatar: Text(material.emoji, style: const TextStyle(fontSize: 16)),
+                  label: Text('${material.name}: $required'),
+                  backgroundColor: hasEnough ? Colors.green[700] : Colors.red[700],
+                  labelStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
+                );
+              }).toList(),
+            ),
             
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildProduceButton(context, product, 1, gameService, canProduce),
-                _buildProduceButton(context, product, 3, gameService, canProduce),
                 _buildProduceButton(context, product, 5, gameService, canProduce),
+                _buildProduceButton(context, product, 10, gameService, canProduce),
               ],
             ),
           ],

@@ -16,7 +16,3 @@ to start as foundation of this game.
     current materials: cardboard.
     current produce: box.
     current sell: sell box.
-
-
-
-

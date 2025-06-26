@@ -3,10 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'screens/main_menu_screen.dart';
-import 'screens/buy_materials_screen.dart';
-import 'screens/build_products_screen.dart';
-import 'screens/sell_products_screen.dart';
-import 'screens/settings_screen.dart';
+import 'screens/main_game_screen.dart';
 import 'services/production_game_service.dart';
 
 void main() {
@@ -32,20 +29,29 @@ class ProductionIncApp extends StatelessWidget {
         builder: (context, state) => const MainMenuScreen(),
       ),
       GoRoute(
+        path: '/game',
+        builder: (context, state) {
+          final indexParam = state.uri.queryParameters['index'];
+          final initialIndex = indexParam != null ? int.tryParse(indexParam) ?? 0 : 0;
+          return MainGameScreen(initialIndex: initialIndex);
+        },
+      ),
+      // Legacy routes - redirect to main game screen with appropriate tab
+      GoRoute(
         path: '/buy',
-        builder: (context, state) => const BuyMaterialsScreen(),
+        redirect: (context, state) => '/game?index=0',
       ),
       GoRoute(
         path: '/build',
-        builder: (context, state) => const BuildProductsScreen(),
+        redirect: (context, state) => '/game?index=1',
       ),
       GoRoute(
         path: '/sell',
-        builder: (context, state) => const SellProductsScreen(),
+        redirect: (context, state) => '/game?index=2',
       ),
       GoRoute(
         path: '/settings',
-        builder: (context, state) => const SettingsScreen(),
+        redirect: (context, state) => '/game?index=3',
       ),
     ],
   );
