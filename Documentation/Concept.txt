@@ -1,0 +1,22 @@
+# Game1 - game code name
+# NAME: Production.INC
+
+game concept:
+
+buy build sell, automate!
+
+buy materials produce then sell the items.
+
+in the long run when you unlocked all the items, you can build machines to automate production!
+as well as mach2ines to buy materials and sell products!
+
+3 windows, buy materials, build, sell materials.
+
+to start as foundation of this game.
+    current materials: cardboard.
+    current produce: box.
+    current sell: sell box.
+
+
+
+
