@@ -1,6 +1,42 @@
 # Game1 - game code name
 # NAME: Production.INC
 
+TODO:
+    implement shipping time mechanics, ui similar to active production ui but separated to 2, current and done.
+    where there should be a history of sold items.
+    
+    
+    
+
+sell products system
+    IDEA 2: shipping time to items. lower money earned from basic items.
+        shipping time: sum all shipping time.
+
+    IDEA 1: implement time needed to sell items.
+        and a way to disadvantage selling only the same product too much
+        forcing players to progress to other options.
+        Idea: system shop system for selling, and shop auto sells based on demand, players set the amount of items to be sold
+            setting system: only sell amount set user by, but needs user to approve order to be sold, then shipping time based on each item sold 
+            add another data for product models: shipping time
+            shipping time will be totally calculated by number of items sold, so sum of all items set products shipping time.
+                Current: Sum all shipping times = potentially very long waits
+                Better: Base shipping time + (items * scaling factor)
+
+Item tier or levels that can be made or bought(materials are the only thing that can be bought)
+    material:
+        carboard, plastic, rubber, basic metals, advance metals
+    basic parts:  //if only selling basic parts basically your a parts producer factory something type shit, this would serve of something like early game purpose.
+        screws, bolts, wires, circuits, hose, bearings,
+    intermediate: //intermediate parts like parts out of  the basic parts like mainboards 
+        // im still thinking i know itll mainly rely on what complex or manufactured items i am making.
+    Complex: // more into combination of all the intermediate parts.
+        //this would include machines like for manufacturing as well and for automation that i could use in the game.
+    retail items: //products with the only purpos is to be sold.  
+        //still thinking of final products.
+
+
+
+
 game concept:
 
 buy build sell, automate!
@@ -16,5 +52,7 @@ to start as foundation of this game.
     current materials: cardboard.
     current produce: box.
     current sell: sell box.
+
+
 
     

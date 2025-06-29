@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'buy_materials_screen.dart';
 import 'build_products_screen.dart';
 import 'sell_products_screen.dart';
+import 'shipping_screen.dart';
 import 'settings_screen.dart';
 
 class MainGameScreen extends StatefulWidget {
   final int initialIndex;
-  
+
   const MainGameScreen({super.key, this.initialIndex = 0});
 
   @override
@@ -15,11 +16,12 @@ class MainGameScreen extends StatefulWidget {
 
 class _MainGameScreenState extends State<MainGameScreen> {
   late int _currentIndex;
-  
+
   final List<Widget> _screens = [
     const BuyMaterialsScreen(),
     const BuildProductsScreen(),
     const SellProductsScreen(),
+    const ShippingScreen(),
     const SettingsScreen(),
   ];
 
@@ -32,19 +34,13 @@ class _MainGameScreenState extends State<MainGameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF1A1A2E),
-              Color(0xFF16213E),
-            ],
+            colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
           ),
           boxShadow: [
             BoxShadow(
@@ -70,20 +66,22 @@ class _MainGameScreenState extends State<MainGameScreen> {
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
-          unselectedLabelStyle: const TextStyle(
-            fontSize: 12,
-          ),
+          unselectedLabelStyle: const TextStyle(fontSize: 12),
           items: [
             BottomNavigationBarItem(
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _currentIndex == 0 ? Colors.green[600]?.withValues(alpha: 0.3) : Colors.transparent,
+                  color:
+                      _currentIndex == 0
+                          ? Colors.green[600]?.withValues(alpha: 0.3)
+                          : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.shopping_cart,
-                  color: _currentIndex == 0 ? Colors.green[400] : Colors.grey[400],
+                  color:
+                      _currentIndex == 0 ? Colors.green[400] : Colors.grey[400],
                 ),
               ),
               label: 'Buy',
@@ -92,12 +90,16 @@ class _MainGameScreenState extends State<MainGameScreen> {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _currentIndex == 1 ? Colors.blue[600]?.withValues(alpha: 0.3) : Colors.transparent,
+                  color:
+                      _currentIndex == 1
+                          ? Colors.blue[600]?.withValues(alpha: 0.3)
+                          : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.build,
-                  color: _currentIndex == 1 ? Colors.blue[400] : Colors.grey[400],
+                  color:
+                      _currentIndex == 1 ? Colors.blue[400] : Colors.grey[400],
                 ),
               ),
               label: 'Build',
@@ -106,12 +108,18 @@ class _MainGameScreenState extends State<MainGameScreen> {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _currentIndex == 2 ? Colors.purple[600]?.withValues(alpha: 0.3) : Colors.transparent,
+                  color:
+                      _currentIndex == 2
+                          ? Colors.purple[600]?.withValues(alpha: 0.3)
+                          : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.attach_money,
-                  color: _currentIndex == 2 ? Colors.purple[400] : Colors.grey[400],
+                  color:
+                      _currentIndex == 2
+                          ? Colors.purple[400]
+                          : Colors.grey[400],
                 ),
               ),
               label: 'Sell',
@@ -120,12 +128,36 @@ class _MainGameScreenState extends State<MainGameScreen> {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _currentIndex == 3 ? Colors.grey[600]?.withValues(alpha: 0.3) : Colors.transparent,
+                  color:
+                      _currentIndex == 3
+                          ? Colors.orange[600]?.withValues(alpha: 0.3)
+                          : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.local_shipping,
+                  color:
+                      _currentIndex == 3
+                          ? Colors.orange[400]
+                          : Colors.grey[400],
+                ),
+              ),
+              label: 'Shipping',
+            ),
+            BottomNavigationBarItem(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color:
+                      _currentIndex == 4
+                          ? Colors.grey[600]?.withValues(alpha: 0.3)
+                          : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.settings,
-                  color: _currentIndex == 3 ? Colors.grey[400] : Colors.grey[400],
+                  color:
+                      _currentIndex == 4 ? Colors.grey[400] : Colors.grey[400],
                 ),
               ),
               label: 'Settings',

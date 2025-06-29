@@ -1,5 +1,7 @@
 // Production.INC Game State
 
+import 'game_models.dart';
+
 // Represents a production task in progress
 class ProductionTask {
   final String id;
@@ -33,8 +35,10 @@ class ProductionTask {
 class GameState {
   final double money;
   final Map<String, int> materials; // materialId -> quantity owned
-  final Map<String, int> products;  // productId -> quantity owned
+  final Map<String, int> products; // productId -> quantity owned
   final List<ProductionTask> activeProductions;
+  final List<ShippingOrder> activeShippingOrders;
+  final List<ShippingHistory> shippingHistory;
   final Map<String, int> machines; // machineId -> quantity owned (future)
 
   const GameState({
@@ -42,6 +46,8 @@ class GameState {
     this.materials = const {},
     this.products = const {},
     this.activeProductions = const [],
+    this.activeShippingOrders = const [],
+    this.shippingHistory = const [],
     this.machines = const {},
   });
 
@@ -50,6 +56,8 @@ class GameState {
     Map<String, int>? materials,
     Map<String, int>? products,
     List<ProductionTask>? activeProductions,
+    List<ShippingOrder>? activeShippingOrders,
+    List<ShippingHistory>? shippingHistory,
     Map<String, int>? machines,
   }) {
     return GameState(
@@ -57,6 +65,8 @@ class GameState {
       materials: materials ?? this.materials,
       products: products ?? this.products,
       activeProductions: activeProductions ?? this.activeProductions,
+      activeShippingOrders: activeShippingOrders ?? this.activeShippingOrders,
+      shippingHistory: shippingHistory ?? this.shippingHistory,
       machines: machines ?? this.machines,
     );
   }
@@ -65,7 +75,7 @@ class GameState {
   int getMaterialCount(String materialId) => materials[materialId] ?? 0;
   int getProductCount(String productId) => products[productId] ?? 0;
   bool canAfford(double price) => money >= price;
-  
+
   bool hasMaterialsFor(Map<String, int> required) {
     for (final entry in required.entries) {
       if (getMaterialCount(entry.key) < entry.value) {

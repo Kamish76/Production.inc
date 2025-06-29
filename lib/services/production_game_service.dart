@@ -8,61 +8,61 @@ import '../models/game_models.dart';
 class ProductionGameService extends ChangeNotifier {
   GameState _state = const GameState();
   Timer? _updateTimer;
-  
+
   GameState get state => _state;
-  
+
   ProductionGameService() {
     // Start update timer to check for completed productions
     _updateTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       updateProductions();
     });
   }
-  
+
   @override
   void dispose() {
     _updateTimer?.cancel();
     super.dispose();
   }
-  
+
   // Buy materials
   bool buyMaterial(String materialId, int quantity) {
     final material = GameData.getMaterial(materialId);
     if (material == null) return false;
-    
+
     final totalCost = material.buyPrice * quantity;
     if (!_state.canAfford(totalCost)) return false;
-    
+
     final newMaterials = Map<String, int>.from(_state.materials);
     newMaterials[materialId] = (newMaterials[materialId] ?? 0) + quantity;
-    
+
     _state = _state.copyWith(
       money: _state.money - totalCost,
       materials: newMaterials,
     );
-    
+
     notifyListeners();
     return true;
   }
-  
+
   // Start production of a product
   bool startProduction(String productId, int quantity) {
     final product = GameData.getProduct(productId);
     if (product == null) return false;
-    
+
     // Check if we have enough materials
     final requiredMaterials = <String, int>{};
     for (final entry in product.requiredMaterials.entries) {
       requiredMaterials[entry.key] = entry.value * quantity;
     }
-    
+
     if (!_state.hasMaterialsFor(requiredMaterials)) return false;
-    
+
     // Consume materials
     final newMaterials = Map<String, int>.from(_state.materials);
     for (final entry in requiredMaterials.entries) {
       newMaterials[entry.key] = (newMaterials[entry.key] ?? 0) - entry.value;
     }
-    
+
     // Create production task
     final task = ProductionTask(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -71,49 +71,73 @@ class ProductionGameService extends ChangeNotifier {
       durationSeconds: product.productionTimeSeconds * quantity,
       quantity: quantity,
     );
-    
+
     final newProductions = List<ProductionTask>.from(_state.activeProductions);
     newProductions.add(task);
-    
+
     _state = _state.copyWith(
       materials: newMaterials,
       activeProductions: newProductions,
     );
-    
+
     notifyListeners();
     return true;
   }
-  
-  // Sell products
+
+  // Sell products (now creates shipping orders)
   bool sellProduct(String productId, int quantity) {
     final product = GameData.getProduct(productId);
     if (product == null) return false;
-    
+
     final available = _state.getProductCount(productId);
     if (available < quantity) return false;
-    
+
+    // Calculate shipping time using the concept's better formula:
+    // Base shipping time + (items * scaling factor)
+    const baseShippingTime = 5.0; // Base 5 seconds
+    const scalingFactor = 0.5; // 0.5 seconds per item
+    final totalShippingTime = baseShippingTime + (quantity * scalingFactor);
+
     final totalRevenue = product.sellPrice * quantity;
-    
+
+    // Remove products from inventory
     final newProducts = Map<String, int>.from(_state.products);
     newProducts[productId] = available - quantity;
     if (newProducts[productId]! <= 0) {
       newProducts.remove(productId);
     }
-    
-    _state = _state.copyWith(
-      money: _state.money + totalRevenue,
-      products: newProducts,
+
+    // Create shipping order
+    final shippingOrder = ShippingOrder(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      items: [ShippingItem(productId: productId, quantity: quantity)],
+      startTime: DateTime.now(),
+      totalShippingTime: totalShippingTime,
+      totalRevenue: totalRevenue,
     );
-    
+
+    final newShippingOrders = List<ShippingOrder>.from(
+      _state.activeShippingOrders,
+    );
+    newShippingOrders.add(shippingOrder);
+
+    _state = _state.copyWith(
+      products: newProducts,
+      activeShippingOrders: newShippingOrders,
+    );
+
     notifyListeners();
     return true;
   }
-  
-  // Check and complete finished productions
+
+  // Check and complete finished productions and shipping orders
   void updateProductions() {
     final completedTasks = <ProductionTask>[];
     final activeTasks = <ProductionTask>[];
+    final completedShipping = <ShippingOrder>[];
+    final activeShipping = <ShippingOrder>[];
 
+    // Check production tasks
     for (final task in _state.activeProductions) {
       if (task.isCompleted) {
         completedTasks.add(task);
@@ -122,27 +146,60 @@ class ProductionGameService extends ChangeNotifier {
       }
     }
 
-    // Always notify listeners if there are active productions for progress updates
-    if (completedTasks.isNotEmpty || _state.activeProductions.isNotEmpty) {
+    // Check shipping orders
+    for (final order in _state.activeShippingOrders) {
+      if (order.isCompleted) {
+        completedShipping.add(order);
+      } else {
+        activeShipping.add(order);
+      }
+    }
+
+    // Always notify listeners if there are active productions/shipping for progress updates
+    if (completedTasks.isNotEmpty ||
+        completedShipping.isNotEmpty ||
+        _state.activeProductions.isNotEmpty ||
+        _state.activeShippingOrders.isNotEmpty) {
       // Add completed products to inventory
       final newProducts = Map<String, int>.from(_state.products);
       for (final task in completedTasks) {
-        newProducts[task.productId] = (newProducts[task.productId] ?? 0) + task.quantity;
+        newProducts[task.productId] =
+            (newProducts[task.productId] ?? 0) + task.quantity;
+      }
+
+      // Add revenue from completed shipping orders and create history
+      double newMoney = _state.money;
+      final newHistory = List<ShippingHistory>.from(_state.shippingHistory);
+
+      for (final order in completedShipping) {
+        newMoney += order.totalRevenue;
+
+        // Add to history
+        final history = ShippingHistory(
+          id: order.id,
+          items: order.items,
+          completedTime: DateTime.now(),
+          totalRevenue: order.totalRevenue,
+        );
+        newHistory.add(history);
       }
 
       _state = _state.copyWith(
+        money: newMoney,
         products: newProducts,
         activeProductions: activeTasks,
+        activeShippingOrders: activeShipping,
+        shippingHistory: newHistory,
       );
 
       notifyListeners();
     }
   }
-  
+
   // Get material info
   Material? getMaterial(String id) => GameData.getMaterial(id);
   Product? getProduct(String id) => GameData.getProduct(id);
-  
+
   // Get all available items
   List<Material> get allMaterials => GameData.materials;
   List<Product> get allProducts => GameData.products;

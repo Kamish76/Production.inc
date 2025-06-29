@@ -1,8 +1,43 @@
 # Production.INC - Version Updates & Features
-## Game Version: 1.0.0+1
+## Game Version: 1.1.0+2
 
 ### 🎮 Game Overview
 **Production.INC** is a production management game built with Flutter where players buy materials, produce items, and sell products to grow their business empire.
+
+---
+
+## ✨ New Features (Version 1.1.0) - **SHIPPING TIME MECHANICS**
+
+### 🚚 Advanced Shipping System
+- **Shipping Time Implementation**: Products now require time to sell instead of instant sales
+- **Smart Shipping Formula**: Base shipping time (5s) + scaling factor (0.5s per item)
+- **Real-time Progress Tracking**: Visual progress bars with percentage and time remaining
+- **Revenue Timing**: Money is only earned when shipping orders complete
+
+### 📋 Shipping Management Screen
+- **New Navigation Tab**: Dedicated shipping screen with truck icon (🚚)
+- **Dual-View Interface**: 
+  - **Current Orders Tab**: Shows active shipping orders with live progress
+  - **History Tab**: Complete transaction records of sold items
+- **Order Details**: Each order displays:
+  - Unique order ID (last 6 digits for readability)
+  - List of items being shipped with emojis
+  - Total revenue amount
+  - Progress bar with completion percentage
+  - Remaining time countdown
+
+### 🏗️ Enhanced Game Architecture
+- **Shipping Order System**: New `ShippingOrder` model with progress tracking
+- **Shipping History**: Permanent record of all completed sales
+- **Updated Product Model**: Added `shippingTimeSeconds` property to all products
+- **Enhanced Game State**: Integrated shipping orders and history tracking
+- **Improved Service Logic**: Unified production and shipping management
+
+### 🎮 Gameplay Improvements
+- **Strategic Planning**: Players must plan ahead due to shipping delays
+- **Time Management**: Encourages better inventory and timing decisions
+- **Progress Visibility**: Clear feedback on all ongoing shipping orders
+- **Historical Tracking**: Complete sales history for performance analysis
 
 ---
 
@@ -33,32 +68,36 @@
   - Active production queue management
 
 ### 💰 Sales Management
-- **Sell Products Screen**: Convert finished products into profit
-  - Product inventory display
-  - Bulk selling capabilities
-  - Real-time revenue calculation
-  - Profit margin optimization (300% markup on cardboard to box)
+- **Sell Products Screen**: Convert finished products into shipping orders
+- **🚚 NEW: Shipping Time System**: Products take time to sell (no more instant sales)
+- **Order Creation**: Selling creates shipping orders with calculated delivery times
+- **Bulk Order Support**: Multiple items in single shipping orders
+- **Strategic Timing**: Players must plan sales around shipping delays
 
 ### ⚙️ Game Settings
 - **Settings Screen**: Game configuration and preferences
 - Accessible through tabbed navigation
 
 ### 🎯 User Interface Features
-- **Tabbed navigation** with 4 main screens:
+- **Tabbed navigation** with 5 main screens:
   1. Buy Materials (🛒)
   2. Build Products (🏭) 
   3. Sell Products (💰)
-  4. Settings (⚙️)
+  4. **🚚 NEW: Shipping Orders** (🚚)
+  5. Settings (⚙️)
 - **Gradient backgrounds** with modern dark theme
 - **Emoji-based icons** for visual appeal
 - **Real-time updates** across all screens
 - **Responsive design** for various screen sizes
+- **🚚 NEW: Progress indicators** for shipping orders
 
 ### 🔧 Technical Implementation
 - **Game State Management**: Centralized state using GameState model
 - **Service Layer**: ProductionGameService handles all game logic
+- **🚚 NEW: Shipping System**: ShippingOrder and ShippingHistory models
 - **Data Models**: Structured game data with Material, Product, and Machine classes
-- **Timer System**: 500ms update cycle for production progress
+- **🚚 NEW: Enhanced Product Model**: Added shippingTimeSeconds property
+- **Timer System**: 500ms update cycle for production and shipping progress
 - **Memory Management**: Proper disposal of timers and resources
 
 ### 📊 Game Economy
@@ -100,12 +139,15 @@
 
 ---
 
-## 🎲 Game Mechanics Summary
+## 🎲 Game Mechanics Summary (Updated v1.1.0)
 1. **Buy** cardboard materials with starting money
 2. **Build** boxes using 3 cardboard pieces (3-second production time)
-3. **Sell** completed boxes for profit
-4. **Reinvest** profits to scale production
-5. **Prepare** for automation unlock system
+3. **🚚 NEW: Create Shipping Orders** by selling completed boxes
+4. **⏱️ Wait for Delivery** - shipping takes time based on order size
+5. **💰 Collect Revenue** when shipping orders complete
+6. **📊 Track History** of all completed sales
+7. **Reinvest** profits to scale production
+8. **Prepare** for automation unlock system
 
 ---
 
@@ -120,4 +162,4 @@
 - **Storage**: SharedPreferences 2.3.2 & SQLite 2.4.1
 - **Math**: Vector Math 2.1.4 for game calculations
 
-**Last Updated**: June 26, 2025
+**Last Updated**: June 30, 2025

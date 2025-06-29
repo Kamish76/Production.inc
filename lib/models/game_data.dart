@@ -24,6 +24,7 @@ class GameData {
       emoji: '📦',
       requiredMaterials: {'cardboard': 3},
       productionTimeSeconds: 3.0,
+      shippingTimeSeconds: 2.0, // 2 seconds base shipping time
     ),
   ];
 
@@ -32,7 +33,8 @@ class GameData {
     Machine(
       id: 'buyer',
       name: 'Auto Materials Buyer',
-      description: 'Automatically buys materials based on set amount per item, per machine can only buy 10 materials per item',
+      description:
+          'Automatically buys materials based on set amount per item, per machine can only buy 10 materials per item',
       requiredMaterials: {'box': 5},
       emoji: '🤖',
       type: MachineType.materialBuyer,
