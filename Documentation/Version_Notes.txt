@@ -1,12 +1,43 @@
 # Production.INC - Version Updates & Features
-## Game Version: 1.1.0+2
+## Game Version: 1.2.0
 
 ### 🎮 Game Overview
 **Production.INC** is a production management game built with Flutter where players buy materials, produce items, and sell products to grow their business empire.
 
 ---
 
-## ✨ New Features (Version 1.1.0) - **SHIPPING TIME MECHANICS**
+## ✨ New Features (Version 1.2.0) - **COMPLEX PRODUCTION CHAINS**
+
+### 🔧 Enhanced Production System
+- **Multi-Tier Production**: Products can now require other products as materials
+- **Complex Recipe Support**: Speaker production chain implemented:
+  - 🔌 Wires (Basic Metal + Plastic)
+  - 💾 Circuits (Basic Metal + Plastic)
+  - 🔊 Sound Driver (Advanced Metal + Basic Metal)
+  - 📱 Plastic Enclosure (Plastic)
+  - 🔈 Speaker (Wires + Circuits + Sound Driver + Plastic Enclosure)
+
+### 🛠️ System Improvements
+- **Robust Error Handling**: Fixed "Bad state: No element" crashes
+- **Safe Material Lookup**: Graceful handling of missing materials/products
+- **Enhanced Production Logic**: Products can consume other products as materials
+- **Improved UI Feedback**: Better visual indicators for available/missing requirements
+
+### 🎯 Bug Fixes & Stability
+- **Production Queue Safety**: Fixed crashes when no active productions exist
+- **Material Display Fix**: Required materials now properly display for complex products
+- **Inventory Management**: Unified handling of materials and products in production
+- **Progress Tracking**: Improved production progress calculations and display
+
+### 🏗️ Technical Enhancements
+- **Enhanced GameState**: Improved material/product availability checking
+- **Service Layer Updates**: Better production material consumption logic
+- **UI Component Safety**: Added null checks and fallbacks throughout the interface
+- **Data Model Flexibility**: Support for products requiring other products
+
+---
+
+## ✨ Previous Features (Version 1.1.0) - **SHIPPING TIME MECHANICS**
 
 ### 🚚 Advanced Shipping System
 - **Shipping Time Implementation**: Products now require time to sell instead of instant sales
@@ -41,7 +72,7 @@
 
 ---
 
-## ✨ Current Features (Version 1.0.0)
+## ✨ Previous Features (Version 1.0.0)
 
 ### 🏗️ Core Game Architecture
 - **Flutter-based mobile game** with cross-platform support (Android, iOS, Windows, macOS, Linux, Web)
@@ -139,15 +170,16 @@
 
 ---
 
-## 🎲 Game Mechanics Summary (Updated v1.1.0)
-1. **Buy** cardboard materials with starting money
-2. **Build** boxes using 3 cardboard pieces (3-second production time)
-3. **🚚 NEW: Create Shipping Orders** by selling completed boxes
-4. **⏱️ Wait for Delivery** - shipping takes time based on order size
-5. **💰 Collect Revenue** when shipping orders complete
-6. **📊 Track History** of all completed sales
-7. **Reinvest** profits to scale production
-8. **Prepare** for automation unlock system
+## 🎲 Game Mechanics Summary (Updated v1.2.0)
+1. **Buy** base materials (Cardboard, Basic Metals, Advanced Metals, Plastic) with starting money
+2. **Build** basic parts (Boxes, Wires, Circuits, Sound Drivers, Plastic Enclosures) using materials
+3. **Create** complex products (Speakers) using other products as materials
+4. **🚚 Create Shipping Orders** by selling completed products
+5. **⏱️ Wait for Delivery** - shipping takes time based on order size
+6. **💰 Collect Revenue** when shipping orders complete
+7. **📊 Track History** of all completed sales
+8. **Reinvest** profits to scale production and unlock complex products
+9. **Prepare** for automation unlock system
 
 ---
 

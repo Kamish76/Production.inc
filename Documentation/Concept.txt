@@ -2,29 +2,62 @@
 # NAME: Production.INC
 
 TODO:
-    implement shipping time mechanics, ui similar to active production ui but separated to 2, current and done.
-    where there should be a history of sold items.
+    PHASE 1: Expand Material System (Foundation) ✅ COMPLETED
+        Add base materials needed for speaker production:
+            - basic metals (for basic wires, circuits)
+            - advanced metals (for sound driver magnets)
+            - plastic (for wire insulation, circuit boards)
+            - wood (for enclosure option)
+        
+    PHASE 2: Implement Better Shipping Formula ✅ COMPLETED
+        Fix shipping scaling issue before adding complex products:
+            Current problem: Sum all shipping times = potentially very long waits
+            Solution: Base shipping time + (items * scaling factor)
+            Fixed scaling factor: 0.9 for all items (can be adjusted later)
+            Example: Speaker base: 5s, scaling: 0.9s per item
+                - 1 speaker: 5.9s (not 5s)
+                - 10 speakers: 14s (not 50s)
     
-    
-    
+    PHASE 3: Create Speaker Production Chain ✅ COMPLETED
+        speaker - retail Item
+            Production chain: Base Materials → Basic Parts → Speaker
+            Basic Parts needed:
+                Wires - basic Parts
+                    cost in materials: basic metals + plastic
+                Enclosure - basic Parts (wooden enclosure included in speaker)
+                    cost in materials: wood
+                Circuits - basic parts
+                    cost in materials: basic metals + plastic
+                Sound driver - basic parts
+                    cost in materials: advanced metals (magnets) + basic metals
+            
+            IMPLEMENTED SINGLE SPEAKER PRODUCT:
+                Speaker - Premium wooden speaker ($150, includes wooden enclosure)
 
 sell products system
+    RECOMMENDED APPROACH: Combine both ideas for better gameplay
+    
     IDEA 2: shipping time to items. lower money earned from basic items.
-        shipping time: sum all shipping time.
-
-    IDEA 1: implement time needed to sell items.
+        shipping time: IMPROVED FORMULA - Base shipping time + (items * scaling factor)
+        Benefits: Prevents linear scaling problems, more realistic logistics
+        
+    IDEA 1: implement time needed to sell items + market saturation.
         and a way to disadvantage selling only the same product too much
         forcing players to progress to other options.
-        Idea: system shop system for selling, and shop auto sells based on demand, players set the amount of items to be sold
-            setting system: only sell amount set user by, but needs user to approve order to be sold, then shipping time based on each item sold 
-            add another data for product models: shipping time
-            shipping time will be totally calculated by number of items sold, so sum of all items set products shipping time.
-                Current: Sum all shipping times = potentially very long waits
-                Better: Base shipping time + (items * scaling factor)
+        Implementation: Market demand decreases with oversupply of same product
+        
+    COMBINED SYSTEM:
+        - Products have base shipping time + scaling factor
+        - Market demand affects sell price (oversaturation = lower profits)
+        - Shop auto-sells based on demand, players set amounts to be sold
+        - Players must approve large orders before shipping begins
+        
+        setting system: only sell amount set by user, but needs user to approve order to be sold, then shipping time based on improved formula
+        add another data for product models: baseShippingTime, shippingScalingFactor, marketDemand
 
 Item tier or levels that can be made or bought(materials are the only thing that can be bought)
     material:
-        carboard, plastic, rubber, basic metals, advance metals
+        carboard, plastic, rubber, basic metals, advance metals, Fiber sheets, glass
     basic parts:  //if only selling basic parts basically your a parts producer factory something type shit, this would serve of something like early game purpose.
         screws, bolts, wires, circuits, hose, bearings,
     intermediate: //intermediate parts like parts out of  the basic parts like mainboards 

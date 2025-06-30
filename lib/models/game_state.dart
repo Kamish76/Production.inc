@@ -78,7 +78,11 @@ class GameState {
 
   bool hasMaterialsFor(Map<String, int> required) {
     for (final entry in required.entries) {
-      if (getMaterialCount(entry.key) < entry.value) {
+      final materialCount = getMaterialCount(entry.key);
+      final productCount = getProductCount(entry.key);
+      final totalAvailable = materialCount + productCount;
+
+      if (totalAvailable < entry.value) {
         return false;
       }
     }

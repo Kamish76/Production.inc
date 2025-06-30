@@ -33,11 +33,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.build,
-                        color: Colors.blue[400],
-                        size: 28,
-                      ),
+                      Icon(Icons.build, color: Colors.blue[400], size: 28),
                       const SizedBox(width: 12),
                       const Text(
                         'Build Products',
@@ -80,27 +76,35 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: gameService.state.materials.entries
-                              .where((entry) => entry.value > 0)
-                              .map((entry) {
-                            final materialId = entry.key;
-                            final count = entry.value;
-                            final material = gameService.allMaterials
-                                .firstWhere((m) => m.id == materialId);
-                            return Chip(
-                              avatar: Text(material.emoji),
-                              label: Text('${material.name}: $count'),
-                              backgroundColor: Colors.grey[700],
-                              labelStyle: const TextStyle(color: Colors.white),
-                            );
-                          }).toList(),
+                          children:
+                              gameService.state.materials.entries
+                                  .where((entry) => entry.value > 0)
+                                  .map((entry) {
+                                    final materialId = entry.key;
+                                    final count = entry.value;
+                                    final material = gameService.getMaterial(
+                                      materialId,
+                                    );
+                                    if (material == null)
+                                      return const SizedBox.shrink();
+                                    return Chip(
+                                      avatar: Text(material.emoji),
+                                      label: Text('${material.name}: $count'),
+                                      backgroundColor: Colors.grey[700],
+                                      labelStyle: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    );
+                                  })
+                                  .where((widget) => widget is! SizedBox)
+                                  .toList(),
                         ),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Production status
                 if (gameService.state.activeProductions.isNotEmpty)
                   Container(
@@ -132,8 +136,8 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                               ),
                               const Spacer(),
                               Icon(
-                                _isProductionExpanded 
-                                    ? Icons.expand_less 
+                                _isProductionExpanded
+                                    ? Icons.expand_less
                                     : Icons.expand_more,
                                 color: Colors.white,
                                 size: 24,
@@ -147,10 +151,15 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                           SizedBox(
                             height: 200,
                             child: ListView.builder(
-                              itemCount: gameService.state.activeProductions.length,
+                              itemCount:
+                                  gameService.state.activeProductions.length,
                               itemBuilder: (context, index) {
-                                final production = gameService.state.activeProductions[index];
-                                return _buildProductionItem(production, gameService);
+                                final production =
+                                    gameService.state.activeProductions[index];
+                                return _buildProductionItem(
+                                  production,
+                                  gameService,
+                                );
                               },
                             ),
                           )
@@ -158,27 +167,50 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                           // Show only the next production to finish when collapsed
                           Builder(
                             builder: (context) {
+                              // Check if there are any active productions
+                              if (gameService.state.activeProductions.isEmpty) {
+                                return const Text(
+                                  'No active productions',
+                                  style: TextStyle(color: Colors.white70),
+                                );
+                              }
+
                               // Find the production that will finish first (highest progress)
-                              final nextProduction = gameService.state.activeProductions
-                                  .reduce((a, b) => a.progress > b.progress ? a : b);
-                              return _buildProductionItem(nextProduction, gameService);
+                              final nextProduction = gameService
+                                  .state
+                                  .activeProductions
+                                  .reduce(
+                                    (a, b) => a.progress > b.progress ? a : b,
+                                  );
+                              return _buildProductionItem(
+                                nextProduction,
+                                gameService,
+                              );
                             },
                           ),
                       ],
                     ),
                   ),
-                
+
                 const SizedBox(height: 16),
-                
-                // Products list
+
+                // Products list - organized by tiers
                 Expanded(
-                  child: ListView.builder(
+                  child: ListView(
                     padding: const EdgeInsets.all(16),
-                    itemCount: gameService.allProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = gameService.allProducts[index];
-                      return _buildProductCard(context, product, gameService);
-                    },
+                    children: [
+                      // Build sections for each tier that has products
+                      ...gameService.productsByTier.entries
+                          .where((entry) => entry.value.isNotEmpty)
+                          .map(
+                            (entry) => _buildTierSection(
+                              context,
+                              gameService.getTierName(entry.key),
+                              entry.value,
+                              gameService,
+                            ),
+                          ),
+                    ],
                   ),
                 ),
               ],
@@ -189,14 +221,94 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     );
   }
 
+  Widget _buildTierSection(
+    BuildContext context,
+    String tierName,
+    List<game.Product> products,
+    ProductionGameService gameService,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tier header
+        Container(
+          margin: const EdgeInsets.only(bottom: 12, top: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.blue[900]!.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue[400]!.withOpacity(0.5)),
+          ),
+          child: Row(
+            children: [
+              Icon(_getTierIcon(tierName), color: Colors.blue[400], size: 20),
+              const SizedBox(width: 8),
+              Text(
+                tierName,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[400],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.blue[400]!.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${products.length}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue[300],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Products in this tier
+        ...products.map(
+          (product) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _buildProductCard(context, product, gameService),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  IconData _getTierIcon(String tierName) {
+    switch (tierName) {
+      case 'Basic Parts':
+        return Icons.construction;
+      case 'Intermediate':
+        return Icons.precision_manufacturing;
+      case 'Complex':
+        return Icons.smart_toy;
+      case 'Retail':
+        return Icons.storefront;
+      default:
+        return Icons.category;
+    }
+  }
+
   Widget _buildProductCard(
     BuildContext context,
     game.Product product,
     ProductionGameService gameService,
   ) {
     // Check if we can produce this product
-    final canProduce = gameService.state.hasMaterialsFor(product.requiredMaterials);
-    
+    final canProduce = gameService.state.hasMaterialsFor(
+      product.requiredMaterials,
+    );
+
     return Card(
       color: Colors.grey[850],
       margin: const EdgeInsets.only(bottom: 12),
@@ -207,10 +319,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           children: [
             Row(
               children: [
-                Text(
-                  product.emoji,
-                  style: const TextStyle(fontSize: 32),
-                ),
+                Text(product.emoji, style: const TextStyle(fontSize: 32)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -226,17 +335,11 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                       ),
                       Text(
                         product.description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[400],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[400]),
                       ),
                       Text(
-                        'Base Production Time: ${(product.productionTimeSeconds/60).toStringAsFixed(1)} min per item',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
+                        'Base Production Time: ${(product.productionTimeSeconds / 60).toStringAsFixed(1)} min per item',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                       ),
                     ],
                   ),
@@ -244,7 +347,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            
+
             // Required materials
             const Text(
               'Required Materials:',
@@ -257,33 +360,90 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 4,
-              children: product.requiredMaterials.entries.map((entry) {
-                final materialId = entry.key;
-                final required = entry.value;
-                final material = gameService.allMaterials
-                    .firstWhere((m) => m.id == materialId);
-                final owned = gameService.state.getMaterialCount(materialId);
-                final hasEnough = owned >= required;
-                
-                return Chip(
-                  avatar: Text(material.emoji, style: const TextStyle(fontSize: 16)),
-                  label: Text('${material.name}: $required'),
-                  backgroundColor: hasEnough ? Colors.green[700] : Colors.red[700],
-                  labelStyle: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
-                );
-              }).toList(),
+              children:
+                  product.requiredMaterials.entries
+                      .map((entry) {
+                        final materialId = entry.key;
+                        final required = entry.value;
+
+                        // First try to get as a material
+                        final material = gameService.getMaterial(materialId);
+                        if (material != null) {
+                          final owned = gameService.state.getMaterialCount(
+                            materialId,
+                          );
+                          final hasEnough = owned >= required;
+
+                          return Chip(
+                            avatar: Text(
+                              material.emoji,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            label: Text('${material.name}: $required'),
+                            backgroundColor:
+                                hasEnough ? Colors.green[700] : Colors.red[700],
+                            labelStyle: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          );
+                        }
+
+                        // If not found as material, try as product
+                        final product = gameService.getProduct(materialId);
+                        if (product != null) {
+                          final owned = gameService.state.getProductCount(
+                            materialId,
+                          );
+                          final hasEnough = owned >= required;
+
+                          return Chip(
+                            avatar: Text(
+                              product.emoji,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            label: Text('${product.name}: $required'),
+                            backgroundColor:
+                                hasEnough ? Colors.green[700] : Colors.red[700],
+                            labelStyle: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          );
+                        }
+
+                        // If neither found, return empty widget
+                        return const SizedBox.shrink();
+                      })
+                      .where((widget) => widget is! SizedBox)
+                      .toList(),
             ),
-            
+
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildProduceButton(context, product, 1, gameService, canProduce),
-                _buildProduceButton(context, product, 5, gameService, canProduce),
-                _buildProduceButton(context, product, 10, gameService, canProduce),
+                _buildProduceButton(
+                  context,
+                  product,
+                  1,
+                  gameService,
+                  canProduce,
+                ),
+                _buildProduceButton(
+                  context,
+                  product,
+                  5,
+                  gameService,
+                  canProduce,
+                ),
+                _buildProduceButton(
+                  context,
+                  product,
+                  10,
+                  gameService,
+                  canProduce,
+                ),
               ],
             ),
           ],
@@ -304,40 +464,47 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     for (final entry in product.requiredMaterials.entries) {
       requiredMaterials[entry.key] = entry.value * quantity;
     }
-    final canProduceQuantity = gameService.state.hasMaterialsFor(requiredMaterials);
-    
+    final canProduceQuantity = gameService.state.hasMaterialsFor(
+      requiredMaterials,
+    );
+
     // Calculate total production time for this quantity
     final totalTimeMinutes = (product.productionTimeSeconds * quantity / 60);
-    final timeText = totalTimeMinutes < 60 
-        ? '${totalTimeMinutes.toStringAsFixed(1)}m'
-        : '${(totalTimeMinutes / 60).toStringAsFixed(1)}h';
-    
+    final timeText =
+        totalTimeMinutes < 60
+            ? '${totalTimeMinutes.toStringAsFixed(1)}m'
+            : '${(totalTimeMinutes / 60).toStringAsFixed(1)}h';
+
     return ElevatedButton(
-      onPressed: canProduceQuantity
-          ? () => gameService.startProduction(product.id, quantity)
-          : null,
+      onPressed:
+          canProduceQuantity
+              ? () => gameService.startProduction(product.id, quantity)
+              : null,
       style: ElevatedButton.styleFrom(
-        backgroundColor: canProduceQuantity ? Colors.blue[600] : Colors.grey[600],
+        backgroundColor:
+            canProduceQuantity ? Colors.blue[600] : Colors.grey[600],
         foregroundColor: Colors.white,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('Build $quantity'),
-          Text(
-            timeText,
-            style: const TextStyle(fontSize: 10),
-          ),
+          Text(timeText, style: const TextStyle(fontSize: 10)),
         ],
       ),
     );
   }
 
-  Widget _buildProductionItem(dynamic production, ProductionGameService gameService) {
-    final product = gameService.allProducts
-        .firstWhere((p) => p.id == production.productId);
+  Widget _buildProductionItem(
+    dynamic production,
+    ProductionGameService gameService,
+  ) {
+    final product = gameService.getProduct(production.productId);
+    if (product == null) {
+      return const SizedBox.shrink(); // Handle missing product gracefully
+    }
     final progress = (production.progress * 100).toInt();
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -367,17 +534,12 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           TweenAnimationBuilder<double>(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            tween: Tween<double>(
-              begin: 0,
-              end: production.progress,
-            ),
+            tween: Tween<double>(begin: 0, end: production.progress),
             builder: (context, value, child) {
               return LinearProgressIndicator(
                 value: value,
                 backgroundColor: Colors.grey[600],
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Colors.orange[400]!,
-                ),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.orange[400]!),
                 minHeight: 6,
               );
             },
@@ -385,18 +547,11 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           const SizedBox(height: 2),
           Row(
             children: [
-              Icon(
-                Icons.access_time,
-                size: 12,
-                color: Colors.white60,
-              ),
+              Icon(Icons.access_time, size: 12, color: Colors.white60),
               const SizedBox(width: 4),
               Text(
                 _getRemainingTime(production),
-                style: const TextStyle(
-                  color: Colors.white60,
-                  fontSize: 10,
-                ),
+                style: const TextStyle(color: Colors.white60, fontSize: 10),
               ),
             ],
           ),
@@ -409,9 +564,9 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     final elapsed = DateTime.now().difference(production.startTime).inSeconds;
     final total = production.durationSeconds;
     final remaining = total - elapsed;
-    
+
     if (remaining <= 0) return 'Completing...';
-    
+
     if (remaining < 60) {
       return '${remaining}s left';
     } else if (remaining < 3600) {

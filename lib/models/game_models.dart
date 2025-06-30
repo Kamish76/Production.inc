@@ -17,6 +17,15 @@ class Material {
   });
 }
 
+// Product tier levels for categorization
+enum ProductLevel {
+  material, // Base materials that can be bought
+  basicParts, // Basic components made from materials
+  intermediate, // Intermediate parts made from basic parts
+  complex, // Complex items made from intermediate parts
+  retail, // Final products for selling only
+}
+
 // Product that can be produced and sold
 class Product {
   final String id;
@@ -26,7 +35,11 @@ class Product {
   final String emoji;
   final Map<String, int> requiredMaterials; // materialId -> quantity needed
   final double productionTimeSeconds;
-  final double shippingTimeSeconds; // Time needed to ship/sell this product
+  final double
+  baseShippingTimeSeconds; // Base shipping time (was shippingTimeSeconds)
+  final double
+  shippingScalingFactor; // Per-item scaling factor (fixed at 0.9 for now)
+  final ProductLevel levelId; // What tier/level this product belongs to
 
   const Product({
     required this.id,
@@ -36,8 +49,15 @@ class Product {
     required this.emoji,
     required this.requiredMaterials,
     required this.productionTimeSeconds,
-    required this.shippingTimeSeconds,
+    required this.baseShippingTimeSeconds,
+    required this.levelId,
+    this.shippingScalingFactor = 0.9, // Fixed scaling factor
   });
+
+  // Calculate total shipping time for a given quantity
+  double calculateShippingTime(int quantity) {
+    return baseShippingTimeSeconds + (quantity * shippingScalingFactor);
+  }
 }
 
 // Machine for automation (future feature)
@@ -89,6 +109,21 @@ class ShippingOrder {
     required this.totalShippingTime,
     required this.totalRevenue,
   });
+
+  // Helper method to calculate shipping time using new formula
+  static double calculateTotalShippingTime(
+    List<ShippingItem> items,
+    List<Product> products,
+  ) {
+    double totalTime = 0.0;
+
+    for (final item in items) {
+      final product = products.firstWhere((p) => p.id == item.productId);
+      totalTime += product.calculateShippingTime(item.quantity);
+    }
+
+    return totalTime;
+  }
 
   bool get isCompleted {
     final now = DateTime.now();

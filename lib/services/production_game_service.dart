@@ -57,10 +57,36 @@ class ProductionGameService extends ChangeNotifier {
 
     if (!_state.hasMaterialsFor(requiredMaterials)) return false;
 
-    // Consume materials
+    // Consume materials and products
     final newMaterials = Map<String, int>.from(_state.materials);
+    final newProducts = Map<String, int>.from(_state.products);
+
     for (final entry in requiredMaterials.entries) {
-      newMaterials[entry.key] = (newMaterials[entry.key] ?? 0) - entry.value;
+      final itemId = entry.key;
+      final needed = entry.value;
+
+      // Try to consume from materials first
+      final availableMaterials = newMaterials[itemId] ?? 0;
+      if (availableMaterials >= needed) {
+        newMaterials[itemId] = availableMaterials - needed;
+        if (newMaterials[itemId]! <= 0) {
+          newMaterials.remove(itemId);
+        }
+      } else {
+        // Consume all materials first, then from products
+        var remaining = needed;
+        if (availableMaterials > 0) {
+          newMaterials.remove(itemId);
+          remaining -= availableMaterials;
+        }
+
+        // Consume remaining from products
+        final availableProducts = newProducts[itemId] ?? 0;
+        newProducts[itemId] = availableProducts - remaining;
+        if (newProducts[itemId]! <= 0) {
+          newProducts.remove(itemId);
+        }
+      }
     }
 
     // Create production task
@@ -77,6 +103,7 @@ class ProductionGameService extends ChangeNotifier {
 
     _state = _state.copyWith(
       materials: newMaterials,
+      products: newProducts,
       activeProductions: newProductions,
     );
 
@@ -92,11 +119,8 @@ class ProductionGameService extends ChangeNotifier {
     final available = _state.getProductCount(productId);
     if (available < quantity) return false;
 
-    // Calculate shipping time using the concept's better formula:
-    // Base shipping time + (items * scaling factor)
-    const baseShippingTime = 5.0; // Base 5 seconds
-    const scalingFactor = 0.5; // 0.5 seconds per item
-    final totalShippingTime = baseShippingTime + (quantity * scalingFactor);
+    // Calculate shipping time using the new formula from Product model
+    final totalShippingTime = product.calculateShippingTime(quantity);
 
     final totalRevenue = product.sellPrice * quantity;
 
@@ -203,4 +227,21 @@ class ProductionGameService extends ChangeNotifier {
   // Get all available items
   List<Material> get allMaterials => GameData.materials;
   List<Product> get allProducts => GameData.products;
+
+  // Get products categorized by tier/level
+  List<Product> get basicPartsProducts => GameData.getBasicPartsProducts();
+  List<Product> get intermediateProducts => GameData.getIntermediateProducts();
+  List<Product> get complexProducts => GameData.getComplexProducts();
+  List<Product> get retailProducts => GameData.getRetailProducts();
+
+  // Get products organized by tiers for UI display
+  Map<ProductLevel, List<Product>> get productsByTier => {
+    ProductLevel.basicParts: basicPartsProducts,
+    ProductLevel.intermediate: intermediateProducts,
+    ProductLevel.complex: complexProducts,
+    ProductLevel.retail: retailProducts,
+  };
+
+  // Get tier display name
+  String getTierName(ProductLevel level) => GameData.getLevelName(level);
 }

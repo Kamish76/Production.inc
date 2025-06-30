@@ -12,10 +12,34 @@ class GameData {
       buyPrice: 1.0,
       emoji: '📄',
     ),
+
+    // Phase 1: Base materials for speaker production (wood removed)
+    Material(
+      id: 'basic_metals',
+      name: 'Basic Metals',
+      description: 'Iron, steel, copper - essential for wires and circuits',
+      buyPrice: 3.0,
+      emoji: '🔩',
+    ),
+    Material(
+      id: 'advanced_metals',
+      name: 'Advanced Metals',
+      description: 'Specialized alloys and rare metals for magnets and drivers',
+      buyPrice: 8.0,
+      emoji: '⚡',
+    ),
+    Material(
+      id: 'plastic',
+      name: 'Plastic',
+      description: 'Versatile polymer for insulation and housings',
+      buyPrice: 2.0,
+      emoji: '🧱',
+    ),
   ];
 
   // Foundation products (as specified in concept)
   static const List<Product> products = [
+    // Original foundation product
     Product(
       id: 'box',
       name: 'Box',
@@ -24,7 +48,72 @@ class GameData {
       emoji: '📦',
       requiredMaterials: {'cardboard': 3},
       productionTimeSeconds: 3.0,
-      shippingTimeSeconds: 2.0, // 2 seconds base shipping time
+      baseShippingTimeSeconds: 2.0,
+      levelId: ProductLevel.basicParts,
+    ),
+
+    // Phase 1: Basic parts for speaker production
+    Product(
+      id: 'wires',
+      name: 'Wires',
+      description: 'Insulated copper wires for electrical connections',
+      sellPrice: 12.0,
+      emoji: '🔌',
+      requiredMaterials: {'basic_metals': 2, 'plastic': 1},
+      productionTimeSeconds: 5.0,
+      baseShippingTimeSeconds: 3.0,
+      levelId: ProductLevel.basicParts,
+    ),
+    Product(
+      id: 'circuits',
+      name: 'Circuits',
+      description: 'Basic electronic circuits and circuit boards',
+      sellPrice: 25.0,
+      emoji: '💾',
+      requiredMaterials: {'basic_metals': 3, 'plastic': 2},
+      productionTimeSeconds: 8.0,
+      baseShippingTimeSeconds: 4.0,
+      levelId: ProductLevel.basicParts,
+    ),
+    Product(
+      id: 'enclosure_plastic',
+      name: 'Plastic Enclosure',
+      description: 'Durable plastic housing for electronics',
+      sellPrice: 18.0,
+      emoji: '📱',
+      requiredMaterials: {'plastic': 4},
+      productionTimeSeconds: 6.0,
+      baseShippingTimeSeconds: 3.5,
+      levelId: ProductLevel.basicParts,
+    ),
+    Product(
+      id: 'sound_driver',
+      name: 'Sound Driver',
+      description: 'High-quality speaker driver with magnetic assembly',
+      sellPrice: 45.0,
+      emoji: '🔊',
+      requiredMaterials: {'advanced_metals': 2, 'basic_metals': 1},
+      productionTimeSeconds: 15.0,
+      baseShippingTimeSeconds: 6.0,
+      levelId: ProductLevel.basicParts,
+    ),
+
+    // Phase 3: Retail products - Speaker (plastic only)
+    Product(
+      id: 'speaker',
+      name: 'Speaker',
+      description: 'High-quality speaker with plastic enclosure',
+      sellPrice: 80.0,
+      emoji: '🔈',
+      requiredMaterials: {
+        'wires': 2,
+        'circuits': 1,
+        'sound_driver': 1,
+        'enclosure_plastic': 1,
+      },
+      productionTimeSeconds: 25.0,
+      baseShippingTimeSeconds: 8.0,
+      levelId: ProductLevel.retail,
     ),
   ];
 
@@ -79,6 +168,38 @@ class GameData {
       return machines.firstWhere((m) => m.id == id);
     } catch (e) {
       return null;
+    }
+  }
+
+  // Helper methods to filter products by level
+  static List<Product> getProductsByLevel(ProductLevel level) {
+    return products.where((p) => p.levelId == level).toList();
+  }
+
+  static List<Product> getMaterialProducts() =>
+      getProductsByLevel(ProductLevel.material);
+  static List<Product> getBasicPartsProducts() =>
+      getProductsByLevel(ProductLevel.basicParts);
+  static List<Product> getIntermediateProducts() =>
+      getProductsByLevel(ProductLevel.intermediate);
+  static List<Product> getComplexProducts() =>
+      getProductsByLevel(ProductLevel.complex);
+  static List<Product> getRetailProducts() =>
+      getProductsByLevel(ProductLevel.retail);
+
+  // Helper to get level name as string
+  static String getLevelName(ProductLevel level) {
+    switch (level) {
+      case ProductLevel.material:
+        return 'Material';
+      case ProductLevel.basicParts:
+        return 'Basic Parts';
+      case ProductLevel.intermediate:
+        return 'Intermediate';
+      case ProductLevel.complex:
+        return 'Complex';
+      case ProductLevel.retail:
+        return 'Retail';
     }
   }
 }

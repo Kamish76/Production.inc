@@ -75,10 +75,12 @@ class SellProductsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 // Products inventory
-                if (gameService.state.products.isEmpty || 
-                    gameService.state.products.values.every((count) => count == 0))
+                if (gameService.state.products.isEmpty ||
+                    gameService.state.products.values.every(
+                      (count) => count == 0,
+                    ))
                   Expanded(
                     child: Center(
                       child: Column(
@@ -112,19 +114,24 @@ class SellProductsScreen extends StatelessWidget {
                     ),
                   )
                 else
-                  // Products list
+                  // Products list - organized by tiers
                   Expanded(
-                    child: ListView.builder(
+                    child: ListView(
                       padding: const EdgeInsets.all(16),
-                      itemCount: gameService.allProducts.length,
-                      itemBuilder: (context, index) {
-                        final product = gameService.allProducts[index];
-                        final available = gameService.state.getProductCount(product.id);
-                        
-                        if (available <= 0) return const SizedBox.shrink();
-                        
-                        return _buildProductCard(context, product, available, gameService);
-                      },
+                      children: [
+                        // Build sections for each tier that has available products
+                        ...gameService.productsByTier.entries
+                            .map(
+                              (entry) => _buildTierSection(
+                                context,
+                                gameService.getTierName(entry.key),
+                                entry.value,
+                                gameService,
+                              ),
+                            )
+                            .where((widget) => widget != null)
+                            .cast<Widget>(),
+                      ],
                     ),
                   ),
               ],
@@ -133,6 +140,95 @@ class SellProductsScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  Widget? _buildTierSection(
+    BuildContext context,
+    String tierName,
+    List<game.Product> products,
+    ProductionGameService gameService,
+  ) {
+    // Filter products to only show those we have in inventory
+    final availableProducts =
+        products
+            .where(
+              (product) => gameService.state.getProductCount(product.id) > 0,
+            )
+            .toList();
+
+    if (availableProducts.isEmpty) return null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tier header
+        Container(
+          margin: const EdgeInsets.only(bottom: 12, top: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.purple[900]!.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.purple[400]!.withOpacity(0.5)),
+          ),
+          child: Row(
+            children: [
+              Icon(_getTierIcon(tierName), color: Colors.purple[400], size: 20),
+              const SizedBox(width: 8),
+              Text(
+                tierName,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.purple[400],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.purple[400]!.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${availableProducts.length}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.purple[300],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Products in this tier
+        ...availableProducts.map((product) {
+          final available = gameService.state.getProductCount(product.id);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _buildProductCard(context, product, available, gameService),
+          );
+        }),
+
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  IconData _getTierIcon(String tierName) {
+    switch (tierName) {
+      case 'Basic Parts':
+        return Icons.construction;
+      case 'Intermediate':
+        return Icons.precision_manufacturing;
+      case 'Complex':
+        return Icons.smart_toy;
+      case 'Retail':
+        return Icons.storefront;
+      default:
+        return Icons.category;
+    }
   }
 
   Widget _buildProductCard(
@@ -151,10 +247,7 @@ class SellProductsScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(
-                  product.emoji,
-                  style: const TextStyle(fontSize: 32),
-                ),
+                Text(product.emoji, style: const TextStyle(fontSize: 32)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -170,17 +263,11 @@ class SellProductsScreen extends StatelessWidget {
                       ),
                       Text(
                         product.description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[400],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[400]),
                       ),
                       Text(
                         'Sell Price: \$${product.sellPrice.toStringAsFixed(2)} | Available: $available',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[300],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[300]),
                       ),
                     ],
                   ),
@@ -188,7 +275,7 @@ class SellProductsScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            
+
             // Sell buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -196,10 +283,22 @@ class SellProductsScreen extends StatelessWidget {
                 _buildSellButton(context, product, 1, gameService, available),
                 if (available >= 5)
                   _buildSellButton(context, product, 5, gameService, available),
-                if (available >= 10) 
-                  _buildSellButton(context, product, 10, gameService, available),
-                _buildSellButton(context, product, available, gameService, available, 
-                    label: 'Sell All'),
+                if (available >= 10)
+                  _buildSellButton(
+                    context,
+                    product,
+                    10,
+                    gameService,
+                    available,
+                  ),
+                _buildSellButton(
+                  context,
+                  product,
+                  available,
+                  gameService,
+                  available,
+                  label: 'Sell All',
+                ),
               ],
             ),
           ],
@@ -218,16 +317,17 @@ class SellProductsScreen extends StatelessWidget {
   }) {
     final canSell = available >= quantity;
     final revenue = product.sellPrice * quantity;
-    
+
     return ElevatedButton(
-      onPressed: canSell
-          ? () => gameService.sellProduct(product.id, quantity)
-          : null,
+      onPressed:
+          canSell ? () => gameService.sellProduct(product.id, quantity) : null,
       style: ElevatedButton.styleFrom(
         backgroundColor: canSell ? Colors.purple[600] : Colors.grey[600],
         foregroundColor: Colors.white,
       ),
-      child: Text('${label ?? 'Sell $quantity'}\n\$${revenue.toStringAsFixed(2)}'),
+      child: Text(
+        '${label ?? 'Sell $quantity'}\n\$${revenue.toStringAsFixed(2)}',
+      ),
     );
   }
 }
