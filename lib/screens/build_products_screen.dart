@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
 
@@ -12,6 +14,55 @@ class BuildProductsScreen extends StatefulWidget {
 
 class _BuildProductsScreenState extends State<BuildProductsScreen> {
   bool _isProductionExpanded = false;
+  Map<String, bool> _tierExpanded = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTierPreferences();
+  }
+
+  Future<void> _loadTierPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _tierExpanded = {
+        'Basic Parts': prefs.getBool('tier_basic_parts') ?? true,
+        'Intermediate': prefs.getBool('tier_intermediate') ?? true,
+        'Complex': prefs.getBool('tier_complex') ?? true,
+        'Retail': prefs.getBool('tier_retail') ?? true,
+      };
+    });
+  }
+
+  Future<void> _saveTierPreference(String tierName, bool expanded) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'tier_${tierName.toLowerCase().replaceAll(' ', '_')}';
+    await prefs.setBool(key, expanded);
+  }
+
+  void _toggleTierExpansion(String tierName) {
+    setState(() {
+      _tierExpanded[tierName] = !(_tierExpanded[tierName] ?? true);
+    });
+    _saveTierPreference(tierName, _tierExpanded[tierName] ?? true);
+  }
+
+  void _toggleAllTiers() {
+    final allExpanded = _areAllTiersExpanded();
+    setState(() {
+      for (final tierName in _tierExpanded.keys) {
+        _tierExpanded[tierName] = !allExpanded;
+      }
+    });
+    // Save all preferences
+    for (final tierName in _tierExpanded.keys) {
+      _saveTierPreference(tierName, _tierExpanded[tierName] ?? true);
+    }
+  }
+
+  bool _areAllTiersExpanded() {
+    return _tierExpanded.values.every((expanded) => expanded);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,67 +94,24 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                           color: Colors.white,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                // Current materials display
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[800],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Current Materials:',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      const Spacer(),
+                      // Expand/Collapse All button
+                      IconButton(
+                        onPressed: _toggleAllTiers,
+                        icon: Icon(
+                          _areAllTiersExpanded()
+                              ? Icons.unfold_less
+                              : Icons.unfold_more,
+                          color: Colors.blue[400],
                         ),
+                        tooltip:
+                            _areAllTiersExpanded()
+                                ? 'Collapse All'
+                                : 'Expand All',
                       ),
-                      const SizedBox(height: 8),
-                      if (gameService.state.materials.isEmpty)
-                        const Text(
-                          'No materials available. Buy some materials first!',
-                          style: TextStyle(color: Colors.white70),
-                        )
-                      else
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children:
-                              gameService.state.materials.entries
-                                  .where((entry) => entry.value > 0)
-                                  .map((entry) {
-                                    final materialId = entry.key;
-                                    final count = entry.value;
-                                    final material = gameService.getMaterial(
-                                      materialId,
-                                    );
-                                    if (material == null)
-                                      return const SizedBox.shrink();
-                                    return Chip(
-                                      avatar: Text(material.emoji),
-                                      label: Text('${material.name}: $count'),
-                                      backgroundColor: Colors.grey[700],
-                                      labelStyle: const TextStyle(
-                                        color: Colors.white,
-                                      ),
-                                    );
-                                  })
-                                  .where((widget) => widget is! SizedBox)
-                                  .toList(),
-                        ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 16),
 
                 // Production status
                 if (gameService.state.activeProductions.isNotEmpty)
@@ -227,59 +235,122 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     List<game.Product> products,
     ProductionGameService gameService,
   ) {
+    final isExpanded = _tierExpanded[tierName] ?? true;
+
+    // Count products with available materials for this tier
+    final availableCount =
+        products
+            .where(
+              (product) =>
+                  gameService.state.hasMaterialsFor(product.requiredMaterials),
+            )
+            .length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Tier header
-        Container(
-          margin: const EdgeInsets.only(bottom: 12, top: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.blue[900]!.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue[400]!.withOpacity(0.5)),
-          ),
-          child: Row(
-            children: [
-              Icon(_getTierIcon(tierName), color: Colors.blue[400], size: 20),
-              const SizedBox(width: 8),
-              Text(
-                tierName,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue[400],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.blue[400]!.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${products.length}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.blue[300],
-                    fontWeight: FontWeight.w500,
+        // Collapsible Tier header
+        GestureDetector(
+          onTap: () => _toggleTierExpansion(tierName),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12, top: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.blue[900]!.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue[400]!.withOpacity(0.5)),
+            ),
+            child: Row(
+              children: [
+                Icon(_getTierIcon(tierName), color: Colors.blue[400], size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    tierName,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[400],
+                    ),
                   ),
                 ),
-              ),
-            ],
+                // Product count badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[400]!.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${products.length}${availableCount > 0 ? ' ($availableCount ready)' : ''}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue[300],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Expand/collapse icon
+                AnimatedRotation(
+                  turns: isExpanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    Icons.expand_more,
+                    color: Colors.blue[400],
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
 
-        // Products in this tier
-        ...products.map(
-          (product) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _buildProductCard(context, product, gameService),
-          ),
-        ),
+        // Collapsible content with grid layout
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          height: isExpanded ? null : 0,
+          child:
+              isExpanded
+                  ? Column(
+                    children: [
+                      // Dynamic Grid layout with proper sizing
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Force 3 columns on most devices, only use 2 on very narrow screens
+                          int crossAxisCount =
+                              constraints.maxWidth < 400 ? 2 : 3;
+                          double cardWidth =
+                              (constraints.maxWidth -
+                                  (crossAxisCount - 1) * 8 - // Reduced spacing
+                                  24) / // Reduced margins
+                              crossAxisCount;
 
-        const SizedBox(height: 16),
+                          return Wrap(
+                            spacing: 8, // Reduced spacing to fit 3 columns
+                            runSpacing: 12,
+                            children:
+                                products.map((product) {
+                                  return SizedBox(
+                                    width: cardWidth,
+                                    child: _buildEnhancedProductCard(
+                                      context,
+                                      product,
+                                      gameService,
+                                    ),
+                                  );
+                                }).toList(),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  )
+                  : const SizedBox.shrink(),
+        ),
       ],
     );
   }
@@ -299,7 +370,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     }
   }
 
-  Widget _buildProductCard(
+  Widget _buildEnhancedProductCard(
     BuildContext context,
     game.Product product,
     ProductionGameService gameService,
@@ -311,148 +382,197 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
 
     return Card(
       color: Colors.grey[850],
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(product.emoji, style: const TextStyle(fontSize: 32)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name,
+      margin: const EdgeInsets.all(4),
+      elevation: 8,
+      shadowColor: Colors.black.withOpacity(0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color:
+              canProduce
+                  ? Colors.green.withOpacity(0.3)
+                  : Colors.red.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => HapticFeedback.lightImpact(),
+        onLongPress: () => _showProductDetails(context, product, gameService),
+        child: Padding(
+          padding: const EdgeInsets.all(10), // Reduced from 12 to fit 3 columns
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Product emoji and name with enhanced styling
+              Row(
+                children: [
+                  GestureDetector(
+                    onLongPress:
+                        () =>
+                            _showProductDetails(context, product, gameService),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[700],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        product.emoji,
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          fontSize: 32,
+                        ), // Increased from 24px
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.name,
+                          style: const TextStyle(
+                            fontSize:
+                                14, // Kept at good mobile size but reduced from 15 to fit 3 cols
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                        Text(
+                          '${(product.productionTimeSeconds / 60).toStringAsFixed(1)}m',
+                          style: TextStyle(
+                            fontSize: 12, // Kept readable but reduced from 13
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Production capability indicator with better design
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: canProduce ? Colors.green[700] : Colors.red[700],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      canProduce ? Icons.check_circle : Icons.cancel,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        canProduce ? 'Ready to Build' : 'Need Materials',
+                        style: const TextStyle(
+                          fontSize: 12, // Increased from 11
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
-                        product.description,
-                        style: TextStyle(fontSize: 14, color: Colors.grey[400]),
-                      ),
-                      Text(
-                        'Base Production Time: ${(product.productionTimeSeconds / 60).toStringAsFixed(1)} min per item',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Material requirements as chips (visible, not just tooltip)
+              if (product.requiredMaterials.isNotEmpty) ...[
+                Text(
+                  'Materials:',
+                  style: TextStyle(
+                    fontSize: 12, // Increased from 11
+                    color: Colors.grey[400],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Required materials
-            const Text(
-              'Required Materials:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children:
-                  product.requiredMaterials.entries
-                      .map((entry) {
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 2, // Reduced from 4 to save space
+                  runSpacing: 2, // Reduced from 4
+                  children:
+                      product.requiredMaterials.entries.map((entry) {
                         final materialId = entry.key;
                         final required = entry.value;
+                        final owned =
+                            gameService.state.getMaterialCount(materialId) +
+                            gameService.state.getProductCount(materialId);
+                        final hasEnough = owned >= required;
 
-                        // First try to get as a material
-                        final material = gameService.getMaterial(materialId);
-                        if (material != null) {
-                          final owned = gameService.state.getMaterialCount(
-                            materialId,
-                          );
-                          final hasEnough = owned >= required;
+                        final materialName =
+                            gameService.getMaterial(materialId)?.name ??
+                            gameService.getProduct(materialId)?.name ??
+                            materialId;
 
-                          return Chip(
-                            avatar: Text(
-                              material.emoji,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            label: Text('${material.name}: $required'),
-                            backgroundColor:
-                                hasEnough ? Colors.green[700] : Colors.red[700],
-                            labelStyle: const TextStyle(
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4, // Reduced from 6 to save space
+                            vertical: 1, // Reduced from 2
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                hasEnough ? Colors.green[600] : Colors.red[600],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '$materialName: $owned/$required',
+                            style: const TextStyle(
+                              fontSize: 10, // Increased from 9
                               color: Colors.white,
-                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
                             ),
-                          );
-                        }
-
-                        // If not found as material, try as product
-                        final product = gameService.getProduct(materialId);
-                        if (product != null) {
-                          final owned = gameService.state.getProductCount(
-                            materialId,
-                          );
-                          final hasEnough = owned >= required;
-
-                          return Chip(
-                            avatar: Text(
-                              product.emoji,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            label: Text('${product.name}: $required'),
-                            backgroundColor:
-                                hasEnough ? Colors.green[700] : Colors.red[700],
-                            labelStyle: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                          );
-                        }
-
-                        // If neither found, return empty widget
-                        return const SizedBox.shrink();
-                      })
-                      .where((widget) => widget is! SizedBox)
-                      .toList(),
-            ),
-
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildProduceButton(
-                  context,
-                  product,
-                  1,
-                  gameService,
-                  canProduce,
+                          ),
+                        );
+                      }).toList(),
                 ),
-                _buildProduceButton(
-                  context,
-                  product,
-                  5,
-                  gameService,
-                  canProduce,
-                ),
-                _buildProduceButton(
-                  context,
-                  product,
-                  10,
-                  gameService,
-                  canProduce,
-                ),
+                const SizedBox(height: 8),
               ],
-            ),
-          ],
+
+              // Production buttons (1 and 10 as requested)
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildEnhancedProduceButton(
+                      context,
+                      product,
+                      1,
+                      gameService,
+                      canProduce,
+                    ),
+                  ),
+                  const SizedBox(width: 4), // Reduced from 6 to save space
+                  Expanded(
+                    child: _buildEnhancedProduceButton(
+                      context,
+                      product,
+                      10,
+                      gameService,
+                      canProduce,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildProduceButton(
+  Widget _buildEnhancedProduceButton(
     BuildContext context,
     game.Product product,
     int quantity,
@@ -464,6 +584,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     for (final entry in product.requiredMaterials.entries) {
       requiredMaterials[entry.key] = entry.value * quantity;
     }
+
     final canProduceQuantity = gameService.state.hasMaterialsFor(
       requiredMaterials,
     );
@@ -475,21 +596,195 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
             ? '${totalTimeMinutes.toStringAsFixed(1)}m'
             : '${(totalTimeMinutes / 60).toStringAsFixed(1)}h';
 
-    return ElevatedButton(
-      onPressed:
-          canProduceQuantity
-              ? () => gameService.startProduction(product.id, quantity)
-              : null,
-      style: ElevatedButton.styleFrom(
-        backgroundColor:
-            canProduceQuantity ? Colors.blue[600] : Colors.grey[600],
-        foregroundColor: Colors.white,
+    return SizedBox(
+      height: 32, // Reduced from 36 to save space for 3 columns
+      child: ElevatedButton(
+        onPressed:
+            canProduceQuantity
+                ? () {
+                  HapticFeedback.mediumImpact();
+                  gameService.startProduction(product.id, quantity);
+                }
+                : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              canProduceQuantity ? Colors.blue[600] : Colors.grey[600],
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          elevation: canProduceQuantity ? 4 : 1,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Build $quantity',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ), // Increased from 10
+            ),
+            Text(
+              '($timeText)',
+              style: const TextStyle(fontSize: 9),
+            ), // Increased from 8
+          ],
+        ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    );
+  }
+
+  void _showProductDetails(
+    BuildContext context,
+    game.Product product,
+    ProductionGameService gameService,
+  ) {
+    HapticFeedback.mediumImpact();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Text(product.emoji, style: const TextStyle(fontSize: 32)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  product.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  product.description,
+                  style: TextStyle(color: Colors.grey[300], fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+
+                // Production stats
+                _buildStatRow(
+                  'Production Time',
+                  '${(product.productionTimeSeconds / 60).toStringAsFixed(1)} minutes',
+                ),
+                _buildStatRow(
+                  'Sell Price',
+                  '\$${product.sellPrice.toStringAsFixed(2)}',
+                ),
+                _buildStatRow('Tier', gameService.getTierName(product.levelId)),
+
+                const SizedBox(height: 16),
+
+                // Required materials
+                if (product.requiredMaterials.isNotEmpty) ...[
+                  const Text(
+                    'Required Materials:',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...product.requiredMaterials.entries.map((entry) {
+                    final materialId = entry.key;
+                    final required = entry.value;
+                    final owned =
+                        gameService.state.getMaterialCount(materialId) +
+                        gameService.state.getProductCount(materialId);
+                    final hasEnough = owned >= required;
+
+                    final materialName =
+                        gameService.getMaterial(materialId)?.name ??
+                        gameService.getProduct(materialId)?.name ??
+                        materialId;
+
+                    final emoji =
+                        gameService.getMaterial(materialId)?.emoji ??
+                        gameService.getProduct(materialId)?.emoji ??
+                        '📦';
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Text(emoji, style: const TextStyle(fontSize: 20)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              materialName,
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  hasEnough
+                                      ? Colors.green[600]
+                                      : Colors.red[600],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '$owned/$required',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Close', style: TextStyle(color: Colors.blue[400])),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStatRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Build $quantity'),
-          Text(timeText, style: const TextStyle(fontSize: 10)),
+          Text(label, style: TextStyle(color: Colors.grey[400], fontSize: 14)),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
