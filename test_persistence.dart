@@ -1,22 +1,23 @@
+import 'package:flutter/foundation.dart';
 import 'package:game1/services/game_persistence_service.dart';
 import 'package:game1/models/game_state.dart';
 
 void main() async {
-  print('Testing GamePersistenceService...');
+  debugPrint('Testing GamePersistenceService...');
 
   // Initialize database factory
-  print('Initializing database factory...');
+  debugPrint('Initializing database factory...');
   GamePersistenceService.initializeDatabaseFactory();
-  print('✅ Database factory initialized');
+  debugPrint('✅ Database factory initialized');
 
   try {
     // Create service instance
-    print('Creating GamePersistenceService...');
+    debugPrint('Creating GamePersistenceService...');
     final service = GamePersistenceService();
-    print('✅ Service created');
+    debugPrint('✅ Service created');
 
     // Test save operation
-    print('Testing save operation...');
+    debugPrint('Testing save operation...');
     final testState = GameState(
       money: 500.0,
       materials: {'cardboard': 10, 'plastic': 5},
@@ -24,28 +25,30 @@ void main() async {
     );
 
     await service.saveGameState(testState);
-    print('✅ Game state saved successfully');
+    debugPrint('✅ Game state saved successfully');
 
     // Test load operation
-    print('Testing load operation...');
+    debugPrint('Testing load operation...');
     final loadedState = await service.loadGameState();
-    print('✅ Game state loaded successfully');
-    print('   Money: ${loadedState.money}');
-    print('   Materials: ${loadedState.materials}');
-    print('   Products: ${loadedState.products}');
+    debugPrint('✅ Game state loaded successfully');
+    debugPrint('   Money: ${loadedState.money}');
+    debugPrint('   Materials: ${loadedState.materials}');
+    debugPrint('   Products: ${loadedState.products}');
 
     // Test has save data
-    print('Testing has save data...');
+    debugPrint('Testing has save data...');
     final hasSave = await service.hasSaveData();
-    print('✅ Has save data: $hasSave');
+    debugPrint('✅ Has save data: $hasSave');
 
     // Clean up
     await service.dispose();
-    print('✅ Service disposed');
+    debugPrint('✅ Service disposed');
 
-    print('\n🎉 All GamePersistenceService operations completed successfully!');
+    debugPrint(
+      '\n🎉 All GamePersistenceService operations completed successfully!',
+    );
   } catch (e) {
-    print('❌ GamePersistenceService operation failed: $e');
-    print('Stack trace: ${StackTrace.current}');
+    debugPrint('❌ GamePersistenceService operation failed: $e');
+    debugPrint('Stack trace: ${StackTrace.current}');
   }
 }

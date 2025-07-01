@@ -2,11 +2,48 @@
 # NOTE: THIS IS A MOBILE GAME - MAIN PLATFORM WILL BE MOBILE PHONES FOR NOW, SO OPTIMIZE FOR PHONES.
 
 (ON HOLD)TODO (V1.4.0): ENHANCED GAMEPLAY FEATURES
-
-    🔋 NEW PRODUCT EXPANSION:
+    NEW PRODUCT EXPANSION:
         Add more retail products for better gameplay variety
-            Power Bank 🔋 (retail) - Circuits + plastic housing + basic metals (connectors) + wires + battery
-                battery - advanced metals + plastic + wires.
+            New Materials:
+                glass
+            New parts: 
+                basic parts:
+                    metal enclosure - basic metals
+                    screen - glass + circuits + metal housing + wires
+                    lens - glass + advanced metals
+                    battery - advanced metals + plastic + wires
+                    solar cells - advanced metals + glass + wires
+                    lens - glass + advanced metals 
+                Intermediate parts:
+                    processor - advanced metals + circuits + plastic housing + wires
+                    image sensor - advanced metals + circuits + plastic housing + wires 
+                    screen - glass + circuits + plastic housing + wires
+                Complex parts:
+                    camera module - lens + image sensor + processor + battery + plastic housing + wires 
+            
+            New Retail Products:
+                Power Bank (retail) - Circuits + plastic enclosure + basic metals (connectors) + wires + battery
+                Solar Panel (retail) - Circuits + metal enclosure + basic metals (connectors) + wires + solar cells
+                Camera (retail) - Circuits + Processor + metal enclosure + basic metals (connectors) + wires + battery + image sensor
+                Phones (retail) - Circuits + Processor + metal enclosure + basic metals (connectors) + wires + battery + sound drivers + screen + plastic
+
+✅ COMPLETED TODO (v1.3.5): flutter analyze issues fix.
+
+    FLUTTER ANALYZE ISSUES FIXES (v1.3.5)
+    ✅ Fixed unnecessary import in game_persistence_service.dart 
+        - Removed redundant 'package:sqflite/sqflite.dart' import (already covered by sqflite_common_ffi)
+    ✅ Fixed all avoid_print warnings in test files
+        - Replaced all print() statements with debugPrint() in test_db_init.dart
+        - Replaced all print() statements with debugPrint() in test_persistence.dart
+        - Added proper Flutter foundation import for debugPrint functionality
+    ✅ All 30 Flutter analyze issues resolved
+    ✅ Code quality improved with proper logging practices
+    
+    📋 FLUTTER ANALYZE STATUS:
+        ✅ Static analysis: CLEAN ✅ (0 issues found)
+        ✅ Code quality: IMPROVED ✅ (Proper logging, clean imports)
+        ✅ Production ready: ENHANCED ✅ (No debug print statements in production code)
+        📋 Result: Codebase now passes all Flutter static analysis checks
 
 ✅ COMPLETED TODO (v1.3.4): DATABASE ERRORS FIX
 
@@ -250,6 +287,12 @@ TODO (V1.3.0): ENHANCED BUILD PRODUCTS SCREEN UI IMPROVEMENTS 🎨 - ✅ COMPLET
         ✅ Smooth animations for expand/collapse
         - Show product count in collapsed state
         - Option to expand/collapse all tiers
+
+
+TO BE IMPLEMENTED IN THE FUTURE VERSIONS
+    NEW IDEA:
+        all retails products are upgradable.
+            like for speaker to bluetooth speaker, or power bank to solar power bank
 
 sell products system
     RECOMMENDED APPROACH: Combine both ideas for better gameplay
