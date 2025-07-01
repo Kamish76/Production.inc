@@ -18,8 +18,16 @@ void main() {
   runApp(ProductionIncApp());
 }
 
-class ProductionIncApp extends StatelessWidget {
-  ProductionIncApp({super.key});
+class ProductionIncApp extends StatefulWidget {
+  const ProductionIncApp({super.key});
+
+  @override
+  State<ProductionIncApp> createState() => _ProductionIncAppState();
+}
+
+class _ProductionIncAppState extends State<ProductionIncApp>
+    with WidgetsBindingObserver {
+  late final ProductionGameService _gameService;
 
   final GoRouter _router = GoRouter(
     initialLocation: '/',
@@ -44,9 +52,31 @@ class ProductionIncApp extends StatelessWidget {
   );
 
   @override
+  void initState() {
+    super.initState();
+    _gameService = ProductionGameService();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _gameService.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Use the optimized lifecycle management in game service
+    _gameService.handleAppLifecycleChange(state);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => ProductionGameService()..updateProductions(),
+    return ChangeNotifierProvider.value(
+      value: _gameService,
       child: MaterialApp.router(
         title: 'Production.INC',
         debugShowCheckedModeBanner: false,

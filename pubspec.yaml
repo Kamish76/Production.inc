@@ -34,12 +34,6 @@ dependencies:
   # UI and theming
   cupertino_icons: ^1.0.8
   
-  # Game development
-  flame: ^1.20.0                    # 2D game engine for Flutter
-  flame_audio: ^2.2.0              # Audio support for games
-  flame_tiled: ^3.0.3              # Tiled map support
-  flame_forge2d: ^0.18.0           # Physics engine integration
-  
   # State management and navigation
   provider: ^6.1.2                 # State management
   go_router: ^14.6.1               # Navigation
@@ -49,7 +43,6 @@ dependencies:
   sqflite: ^2.4.1                  # Local database for save games
   
   # Utilities
-  vector_math: ^2.1.4              # Vector math for game calculations
   collection: ^1.18.0              # Collection utilities
   
   # Android specific
@@ -65,6 +58,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  
+  # Testing dependencies
+  sqflite_common_ffi: 2.3.6       # SQLite testing support
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

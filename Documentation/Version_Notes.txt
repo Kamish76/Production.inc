@@ -1,12 +1,141 @@
 # Production.INC - Version Updates & Features
-## Game Version: 1.2.0
+## Game Version: 1.3.0
 
 ### 🎮 Game Overview
 **Production.INC** is a production management game built with Flutter where players buy materials, produce items, and sell products to grow their business empire.
 
 ---
 
-## ✨ New Features (Version 1.2.0) - **COMPLEX PRODUCTION CHAINS**
+## ✨ New Features (Version 1.3.0) - **COMPREHENSIVE UI OVERHAUL**
+
+### 🛒 Revolutionary Sell Screen Redesign
+- **Modern Grid Layout**: Complete transformation from list-based to responsive grid layout
+- **Mobile-First Design**: Optimized for phone screens with 3 products per row (2 on narrow screens <400px)
+- **Dynamic Responsive Cards**: Cards automatically resize based on content using calculated widths
+- **Collapsible Tier System**: Smooth animations with persistent expansion state via SharedPreferences
+
+### 📱 Mobile-Optimized User Interface
+- **Enhanced Product Cards**: 
+  - Large 32px emoji icons in styled containers (matching build screen design)
+  - Mobile-optimized typography hierarchy:
+    * Product name: 14px (mobile-optimized for 3-column layout)
+    * Sell price: 12px (clearly visible pricing)
+    * Available quantity: 12px (prominent stock display)
+    * Status indicators: 12px (clear and readable)
+  - Color-coded stock level indicators (green: high ≥20, orange: medium ≥5, red: low <5)
+  - Revenue potential calculations displayed per product
+  - Subtle shadows and elevations for visual depth
+- **Improved Button Design**: 
+  - Streamlined "Sell 1" and "Sell 10" buttons (matching build screen pattern)
+  - Revenue display format: "Sell 1 ($X.XX)" with clear pricing breakdown
+  - Button font sizes optimized (11px for main text, 9px for price display)
+  - Disabled state when insufficient stock with visual feedback
+  - Haptic feedback integration for premium mobile experience
+
+### 📊 Advanced Information Display
+- **Portfolio Value Calculator**: Real-time calculation of total inventory worth displayed prominently
+- **Enhanced Header Display**: 
+  - Split layout showing total products count and portfolio value
+  - Improved money display with better visual hierarchy
+  - Purple theme consistency with build screen
+- **Stock Level Intelligence**: 
+  - Dynamic stock level assessment with trending icons (📈📊📉)
+  - Color-coded availability indicators throughout interface
+  - Smart stock categorization (high/medium/low thresholds)
+- **Revenue Potential Section**: Shows total possible earnings per product for strategic decision making
+
+### 🎯 User Experience Enhancements
+- **Long-Press Product Details**: 
+  - Modal dialogs with comprehensive product information
+  - Stats include: sell price, available quantity, total value, product level
+  - Professional modal design matching game theme with rounded corners
+  - Proper dialog styling with grey[850] background and white text
+- **Advanced Tier Management System**:
+  - Individual tier expand/collapse with smooth 300ms animations
+  - "Expand/Collapse All" functionality with animated rotation icons (200ms rotation)
+  - Persistent preferences saved separately from build screen (prefixed with 'sell_tier_')
+  - Smart tier labeling showing "X available" instead of just product count
+  - Tier headers with purple theme and proper spacing
+
+### 🏗️ Technical Architecture Improvements
+- **StatefulWidget Conversion**: Enhanced from StatelessWidget for proper state management
+- **LayoutBuilder Integration**: Responsive design system matching build screen implementation
+- **Wrap Layout System**: Dynamic grid using Wrap instead of fixed GridView for true responsiveness
+- **SharedPreferences Integration**: Separate sell screen tier preferences with proper key naming
+- **Performance Optimizations**: Efficient card rendering with proper widget lifecycle management
+- **Haptic Feedback Integration**: flutter/services.dart imported for premium mobile interactions
+
+### 🎨 Visual Design System
+- **Consistent Branding**: Perfect visual alignment with build products screen design patterns
+- **Enhanced Card Styling**: 
+  - Elevated shadows with black opacity for depth (elevation: 8)
+  - Border styling with stock-level color coding and 0.3 opacity
+  - Rounded corners (12px) for modern appearance matching build screen
+  - Proper InkWell ripple effects for touch feedback
+  - Card margins (4px) optimized for 3-column mobile layout
+- **Color Psychology**: Strategic use of purple theme with meaningful color coding
+- **Typography Hierarchy**: Carefully balanced font sizes specifically optimized for 3-column mobile layout
+- **Gradient Background**: Consistent with build screen (0xFF1A1A2E to 0xFF16213E)
+
+### ♿ Accessibility & UX Improvements
+- **Touch-Friendly Design**: Optimized button sizes and spacing for mobile interaction
+- **Clear Visual Feedback**: Immediate response to all user interactions with haptic feedback
+- **Improved Contrast Ratios**: Enhanced readability across all text elements
+- **Professional Mobile Experience**: System vibrations and premium interaction patterns
+- **Error State Handling**: Graceful handling of empty inventory states with helpful messaging
+- **Breakpoint Optimization**: 400px breakpoint ensures proper display on various mobile devices
+
+### 🚀 Advanced Features Implementation
+- **Revenue Calculations**: Real-time calculation of selling potential for strategic planning
+- **Stock Management Intelligence**: Visual indicators help players make informed selling decisions
+- **Persistent UI State**: Tier expansion preferences remembered across app sessions
+- **Animation System**: Smooth 300ms tier animations with proper easing
+- **Responsive Grid**: True responsive behavior with calculated card widths
+- **Mobile-First Approach**: Every design decision optimized for phone usage patterns
+
+### 🏭 Enhanced Build Products Screen (Previously Completed)
+- **Material Chips Display**: 
+  - Required materials shown as chips directly on cards (not just tooltips)
+  - Color-coded chips: GREEN for available materials, RED for insufficient
+  - Format: "Material Name: X/Y" where X=owned, Y=needed
+  - Increased font size to 10px for better mobile readability
+- **Button Configuration Improvements**:
+  - Changed production buttons from "5 & 10" to "1 & 10" as requested
+  - Clearer button text: "Build 1" instead of just "1"
+  - Total time display: "Build 10 (50m)" format
+  - Increased button font sizes (11px for main text, 9px for time)
+- **Dynamic Card Sizing System**:
+  - Replaced fixed GridView with dynamic Wrap layout
+  - Cards truly resize based on content (more materials = taller cards)
+  - Calculated widths ensure proper responsive behavior
+- **Enhanced Visual Hierarchy**:
+  - Larger, more prominent product emoji (32px in styled container)
+  - Optimized typography hierarchy for 3-column layout:
+    * Product name: 14px (mobile-optimized)
+    * Production time: 12px (balanced readability)
+    * Status indicator: 12px (clear and readable)
+    * Materials label: 12px (appropriate sizing)
+    * Material chips: 10px (compact but readable)
+  - Consistent padding and margins throughout
+- **Improved Responsiveness**:
+  - Graceful handling of different screen sizes (3 cols on >400px, 2 on <400px)
+  - Dynamic width calculation for proper card sizing
+  - Reduced spacing and padding to fit 3 columns with readable fonts
+- **UI Cleanup & Accessibility**:
+  - Removed unnecessary "Current Materials" and "Current Products" sections
+  - Added haptic feedback for interactions
+  - Improved touch targets and visual feedback
+  - Better color contrast ratios for mobile readability
+- **Technical Enhancements**:
+  - LayoutBuilder for responsive design
+  - Enhanced card design with proper elevation and shadows
+  - Modal dialogs for detailed product information
+  - Improved button styling and feedback
+  - Mobile-optimized font sizes throughout
+
+---
+
+## ✨ Previous Features (Version 1.2.0) - **COMPLEX PRODUCTION CHAINS**
 
 ### 🔧 Enhanced Production System
 - **Multi-Tier Production**: Products can now require other products as materials
@@ -170,16 +299,19 @@
 
 ---
 
-## 🎲 Game Mechanics Summary (Updated v1.2.0)
+## 🎲 Game Mechanics Summary (Updated v1.3.0)
 1. **Buy** base materials (Cardboard, Basic Metals, Advanced Metals, Plastic) with starting money
 2. **Build** basic parts (Boxes, Wires, Circuits, Sound Drivers, Plastic Enclosures) using materials
 3. **Create** complex products (Speakers) using other products as materials
-4. **🚚 Create Shipping Orders** by selling completed products
-5. **⏱️ Wait for Delivery** - shipping takes time based on order size
-6. **💰 Collect Revenue** when shipping orders complete
-7. **📊 Track History** of all completed sales
-8. **Reinvest** profits to scale production and unlock complex products
-9. **Prepare** for automation unlock system
+4. **� Enhanced Selling Experience** - Use the redesigned grid-based sell screen with mobile-optimized interface
+5. **�🚚 Create Shipping Orders** by selling completed products through streamlined "Sell 1" or "Sell 10" buttons
+6. **📊 Portfolio Management** - Track total inventory value and make strategic selling decisions
+7. **⏱️ Wait for Delivery** - shipping takes time based on order size
+8. **💰 Collect Revenue** when shipping orders complete with clear revenue calculations
+9. **📊 Track History** of all completed sales
+10. **🎯 Strategic Planning** - Use stock level indicators and revenue potential data for optimal selling
+11. **Reinvest** profits to scale production and unlock complex products
+12. **Prepare** for automation unlock system
 
 ---
 
@@ -194,4 +326,4 @@
 - **Storage**: SharedPreferences 2.3.2 & SQLite 2.4.1
 - **Math**: Vector Math 2.1.4 for game calculations
 
-**Last Updated**: June 30, 2025
+**Last Updated**: June 30, 2025 - Version 1.3.0 Release
