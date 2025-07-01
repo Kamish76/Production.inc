@@ -256,9 +256,11 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
             margin: const EdgeInsets.only(bottom: 12, top: 8),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.blue[900]!.withOpacity(0.3),
+              color: Colors.blue[900]!.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue[400]!.withOpacity(0.5)),
+              border: Border.all(
+                color: Colors.blue[400]!.withValues(alpha: 0.5),
+              ),
             ),
             child: Row(
               children: [
@@ -281,7 +283,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.blue[400]!.withOpacity(0.2),
+                    color: Colors.blue[400]!.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -384,14 +386,14 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
       color: Colors.grey[850],
       margin: const EdgeInsets.all(4),
       elevation: 8,
-      shadowColor: Colors.black.withOpacity(0.3),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color:
               canProduce
-                  ? Colors.green.withOpacity(0.3)
-                  : Colors.red.withOpacity(0.3),
+                  ? Colors.green.withValues(alpha: 0.3)
+                  : Colors.red.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

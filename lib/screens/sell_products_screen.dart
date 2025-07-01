@@ -301,9 +301,11 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
             margin: const EdgeInsets.only(bottom: 12, top: 8),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.purple[900]!.withOpacity(0.3),
+              color: Colors.purple[900]!.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.purple[400]!.withOpacity(0.5)),
+              border: Border.all(
+                color: Colors.purple[400]!.withValues(alpha: 0.5),
+              ),
             ),
             child: Row(
               children: [
@@ -328,7 +330,7 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.purple[400]!.withOpacity(0.2),
+                    color: Colors.purple[400]!.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -429,11 +431,11 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
       color: Colors.grey[850],
       margin: const EdgeInsets.all(4),
       elevation: 8,
-      shadowColor: Colors.black.withOpacity(0.3),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: _getStockLevelColor(stockLevel).withOpacity(0.3),
+          color: _getStockLevelColor(stockLevel).withValues(alpha: 0.3),
           width: 1,
         ),
       ),

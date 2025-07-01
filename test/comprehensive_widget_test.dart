@@ -270,8 +270,8 @@ void main() {
       WidgetTester tester,
     ) async {
       // Test with narrow screen
-      tester.binding.window.physicalSizeTestValue = const Size(400, 800);
-      tester.binding.window.devicePixelRatioTestValue = 1.0;
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
 
       await tester.pumpWidget(
         ChangeNotifierProvider<ProductionGameService>.value(
@@ -285,7 +285,7 @@ void main() {
       expect(find.byType(BuildProductsScreen), findsOneWidget);
 
       // Test with wide screen
-      tester.binding.window.physicalSizeTestValue = const Size(800, 600);
+      tester.view.physicalSize = const Size(800, 600);
 
       await tester.pump();
 
@@ -293,7 +293,7 @@ void main() {
       expect(find.byType(BuildProductsScreen), findsOneWidget);
 
       // Reset to default
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      addTearDown(() => tester.view.resetPhysicalSize());
     });
   });
 }
