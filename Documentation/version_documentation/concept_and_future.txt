@@ -1,0 +1,80 @@
+# Production.Inc - Game Concept & Future Ideas
+# Core game concept and future implementation ideas
+
+GAME CONCEPT:
+
+    buy build sell, automate!
+
+    buy materials produce then sell the items.
+
+    in the long run when you unlocked all the items, you can build machines to automate production!
+    as well as machines to buy materials and sell products!
+
+    3 windows, buy materials, build, sell materials.
+
+    to start as foundation of this game.
+        current materials: cardboard.
+        current produce: box.
+        current sell: sell box.
+
+TO BE IMPLEMENTED IN THE FUTURE VERSIONS
+    automation system:
+        machines to automate production.
+        machines to buy materials.
+        machines to sell products.
+
+        machine can only be made from materials, and can be upgraded.
+        upgrade system:
+            machines can be upgraded to produce faster, buy materials faster, and sell products faster.    
+            machines produce by batch and player can set minimum amount of products to be produced before producing the next products.
+                so machines can produce 10 boxe at once, then if the minimum is reached it will move on producing the next product.
+                    different machines for different Levelid, so a basic machine type can only produce basic items, and advanced machine type can produce advanced items so on and so fort.
+            machines can be produced and is tierd as 'Machines'.
+
+    retails products are upgradable.
+        products can be upgraded to premium quality, which increases the materials needed to produce them, but also increases the sell price.
+            quality levels:
+                - Basic Quality (current pricing)
+                - Premium Quality (+50% materials, +100% sell price)
+                - Luxury Quality (+100% materials, +200% sell price)
+        like for speaker to bluetooth speaker, or power bank to solar power bank
+    market saturation system:
+        products can be sold, but if the market is oversaturated with the same product, the sell price will decrease.
+        this will force players to diversify their products and not just focus on one product.
+        implementation: Market demand decreases with oversupply of same product
+        so if the player only sells boxes, the sell price will decrease over time, forcing the player to produce and sell other products.
+        there will be an indicator for the player to see the market demand for each product or it will be shown in the sell products window.
+        (im still thinking of how to implement market demand system, how it will make some products have higher demand so higher prices)
+
+sell products system
+    RECOMMENDED APPROACH: Combine both ideas for better gameplay
+    
+    IDEA 2: shipping time to items. lower money earned from basic items.
+        shipping time: IMPROVED FORMULA - Base shipping time + (items * scaling factor)
+        Benefits: Prevents linear scaling problems, more realistic logistics
+        
+    IDEA 1: implement time needed to sell items + market saturation.
+        and a way to disadvantage selling only the same product too much
+        forcing players to progress to other options.
+        Implementation: Market demand decreases with oversupply of same product
+        
+    COMBINED SYSTEM:
+        - Products have base shipping time + scaling factor
+        - Market demand affects sell price (oversaturation = lower profits)
+        - Shop auto-sells based on demand, players set amounts to be sold
+        - Players must approve large orders before shipping begins
+        
+        setting system: only sell amount set by user, but needs user to approve order to be sold, then shipping time based on improved formula
+        add another data for product models: baseShippingTime, shippingScalingFactor, marketDemand
+
+Item tier or levels that can be made or bought(materials are the only thing that can be bought)
+    material:
+        carboard, plastic, rubber, basic metals, advance metals, Fiber sheets, glass
+    basic parts:  //if only selling basic parts basically your a parts producer factory something type shit, this would serve of something like early game purpose.
+        screws, bolts, wires, circuits, hose, bearings,
+    intermediate: //intermediate parts like parts out of  the basic parts like mainboards 
+        // im still thinking i know itll mainly rely on what complex or manufactured items i am making.
+    Complex: // more into combination of all the intermediate parts.
+        //this would include machines like for manufacturing as well and for automation that i could use in the game.
+    retail items: //products with the only purpos is to be sold.  
+        //still thinking of final products.

@@ -35,6 +35,15 @@ class GameData {
       buyPrice: 2.0,
       emoji: '🧱',
     ),
+
+    // v1.4.0 Phase 1: New material
+    Material(
+      id: 'glass',
+      name: 'Glass',
+      description: 'Glass sheets for screens and lenses',
+      buyPrice: 5.0,
+      emoji: '🪟',
+    ),
   ];
 
   // Foundation products (as specified in concept)
@@ -98,6 +107,75 @@ class GameData {
       levelId: ProductLevel.basicParts,
     ),
 
+    // v1.4.0 Phase 1: New basic parts
+    Product(
+      id: 'metal_enclosure',
+      name: 'Metal Enclosure',
+      description: 'Durable metal housing',
+      sellPrice: 15.0,
+      emoji: '🏠',
+      requiredMaterials: {'basic_metals': 2, 'plastic': 1},
+      productionTimeSeconds: 7.0,
+      baseShippingTimeSeconds: 3.0,
+      levelId: ProductLevel.basicParts,
+    ),
+    Product(
+      id: 'lens',
+      name: 'Lens',
+      description: 'Precision glass lens',
+      sellPrice: 25.0,
+      emoji: '🔍',
+      requiredMaterials: {'glass': 1, 'advanced_metals': 2},
+      productionTimeSeconds: 10.0,
+      baseShippingTimeSeconds: 4.0,
+      levelId: ProductLevel.basicParts,
+    ),
+    Product(
+      id: 'battery',
+      name: 'Battery',
+      description: 'Rechargeable battery pack',
+      sellPrice: 35.0,
+      emoji: '🔋',
+      requiredMaterials: {'advanced_metals': 2, 'plastic': 1, 'wires': 1},
+      productionTimeSeconds: 12.0,
+      baseShippingTimeSeconds: 5.0,
+      levelId: ProductLevel.basicParts,
+    ),
+
+    // v1.4.0 Phase 1: New intermediate parts
+    Product(
+      id: 'display_screen',
+      name: 'Display Screen',
+      description: 'LCD/LED display',
+      sellPrice: 50.0,
+      emoji: '📺',
+      requiredMaterials: {
+        'glass': 2,
+        'circuits': 1,
+        'metal_enclosure': 1,
+        'wires': 1,
+      },
+      productionTimeSeconds: 20.0,
+      baseShippingTimeSeconds: 8.0,
+      levelId: ProductLevel.intermediate,
+    ),
+    Product(
+      id: 'processor',
+      name: 'Processor',
+      description: 'Electronic processor unit',
+      sellPrice: 60.0,
+      emoji: '🖥️',
+      requiredMaterials: {
+        'advanced_metals': 3,
+        'circuits': 2,
+        'enclosure_plastic': 1,
+        'wires': 2,
+      },
+      productionTimeSeconds: 25.0,
+      baseShippingTimeSeconds: 10.0,
+      levelId: ProductLevel.intermediate,
+    ),
+
     // Phase 3: Retail products - Speaker (plastic only)
     Product(
       id: 'speaker',
@@ -113,6 +191,75 @@ class GameData {
       },
       productionTimeSeconds: 25.0,
       baseShippingTimeSeconds: 8.0,
+      levelId: ProductLevel.retail,
+    ),
+
+    // v1.4.0 Phase 1: New retail products
+    Product(
+      id: 'power_bank',
+      name: 'Power Bank',
+      description: 'Portable battery charger',
+      sellPrice: 120.0,
+      emoji: '🔌',
+      requiredMaterials: {
+        'circuits': 1,
+        'enclosure_plastic': 1,
+        'basic_metals': 1,
+        'wires': 1,
+        'battery': 2,
+      },
+      productionTimeSeconds: 35.0,
+      baseShippingTimeSeconds: 12.0,
+      levelId: ProductLevel.retail,
+    ),
+
+    // v1.4.1 Phase 2: New basic parts - Advanced Components
+    Product(
+      id: 'solar_cells',
+      name: 'Solar Cells',
+      description: 'Photovoltaic cells for renewable energy',
+      sellPrice: 40.0,
+      emoji: '☀️',
+      requiredMaterials: {'advanced_metals': 2, 'glass': 2, 'wires': 1},
+      productionTimeSeconds: 15.0,
+      baseShippingTimeSeconds: 6.0,
+      levelId: ProductLevel.basicParts,
+    ),
+
+    // v1.4.1 Phase 2: New intermediate parts
+    Product(
+      id: 'image_sensor',
+      name: 'Image Sensor',
+      description: 'Digital camera sensor',
+      sellPrice: 80.0,
+      emoji: '📸',
+      requiredMaterials: {
+        'advanced_metals': 3,
+        'circuits': 2,
+        'lens': 1,
+        'wires': 2,
+      },
+      productionTimeSeconds: 30.0,
+      baseShippingTimeSeconds: 12.0,
+      levelId: ProductLevel.intermediate,
+    ),
+
+    // v1.4.1 Phase 2: New retail products
+    Product(
+      id: 'solar_panel',
+      name: 'Solar Panel',
+      description: 'Solar power generator',
+      sellPrice: 200.0,
+      emoji: '🌞',
+      requiredMaterials: {
+        'circuits': 2,
+        'metal_enclosure': 1,
+        'basic_metals': 1,
+        'wires': 2,
+        'solar_cells': 3,
+      },
+      productionTimeSeconds: 45.0,
+      baseShippingTimeSeconds: 15.0,
       levelId: ProductLevel.retail,
     ),
   ];

@@ -1,348 +1,44 @@
 # Game1 - Production.Inc
 # NOTE: THIS IS A MOBILE GAME - MAIN PLATFORM WILL BE MOBILE PHONES FOR NOW, SO OPTIMIZE FOR PHONES.
 
-(ON HOLD)TODO (V1.4.0): ENHANCED GAMEPLAY FEATURES
-    NEW PRODUCT EXPANSION:
-        Add more retail products for better gameplay variety
-            New Materials:
-                glass
-            New parts: 
-                basic parts:
-                    metal enclosure - basic metals
-                    screen - glass + circuits + metal housing + wires
-                    lens - glass + advanced metals
-                    battery - advanced metals + plastic + wires
-                    solar cells - advanced metals + glass + wires
-                    lens - glass + advanced metals 
-                Intermediate parts:
-                    processor - advanced metals + circuits + plastic housing + wires
-                    image sensor - advanced metals + circuits + plastic housing + wires 
-                    screen - glass + circuits + plastic housing + wires
-                Complex parts:
-                    camera module - lens + image sensor + processor + battery + plastic housing + wires 
-            
-            New Retail Products:
-                Power Bank (retail) - Circuits + plastic enclosure + basic metals (connectors) + wires + battery
-                Solar Panel (retail) - Circuits + metal enclosure + basic metals (connectors) + wires + solar cells
-                Camera (retail) - Circuits + Processor + metal enclosure + basic metals (connectors) + wires + battery + image sensor
-                Phones (retail) - Circuits + Processor + metal enclosure + basic metals (connectors) + wires + battery + sound drivers + screen + plastic
+# Game1 - Production.Inc
+# NOTE: THIS IS A MOBILE GAME - MAIN PLATFORM WILL BE MOBILE PHONES FOR NOW, SO OPTIMIZE FOR PHONES.
 
-✅ COMPLETED TODO (v1.3.5): flutter analyze issues fix.
-
-    FLUTTER ANALYZE ISSUES FIXES (v1.3.5)
-    ✅ Fixed unnecessary import in game_persistence_service.dart 
-        - Removed redundant 'package:sqflite/sqflite.dart' import (already covered by sqflite_common_ffi)
-    ✅ Fixed all avoid_print warnings in test files
-        - Replaced all print() statements with debugPrint() in test_db_init.dart
-        - Replaced all print() statements with debugPrint() in test_persistence.dart
-        - Added proper Flutter foundation import for debugPrint functionality
-    ✅ All 30 Flutter analyze issues resolved
-    ✅ Code quality improved with proper logging practices
+📁 VERSION DOCUMENTATION ORGANIZED:
+    All version-specific documentation has been moved to version_documentation/ folder:
     
-    📋 FLUTTER ANALYZE STATUS:
-        ✅ Static analysis: CLEAN ✅ (0 issues found)
-        ✅ Code quality: IMPROVED ✅ (Proper logging, clean imports)
-        ✅ Production ready: ENHANCED ✅ (No debug print statements in production code)
-        📋 Result: Codebase now passes all Flutter static analysis checks
-
-✅ COMPLETED TODO (v1.3.4): DATABASE ERRORS FIX
-
-    DATABASE INITIALIZATION FIXES FOR DESKTOP PLATFORMS (v1.3.4)
-    ✅ Fixed "databaseFactory not initialized" error on Windows desktop
-    ✅ Added proper SQLite FFI initialization for desktop platforms (Windows/macOS/Linux)
-    ✅ Enhanced GamePersistenceService with initializeDatabaseFactory() method
-    ✅ Updated main.dart to initialize database factory before app startup
-    ✅ Fixed sqflite_common_ffi dependency configuration in pubspec.yaml
-    ✅ Updated test setup to use new database initialization method
-    ✅ Verified Windows build and launch success - app runs without database errors
-    ✅ All persistence tests passing on desktop platforms
-    ✅ Cross-platform SQLite compatibility achieved (mobile + desktop)
+    📋 v1.4.txt - Current planned expansion (4 phases of product expansion)
+    📋 v1.3.txt - Recently completed fixes and optimizations 
+    📋 v1.2.txt - Grid layout and UI improvements
+    📋 concept_and_future.txt - Core game concept and future ideas
     
-    📋 DESKTOP COMPATIBILITY STATUS:
-        ✅ Windows: WORKING ✅ (Built and launched successfully)
-        ✅ SQLite persistence: WORKING ✅ (FFI initialized properly)
-        ✅ Cross-platform: READY ✅ (Mobile + Desktop support)
-        ✅ Tests: ALL PASSING ✅ (Persistence tests verified)
-        📋 Result: Game now works seamlessly on desktop and mobile platforms
+    This file now serves as the main overview and current status.
+
+CURRENT GAME STATUS (v1.3.5):
+    ✅ Core functionality: FULLY WORKING
+    ✅ Data persistence: IMPLEMENTED
+    ✅ Mobile optimization: COMPLETE
+    ✅ Cross-platform: READY (Windows/Android/iOS)
+    ✅ Production ready: YES
     
-✅ COMPLETEDTODO (v1.3.3) OTHER NECESSARY FIXES AND IMPROVEMENTS
-
-    ANDROID CONFIGURATION FIXES AND UPDATES (v1.3.3)
-    ✅ Updated version name from "P1.0.0" to "1.3.3" to match game version
-    ✅ Updated app label from "Game1" to "Production.Inc" for proper branding
-    ✅ Added comprehensive ProGuard rules for release optimization
-    ✅ Enhanced AndroidManifest.xml with security and performance settings:
-        - Added network security configuration
-        - Added data extraction rules for privacy compliance
-        - Disabled legacy external storage access
-        - Added backup and data transfer policies
-    ✅ Created proper launch screen with game branding and colors
-    ✅ Added comprehensive build documentation (README_ANDROID.md)
-    ✅ Fixed deprecated Gradle properties for Android Gradle Plugin 8.7.0
-    ✅ Enhanced Gradle build performance settings
-    ✅ Created keystore template for future production signing
-    ✅ Added security XML configurations for network and data handling
-    ✅ Verified successful debug build compilation
+    🎯 COMPLETED MILESTONE: v1.4.0 Phase 1 - Foundation Expansion ✅
+        ✅ Added glass material
+        ✅ Added 3 new basic parts (metal_enclosure, lens, battery)
+        ✅ Added 2 new intermediate parts (display_screen, processor)
+        ✅ Added 1 new retail product (power_bank)
     
-    📋 ANDROID PRODUCTION READINESS STATUS:
-        ✅ Build system: READY (Modern Gradle 8.10.2, AGP 8.7.0, Kotlin DSL)
-        ✅ App configuration: READY (Proper package name, version, branding)
-        ✅ Performance optimization: READY (ProGuard, R8, resource shrinking)
-        ✅ Security: READY (Network config, data rules, permissions)
-        ✅ Debug builds: WORKING ✅
-        ⚠️ Release signing: PENDING (Need to create production keystore)
-        📋 Next: Create keystore for Google Play Store release
+    🎯 NEXT MILESTONE: v1.4.1 - Advanced Components
+        - Add solar_cells basic part
+        - Add image_sensor intermediate part
+        - Add solar_panel retail product
 
-✅ COMPLETED TODO (v1.3.2): flutter analyze issue fix.
-
-✅ COMPLETED TODO (v1.3.1): CRITICAL FIXES AND OPTIMIZATIONS
-
-    ## STATUS SUMMARY (Latest Update):
-    - **Core Functionality**: ✅ FULLY IMPLEMENTED AND WORKING (VERIFIED WITH TESTS)
-    - **Critical Issues**: ✅ ALL RESOLVED  
-    - **App Stability**: ✅ STABLE FOR PRODUCTION
-    - **Test Coverage**: ✅ COMPREHENSIVE (with minor test environment issues)
-    - **Ready for Release**: ✅ YES (with optional test environment improvements pending)
-
-    ## VERIFICATION STATUS:
-    ✅ **Core functionality tests**: ALL PASSING (14/14 tests) - Game logic fully functional
-    ⚠️ **Widget tests**: Have test environment issues (database initialization, UI setup)
-    ⚠️ **Integration tests**: Have test environment issues (navigation, widget finding)
-
-    **CONCLUSION**: The game itself works perfectly. Test failures are environment-related, not game bugs.
-
-    ## REMAINING WORK: 
-    - ⚠️ **Optional**: Fix test environment issues (database initialization, widget test setup)
-    - ⚠️ **Optional**: Address UI overflow warnings in test environment (not affecting actual app)
-    - 📋 **Future**: v1.4.0 feature enhancements (on hold)
-
-        ✅ 🚨 CRITICAL DATA PERSISTENCE ISSUE: **FULLY COMPLETED**
-            ✅ MAIN ISSUE IDENTIFIED: Game data not being saved locally so progress is lost after exiting the app
-                ✅ Previously only tier expansion preferences were saved with SharedPreferences  
-                ✅ Core game state (money, materials, products, productions, shipping) now fully persisted
-                ✅ Implemented full game state persistence using SQLite with GamePersistenceService
-                ✅ Save/load: money, materials, products, active productions, shipping orders, shipping history
-                ✅ Save occurs: on app pause/background, after major transactions, and periodically
-            
-        ✅ 🔧 PERFORMANCE OPTIMIZATIONS: **FULLY COMPLETED**
-            ✅ Timer optimization: Changed from 500ms to 1000ms (1 second) for better battery life
-                ✅ Reduced to 1000ms (1 second) update interval
-                ✅ Timer only runs when there are active productions/shipping orders
-                ✅ Implemented app lifecycle awareness - timer pauses when app is backgrounded
-                ✅ Added dynamic timer intervals (1s active, 5s idle)
-            
-        ✅ 📱 MOBILE-SPECIFIC ISSUES: **FULLY COMPLETED**
-            ✅ App lifecycle management for mobile optimization implemented
-                ✅ Proper app pause/resume state handling implemented
-                ✅ Game state saves automatically when app goes to background
-                ✅ Timer behavior optimized for battery life with smart pausing
-            
-        ✅ ⚙️ ARCHITECTURAL IMPROVEMENTS: **FULLY COMPLETED**
-            ✅ Settings screen functionality fully implemented
-                ✅ Game settings (save/load, reset game) implemented
-                ✅ Tutorial/help section with comprehensive dialogs implemented
-                ✅ Game statistics display (money, materials, products, active operations) implemented
-                ✅ App state monitoring and performance information display
-            
-        ✅ 🛠️ TECHNICAL DEBT: **FULLY COMPLETED**
-            ✅ Cleaned up unused game engine dependencies
-                ✅ Removed unused flame dependencies: flame, flame_audio, flame_tiled, flame_forge2d
-                ✅ Removed unused vector_math dependency
-                ✅ APK size optimized for production builds
-            
-        ✅ 🔍 ERROR HANDLING: **FULLY COMPLETED**
-            ✅ Basic error handling implemented in persistence service
-            ✅ Comprehensive error handling for game operations implemented
-                ✅ Added try-catch blocks around critical game operations (buyMaterial, startProduction, sellProduct, updateProductions)
-                ✅ Added edge case handling in production/selling/buying
-                ✅ Added user feedback methods for failed operations
-            
-        ⚠️ 🧪 TESTING CONCERNS: **MOSTLY COMPLETED - TEST ENVIRONMENT ISSUES REMAIN**
-            ✅ Added automated tests for game persistence logic
-            ✅ Added automated tests for performance optimization features  
-            ✅ Added unit tests for game service core operations
-            ✅ Added comprehensive widget tests for UI components (comprehensive_widget_test.dart)
-            ✅ Added integration tests for full game flow (integration_test.dart)
-            ⚠️ Some test failures due to test environment setup issues:
-                ⚠️ Database factory not initialized in test environment (SQLite/sqflite_common_ffi issue)
-                ⚠️ Widget navigation/finder issues in test environment
-                ⚠️ UI overflow warnings during tests (not affecting actual app functionality)
-
-TODO (V1.3.0): ENHANCED BUILD PRODUCTS SCREEN UI IMPROVEMENTS 🎨 - ✅ COMPLETED
+CURRENT GAME CONTENT (v1.4.0):
+    Materials: cardboard, plastic, basic_metals, advanced_metals, glass
+    Basic Parts: box, wires, circuits, enclosure_plastic, sound_driver, metal_enclosure, lens, battery
+    Intermediate Parts: display_screen, processor
+    Retail Products: speaker, power_bank
     
-    ✅ ALL ISSUES FIXED:
-        ✅ UI looks janky - grid cards need better spacing and proportions - FIXED
-        ✅ Material requirements display is only in tooltip (hidden from view) - FIXED  
-        ✅ Production buttons show "5" and "10" but TODO asks for "1" and "10" - FIXED
-        ✅ No long-press functionality for product descriptions - FIXED
-        ✅ Card heights don't dynamically adjust to content - FIXED (Using Wrap with calculated widths)
-        ✅ Time cost shown in buttons but not prominently in card - FIXED
-        ✅ Font sizes too small for mobile - FIXED (Optimized for readability while maintaining 3 cols)
-        ✅ Unnecessary current materials and products sections - REMOVED
-        ✅ Maintain 3 products per row on mobile - FIXED (Optimized spacing and layout)
-    
-    ✅ ALREADY IMPLEMENTED:
-        ✅ Grid layout with 3 products per row
-        ✅ Color-coded availability indicators (green/red chips)
-        ✅ Production time shown in tooltip and buttons
-        ✅ Material requirements listed in tooltip
-        ✅ Visual "Ready" vs "Need Materials" status
-    
-    ✅ NEWLY IMPLEMENTED FEATURES:
-        ✅ 1. MATERIAL CHIPS DISPLAY 💊
-           ✅ Show required materials as chips directly on card (not just tooltip)
-           ✅ Color-code chips: GREEN for available materials, RED for insufficient
-           ✅ Format: "Material Name: X/Y" where X=owned, Y=needed
-           ✅ Increased font size to 10px for better mobile readability
-        
-        ✅ 2. BUTTON CONFIGURATION 🔘
-           ✅ Change production buttons from "5 & 10" to "1 & 10" as requested
-           ✅ Make button text clearer: "Build 1" instead of just "1"
-           ✅ Show total time for quantity: "Build 10 (50m)" format
-           ✅ Increased button font sizes (11px for main text, 9px for time)
-        
-        ✅ 3. LONG-PRESS DESCRIPTIONS 📝
-           ✅ Add long-press gesture detector on product emoji/icon
-           ✅ Show modal dialog with full product description
-           ✅ Include detailed stats: production time, sell price, tier info
-        
-        ✅ 4. DYNAMIC CARD SIZING 📏
-           ✅ Replaced fixed GridView with dynamic Wrap layout
-           ✅ Cards now truly resize based on content (more materials = taller cards)
-           ✅ Calculated widths ensure proper responsive behavior
-        
-        ✅ 5. ENHANCED VISUAL HIERARCHY 🎯
-           ✅ Larger, more prominent product emoji (32px in styled container)
-           ✅ Better typography hierarchy with optimized font sizes for 3-column layout:
-               - Product name: 14px (optimized for mobile 3-col layout)
-               - Production time: 12px (balanced readability and space)  
-               - Status indicator: 12px (clear and readable)
-               - Materials label: 12px (appropriate sizing)
-               - Material chips: 10px (compact but readable)
-           ✅ Consistent padding and margins throughout
-           ✅ Add subtle shadows/elevations for depth
-        
-        ✅ 6. IMPROVED RESPONSIVENESS 📱
-           ✅ Handle different screen sizes gracefully (3 cols on most devices, 2 only on very narrow <400px)
-           ✅ Optimized layout to maintain 3 columns per row on mobile devices
-           ✅ Dynamic width calculation for proper card sizing
-           ✅ Better spacing and proportions for mobile devices
-           ✅ Reduced spacing and padding to fit 3 columns with readable fonts
-        
-        ✅ 7. ACCESSIBILITY IMPROVEMENTS ♿
-           ✅ Add haptic feedback for interactions
-           ✅ Improved touch targets and visual feedback
-           ✅ Better color contrast ratios
-           ✅ Larger fonts for better mobile readability
-        
-        ✅ 8. UI CLEANUP 🧹
-           ✅ Removed unnecessary "Current Materials" section
-           ✅ Removed unnecessary "Current Products" section
-           ✅ Cleaner, more focused interface
-    
-    🔍 TECHNICAL IMPLEMENTATIONS COMPLETED:
-        ✅ Use LayoutBuilder for responsive design
-        ✅ Enhanced card design with proper elevation and shadows
-        ✅ Haptic feedback integration
-        ✅ Modal dialogs for detailed product information
-        ✅ Material availability checking and display
-        ✅ Improved button styling and feedback
-        ✅ Dynamic Wrap layout instead of fixed GridView
-        ✅ Calculated card widths for true responsiveness  
-        ✅ Mobile-optimized font sizes throughout
-        ✅ Optimized spacing and padding to maintain 3 columns on mobile
-        ✅ Breakpoint set at 400px (only very narrow screens use 2 columns)
-        ✅ Show product count in collapsed state
-        ✅ Option to expand/collapse all tiers
-
-    🚀 BONUS FEATURES IMPLEMENTED:
-        ✅ Current Products Inventory Display: Shows all built products with quantities
-        ✅ Expand/Collapse All Button: Single button to control all tier visibility
-        ✅ Enhanced Tooltips: Detailed production info with material requirements
-        ✅ Visual Status Indicators: Color-coded "Ready" vs "Need Materials" chips
-        ✅ Persistent UI State: Tier expansion preferences saved across app restarts
-        ✅ Smooth Animations: 300ms expand/collapse with 200ms icon rotation
-        ✅ Improved Information Hierarchy: Better organized materials and products sectionsAME: Production.INC
-
-✅ COMPLETED TODOS (V1.2.0):
-    ✅ 1. UPDATE BUILD SCREEN TO GRID LAYOUT - DONE
-        ✅ Replace current ListView with GridView.builder for products
-        ✅ 3 products per row (crossAxisCount: 3)
-        ✅ Make each tier section collapsible (ExpansionTile)
-        ✅ Compact product cards
-        ✅ Production buttons: only "5" and "10" per product (remove "1" button)
-        ✅ Add product quantity counter in grid header
-        ✅ Implement sticky tier headers for better navigation
-
-    ✅ 2. ENHANCE PRODUCT CARD DESIGN - DONE
-        ✅ Reduce card padding and margins for compactness
-        ✅ Move production time to tooltip or secondary info
-        ✅ Use chips for material requirements (green/red status)
-        ✅ Add visual indicators for production capability
-        ✅ Implement consistent spacing and sizing across all cards
-
-    ✅ 3. IMPLEMENT COLLAPSIBLE TIER SECTIONS - DONE
-        ✅ Add expand/collapse icons to tier headers
-        ✅ Remember expansion state in shared preferences
-        ✅ Smooth animations for expand/collapse
-        - Show product count in collapsed state
-        - Option to expand/collapse all tiers
-
-
-TO BE IMPLEMENTED IN THE FUTURE VERSIONS
-    NEW IDEA:
-        all retails products are upgradable.
-            like for speaker to bluetooth speaker, or power bank to solar power bank
-
-sell products system
-    RECOMMENDED APPROACH: Combine both ideas for better gameplay
-    
-    IDEA 2: shipping time to items. lower money earned from basic items.
-        shipping time: IMPROVED FORMULA - Base shipping time + (items * scaling factor)
-        Benefits: Prevents linear scaling problems, more realistic logistics
-        
-    IDEA 1: implement time needed to sell items + market saturation.
-        and a way to disadvantage selling only the same product too much
-        forcing players to progress to other options.
-        Implementation: Market demand decreases with oversupply of same product
-        
-    COMBINED SYSTEM:
-        - Products have base shipping time + scaling factor
-        - Market demand affects sell price (oversaturation = lower profits)
-        - Shop auto-sells based on demand, players set amounts to be sold
-        - Players must approve large orders before shipping begins
-        
-        setting system: only sell amount set by user, but needs user to approve order to be sold, then shipping time based on improved formula
-        add another data for product models: baseShippingTime, shippingScalingFactor, marketDemand
-
-Item tier or levels that can be made or bought(materials are the only thing that can be bought)
-    material:
-        carboard, plastic, rubber, basic metals, advance metals, Fiber sheets, glass
-    basic parts:  //if only selling basic parts basically your a parts producer factory something type shit, this would serve of something like early game purpose.
-        screws, bolts, wires, circuits, hose, bearings,
-    intermediate: //intermediate parts like parts out of  the basic parts like mainboards 
-        // im still thinking i know itll mainly rely on what complex or manufactured items i am making.
-    Complex: // more into combination of all the intermediate parts.
-        //this would include machines like for manufacturing as well and for automation that i could use in the game.
-    retail items: //products with the only purpos is to be sold.  
-        //still thinking of final products.
-
-game concept:
-
-    buy build sell, automate!
-
-    buy materials produce then sell the items.
-
-    in the long run when you unlocked all the items, you can build machines to automate production!
-    as well as mach2ines to buy materials and sell products!
-
-    3 windows, buy materials, build, sell materials.
-
-    to start as foundation of this game.
-        current materials: cardboard.
-        current produce: box.
-        current sell: sell box.
+    🎮 GAMEPLAY: Buy materials → Build products → Sell products → Reinvest profits
 
 
 
-    
