@@ -5,9 +5,13 @@ import 'package:provider/provider.dart';
 import 'screens/main_menu_screen.dart';
 import 'screens/main_game_screen.dart';
 import 'services/production_game_service.dart';
+import 'services/game_persistence_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize database factory for desktop platforms
+  GamePersistenceService.initializeDatabaseFactory();
 
   // Set preferred orientations for mobile
   SystemChrome.setPreferredOrientations([

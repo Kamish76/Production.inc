@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:game1/services/game_persistence_service.dart';
 import 'package:game1/models/game_state.dart';
 import 'package:game1/models/game_models.dart';
@@ -7,8 +6,7 @@ import 'package:game1/models/game_models.dart';
 void main() {
   // Setup for SQLite testing
   setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+    GamePersistenceService.initializeDatabaseFactory();
   });
 
   group('GamePersistenceService Tests', () {

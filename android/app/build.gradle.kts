@@ -14,7 +14,7 @@ android {
         minSdk = 24  
         targetSdk = 35
         versionCode = 1
-        versionName = "P1.0.0"
+        versionName = "1.3.3"
         
         // Game-specific optimizations
         multiDexEnabled = true
@@ -41,8 +41,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Using debug signing for now - update with proper signing config when ready for production
             signingConfig = signingConfigs.getByName("debug")
         }
         debug {

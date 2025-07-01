@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch screen background color - matches your game theme -->
+    <color name="launch_background_color">#FF2196F3</color>
+    
+    <!-- Additional game theme colors -->
+    <color name="game_primary">#FF2196F3</color>
+    <color name="game_primary_dark">#FF1976D2</color>
+    <color name="game_accent">#FFFF5722</color>
+</resources>

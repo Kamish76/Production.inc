@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Production.Inc Launch Screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
+    <!-- Background color matching game theme -->
+    <item android:drawable="@color/launch_background_color" />
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <!-- Company logo/game icon (when you have one) -->
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
+            android:src="@mipmap/ic_launcher" />
+    </item>
+    
+    <!-- Optional: Loading text at bottom -->
+    <!-- <item android:gravity="bottom|center_horizontal">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent"/>
+        </shape>
     </item> -->
 </layer-list>
