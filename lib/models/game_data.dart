@@ -303,6 +303,29 @@ class GameData {
       baseShippingTimeSeconds: 22.0,
       levelId: ProductLevel.retail,
     ),
+
+    // v1.4.3 Phase 4: Premium Products
+    Product(
+      id: 'smartphone',
+      name: 'Smartphone',
+      description: 'Advanced mobile device',
+      sellPrice: 800.0,
+      emoji: '📱',
+      requiredMaterials: {
+        'circuits': 2,
+        'processor': 1,
+        'metal_enclosure': 1,
+        'basic_metals': 2,
+        'wires': 3,
+        'battery': 1,
+        'sound_driver': 1,
+        'display_screen': 1,
+        'enclosure_plastic': 1,
+      },
+      productionTimeSeconds: 90.0,
+      baseShippingTimeSeconds: 35.0,
+      levelId: ProductLevel.retail,
+    ),
   ];
 
   // Future machines for automation
