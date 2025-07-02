@@ -311,48 +311,58 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           ),
         ),
 
-        // Collapsible content with grid layout
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          height: isExpanded ? null : 0,
-          child:
-              isExpanded
-                  ? Column(
-                    children: [
-                      // Dynamic Grid layout with proper sizing
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          // Force 3 columns on most devices, only use 2 on very narrow screens
-                          int crossAxisCount =
-                              constraints.maxWidth < 400 ? 2 : 3;
-                          double cardWidth =
-                              (constraints.maxWidth -
-                                  (crossAxisCount - 1) * 8 - // Reduced spacing
-                                  24) / // Reduced margins
-                              crossAxisCount;
+        // Collapsible content with grid layout - Fixed layout issues
+        if (isExpanded)
+          Column(
+            children: [
+              // Fixed 3-column grid with dynamic height based on content
+              // Always use 3 columns, calculate spacing
+              Builder(
+                builder: (context) {
+                  const columnsCount = 3;
+                  const spacing = 8.0;
 
-                          return Wrap(
-                            spacing: 8, // Reduced spacing to fit 3 columns
-                            runSpacing: 12,
-                            children:
-                                products.map((product) {
-                                  return SizedBox(
-                                    width: cardWidth,
-                                    child: _buildEnhancedProductCard(
-                                      context,
-                                      product,
-                                      gameService,
-                                    ),
-                                  );
-                                }).toList(),
+                  // Group products into rows of 3
+                  final rows = <List<game.Product>>[];
+                  for (int i = 0; i < products.length; i += columnsCount) {
+                    final end =
+                        (i + columnsCount < products.length)
+                            ? i + columnsCount
+                            : products.length;
+                    rows.add(products.sublist(i, end));
+                  }
+
+                  return Column(
+                    children:
+                        rows.map((rowProducts) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (int i = 0; i < columnsCount; i++) ...[
+                                  if (i > 0) const SizedBox(width: spacing),
+                                  Expanded(
+                                    child:
+                                        i < rowProducts.length
+                                            ? _buildEnhancedProductCard(
+                                              context,
+                                              rowProducts[i],
+                                              gameService,
+                                            )
+                                            : const SizedBox(), // Empty space for incomplete rows
+                                  ),
+                                ],
+                              ],
+                            ),
                           );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  )
-                  : const SizedBox.shrink(),
-        ),
+                        }).toList(),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
       ],
     );
   }
@@ -401,11 +411,12 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
         borderRadius: BorderRadius.circular(12),
         onTap: () => HapticFeedback.lightImpact(),
         onLongPress: () => _showProductDetails(context, product, gameService),
-        child: Padding(
-          padding: const EdgeInsets.all(10), // Reduced from 12 to fit 3 columns
+        child: Container(
+          padding: const EdgeInsets.all(12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+                CrossAxisAlignment.center, // Center align content
             children: [
               // Product emoji and name with enhanced styling
               Row(
@@ -415,7 +426,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                         () =>
                             _showProductDetails(context, product, gameService),
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: Colors.grey[700],
                         borderRadius: BorderRadius.circular(8),
@@ -423,8 +434,8 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                       child: Text(
                         product.emoji,
                         style: const TextStyle(
-                          fontSize: 32,
-                        ), // Increased from 24px
+                          fontSize: 26, // Increased by 2 (was 24)
+                        ),
                       ),
                     ),
                   ),
@@ -436,18 +447,18 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                         Text(
                           product.name,
                           style: const TextStyle(
-                            fontSize:
-                                14, // Kept at good mobile size but reduced from 15 to fit 3 cols
+                            fontSize: 14, // Increased by 2 (was 12)
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 2),
                         Text(
                           '${(product.productionTimeSeconds / 60).toStringAsFixed(1)}m',
                           style: TextStyle(
-                            fontSize: 12, // Kept readable but reduced from 13
+                            fontSize: 12, // Increased by 2 (was 10)
                             color: Colors.grey[400],
                           ),
                         ),
@@ -456,18 +467,19 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
               // Production capability indicator with better design
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
                   color: canProduce ? Colors.green[700] : Colors.red[700],
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       canProduce ? Icons.check_circle : Icons.cancel,
@@ -475,70 +487,93 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                       color: Colors.white,
                     ),
                     const SizedBox(width: 4),
-                    Expanded(
+                    Flexible(
                       child: Text(
                         canProduce ? 'Ready to Build' : 'Need Materials',
                         style: const TextStyle(
-                          fontSize: 12, // Increased from 11
+                          fontSize: 13, // Increased by 2 (was 11)
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
                         ),
                         overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
               // Material requirements as chips (visible, not just tooltip)
               if (product.requiredMaterials.isNotEmpty) ...[
-                Text(
-                  'Materials:',
-                  style: TextStyle(
-                    fontSize: 12, // Increased from 11
-                    color: Colors.grey[400],
-                    fontWeight: FontWeight.w500,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Materials:',
+                    style: TextStyle(
+                      fontSize: 13, // Increased by 2 (was 11)
+                      color: Colors.grey[400],
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 2, // Reduced from 4 to save space
-                  runSpacing: 2, // Reduced from 4
-                  children:
-                      product.requiredMaterials.entries.map((entry) {
-                        final materialId = entry.key;
-                        final required = entry.value;
-                        final owned =
-                            gameService.state.getMaterialCount(materialId) +
-                            gameService.state.getProductCount(materialId);
-                        final hasEnough = owned >= required;
+                const SizedBox(height: 6),
+                // Material requirements as chips with dynamic sizing
+                ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxHeight:
+                        100, // Fixed max height to prevent conflicts with IntrinsicHeight
+                    minHeight: 40,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Wrap(
+                      spacing: 2,
+                      runSpacing: 2,
+                      alignment: WrapAlignment.center,
+                      children:
+                          product.requiredMaterials.entries.map((entry) {
+                            final materialId = entry.key;
+                            final required = entry.value;
+                            final owned =
+                                gameService.state.getMaterialCount(materialId) +
+                                gameService.state.getProductCount(materialId);
+                            final hasEnough = owned >= required;
 
-                        final materialName =
-                            gameService.getMaterial(materialId)?.name ??
-                            gameService.getProduct(materialId)?.name ??
-                            materialId;
+                            final materialName =
+                                gameService.getMaterial(materialId)?.name ??
+                                gameService.getProduct(materialId)?.name ??
+                                materialId;
 
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4, // Reduced from 6 to save space
-                            vertical: 1, // Reduced from 2
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                hasEnough ? Colors.green[600] : Colors.red[600],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '$materialName: $owned/$required',
-                            style: const TextStyle(
-                              fontSize: 10, // Increased from 9
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                            // Simple truncation for material names (no TextPainter to avoid layout conflicts)
+                            String displayName =
+                                materialName.length > 18
+                                    ? '${materialName.substring(0, 8)}...'
+                                    : materialName;
+
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    hasEnough
+                                        ? Colors.green[600]
+                                        : Colors.red[600],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '$displayName: $owned/$required',
+                                style: const TextStyle(
+                                  fontSize: 10, // Increased by 2 (was 8)
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -546,7 +581,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
               // Production buttons (1 and 10 as requested)
               Row(
                 children: [
-                  Expanded(
+                  Flexible(
                     child: _buildEnhancedProduceButton(
                       context,
                       product,
@@ -555,8 +590,10 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                       canProduce,
                     ),
                   ),
-                  const SizedBox(width: 4), // Reduced from 6 to save space
-                  Expanded(
+                  const SizedBox(
+                    width: 4,
+                  ), // Reduced spacing for narrow columns
+                  Flexible(
                     child: _buildEnhancedProduceButton(
                       context,
                       product,
@@ -599,7 +636,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
             : '${(totalTimeMinutes / 60).toStringAsFixed(1)}h';
 
     return SizedBox(
-      height: 32, // Reduced from 36 to save space for 3 columns
+      height: 34, // Increased by 2 (was 32)
       child: ElevatedButton(
         onPressed:
             canProduceQuantity
@@ -612,25 +649,36 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           backgroundColor:
               canProduceQuantity ? Colors.blue[600] : Colors.grey[600],
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 2,
+            vertical: 1,
+          ), // Reduced padding
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+          ), // Smaller radius
           elevation: canProduceQuantity ? 4 : 1,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Build $quantity',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ), // Increased from 10
-            ),
-            Text(
-              '($timeText)',
-              style: const TextStyle(fontSize: 9),
-            ), // Increased from 8
-          ],
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Build $quantity',
+                style: const TextStyle(
+                  fontSize: 12, // Increased by 2 (was 10)
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              Text(
+                '($timeText)',
+                style: const TextStyle(fontSize: 10), // Increased by 2 (was 8)
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
