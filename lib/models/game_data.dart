@@ -262,6 +262,47 @@ class GameData {
       baseShippingTimeSeconds: 15.0,
       levelId: ProductLevel.retail,
     ),
+
+    // v1.4.2 Phase 3: New complex parts
+    Product(
+      id: 'camera_module',
+      name: 'Camera Module',
+      description: 'Complete camera system',
+      sellPrice: 150.0,
+      emoji: '📷',
+      requiredMaterials: {
+        'lens': 1,
+        'image_sensor': 1,
+        'processor': 1,
+        'battery': 1,
+        'metal_enclosure': 1,
+        'wires': 2,
+      },
+      productionTimeSeconds: 50.0,
+      baseShippingTimeSeconds: 18.0,
+      levelId: ProductLevel.complex,
+    ),
+
+    // v1.4.2 Phase 3: New retail products
+    Product(
+      id: 'camera',
+      name: 'Digital Camera',
+      description: 'Digital camera device',
+      sellPrice: 350.0,
+      emoji: '📹',
+      requiredMaterials: {
+        'circuits': 1,
+        'processor': 1,
+        'metal_enclosure': 1,
+        'basic_metals': 1,
+        'wires': 1,
+        'battery': 1,
+        'image_sensor': 1,
+      },
+      productionTimeSeconds: 60.0,
+      baseShippingTimeSeconds: 22.0,
+      levelId: ProductLevel.retail,
+    ),
   ];
 
   // Future machines for automation

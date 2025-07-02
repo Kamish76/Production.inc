@@ -27,15 +27,26 @@ CURRENT GAME STATUS (v1.3.5):
         ✅ Added 2 new intermediate parts (display_screen, processor)
         ✅ Added 1 new retail product (power_bank)
     
-    🎯 NEXT MILESTONE: v1.4.1 - Advanced Components
-        - Add solar_cells basic part
-        - Add image_sensor intermediate part
-        - Add solar_panel retail product
+    🎯 COMPLETED MILESTONE: v1.4.1 - Advanced Components ✅
+        ✅ Added solar_cells basic part
+        ✅ Added image_sensor intermediate part
+        ✅ Added solar_panel retail product
+    
+    🎯 COMPLETED MILESTONE: v1.4.2 - Complex Systems ✅
+        ✅ Added camera_module complex part
+        ✅ Added digital camera retail product
+    
+    🎯 NEXT MILESTONE: v1.4.3 - Premium Products
+        - Add smartphone (ultimate retail product)
 
-CURRENT GAME CONTENT (v1.4.0):
+CURRENT GAME CONTENT (v1.4.2):
     Materials: cardboard, plastic, basic_metals, advanced_metals, glass
-    Basic Parts: box, wires, circuits, enclosure_plastic, sound_driver, metal_enclosure, lens, battery
-    Intermediate Parts: display_screen, processor
+    Basic Parts: box, wires, circuits, enclosure_plastic, sound_driver, metal_enclosure, lens, battery, solar_cells
+    Intermediate Parts: display_screen, processor, image_sensor
+    Complex Parts: camera_module
+    Retail Products: speaker, power_bank, solar_panel, camera
+    
+    🎮 GAMEPLAY: Buy materials → Build products → Sell products → Reinvest profits
     Retail Products: speaker, power_bank
     
     🎮 GAMEPLAY: Buy materials → Build products → Sell products → Reinvest profits

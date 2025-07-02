@@ -89,7 +89,7 @@
 
 The foundation is now set for **v1.4.1 - Advanced Components**:
 - Solar cells basic part
-- Image sensor intermediate part  
-- Solar panel retail product
+"../Version_documentations"- Image sensor intermediate part  
+"../Version_documentations"- Solar panel retail product
 
 **v1.4.0 Phase 1 is production ready!** 🚀
