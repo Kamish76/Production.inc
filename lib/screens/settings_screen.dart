@@ -315,7 +315,7 @@ class SettingsScreen extends StatelessWidget {
             Expanded(
               child: Consumer<ProductionGameService>(
                 builder: (context, gameService, child) {
-                  return Padding(
+                  return SingleChildScrollView(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
@@ -767,7 +767,7 @@ class SettingsScreen extends StatelessWidget {
                           ),
                         ),
 
-                        const Spacer(),
+                        const SizedBox(height: 24),
 
                         // Performance & Auto-save info
                         Container(

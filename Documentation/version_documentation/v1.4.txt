@@ -1,6 +1,12 @@
 # Production.Inc - Version 1.4 Documentation
 # All v1.4.x content including planned phases and specifications
 
+
+
+✅ COMPLETED (V1.4.4) Fix settings_screen ui issue ✅
+    UI overflow when displaying settings options
+    - ✅ added scrollable container for settings
+
 ✅ COMPLETED (V1.4.0): FOUNDATION EXPANSION - PHASE 1 🏗️ ✅
     STATUS: FULLY IMPLEMENTED AND TESTED ✅
     FOCUS: Add glass material + basic intermediate parts + first new retail product
