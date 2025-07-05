@@ -368,9 +368,9 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                       // Dynamic Grid layout with proper mobile sizing
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          // Mobile-first: 3 columns on >400px, 2 on smaller screens
+                          // Responsive: 2 columns for <480px (720p/1080p), 3 for high-res
                           int crossAxisCount =
-                              constraints.maxWidth < 400 ? 2 : 3;
+                              constraints.maxWidth < 480 ? 2 : 3;
                           double cardWidth =
                               (constraints.maxWidth -
                                   (crossAxisCount - 1) *

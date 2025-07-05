@@ -7,4 +7,5 @@
     <color name="game_primary">#FF2196F3</color>
     <color name="game_primary_dark">#FF1976D2</color>
     <color name="game_accent">#FFFF5722</color>
+	<color name="ic_launcher_background">#2196F3</color>
 </resources>

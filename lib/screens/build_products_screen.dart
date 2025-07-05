@@ -315,14 +315,20 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
         if (isExpanded)
           Column(
             children: [
-              // Fixed 3-column grid with dynamic height based on content
-              // Always use 3 columns, calculate spacing
-              Builder(
-                builder: (context) {
-                  const columnsCount = 3;
+              // Responsive column grid: 2 columns for smaller screens, 3 for larger
+              // Adapts to phone resolution for better UI on mid/low-end devices
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // Get actual screen width for more accurate responsive behavior
+                  final screenWidth = MediaQuery.of(context).size.width;
+
+                  // Use screen width to determine optimal column count
+                  // 480px breakpoint optimized for 720p/1080p vs high-res phones
+                  final columnsCount = screenWidth < 480 ? 2 : 3;
+
                   const spacing = 8.0;
 
-                  // Group products into rows of 3
+                  // Group products into rows based on responsive column count
                   final rows = <List<game.Product>>[];
                   for (int i = 0; i < products.length; i += columnsCount) {
                     final end =

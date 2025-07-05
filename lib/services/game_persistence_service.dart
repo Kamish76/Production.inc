@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../models/game_state.dart';
 import '../models/game_models.dart';
@@ -13,10 +12,14 @@ class GamePersistenceService {
 
   /// Initialize database factory for desktop platforms if needed
   static void initializeDatabaseFactory() {
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      // Initialize FFI database factory for desktop platforms
+    try {
+      // Only initialize for platforms that support it
+      // Web platform will use default sqflite implementation
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
+    } catch (e) {
+      // Web platform or other unsupported platforms - use default factory
+      print('Using default database factory for current platform');
     }
   }
 
