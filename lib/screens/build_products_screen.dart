@@ -392,6 +392,14 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
       product.requiredMaterials,
     );
 
+    // Check if this product is currently in production
+    final isInProduction = gameService.state.activeProductions.any(
+      (task) => task.productId == product.id,
+    );
+
+    // Calculate available quantity
+    final availableQuantity = gameService.state.getProductCount(product.id);
+
     return Card(
       color: Colors.grey[850],
       margin: const EdgeInsets.all(4),
@@ -412,6 +420,14 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
         onTap: () => HapticFeedback.lightImpact(),
         onLongPress: () => _showProductDetails(context, product, gameService),
         child: Container(
+          // Add orange production indicator as background overlay
+          decoration:
+              isInProduction
+                  ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.orange.withValues(alpha: 0.2),
+                  )
+                  : null,
           padding: const EdgeInsets.all(12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -501,6 +517,65 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 8),
+
+              // Available quantity and production status indicators
+              Row(
+                children: [
+                  // Available quantity indicator
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[700],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Available: $availableQuantity',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  if (isInProduction) ...[
+                    const SizedBox(width: 4),
+                    // Production status indicator
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[600],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.build, size: 12, color: Colors.white),
+                          const SizedBox(width: 2),
+                          const Text(
+                            'In Production',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 10),
 

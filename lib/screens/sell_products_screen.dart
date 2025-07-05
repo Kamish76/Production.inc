@@ -427,6 +427,11 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
     final available = gameService.state.getProductCount(product.id);
     final stockLevel = _getStockLevel(available);
 
+    // Check if this product is currently in production
+    final isInProduction = gameService.state.activeProductions.any(
+      (task) => task.productId == product.id,
+    );
+
     return Card(
       color: Colors.grey[850],
       margin: const EdgeInsets.all(4),
@@ -444,7 +449,15 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
         onTap: () => HapticFeedback.lightImpact(),
         onLongPress:
             () => _showProductDetails(context, product, gameService, available),
-        child: Padding(
+        child: Container(
+          // Add orange production indicator as background overlay
+          decoration:
+              isInProduction
+                  ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.orange.withValues(alpha: 0.2),
+                  )
+                  : null,
           padding: const EdgeInsets.all(10), // Mobile-optimized padding
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -534,7 +547,37 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
+
+              // Production status indicator (if product is being produced)
+              if (isInProduction)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[600],
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.build, size: 14, color: Colors.white),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Currently in Production',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (isInProduction) const SizedBox(height: 8),
 
               // Revenue potential display
               if (available > 0) ...[

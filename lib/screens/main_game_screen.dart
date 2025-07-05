@@ -18,6 +18,7 @@ class MainGameScreen extends StatefulWidget {
 
 class _MainGameScreenState extends State<MainGameScreen> {
   late int _currentIndex;
+  late PageController _pageController;
 
   final List<Widget> _screens = [
     const BuyMaterialsScreen(),
@@ -31,6 +32,13 @@ class _MainGameScreenState extends State<MainGameScreen> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -79,7 +87,15 @@ class _MainGameScreenState extends State<MainGameScreen> {
 
         // Game is loaded, show normal interface
         return Scaffold(
-          body: IndexedStack(index: _currentIndex, children: _screens),
+          body: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            children: _screens,
+          ),
           bottomNavigationBar: Container(
             decoration: BoxDecoration(
               gradient: const LinearGradient(
@@ -101,6 +117,11 @@ class _MainGameScreenState extends State<MainGameScreen> {
                 setState(() {
                   _currentIndex = index;
                 });
+                _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
               },
               type: BottomNavigationBarType.fixed,
               backgroundColor: Colors.transparent,

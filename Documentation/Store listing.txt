@@ -1,0 +1,107 @@
+# Google Play Store Listing - Production.INC
+
+## App Title
+Production.INC - Business Simulation Game
+
+## Short Description (80 characters max)
+Build your production empire! Buy materials, craft products, and sell for profit
+
+## Full Description (4000 characters max)
+
+🏭 **BUILD YOUR PRODUCTION EMPIRE!** 🏭
+
+Welcome to Production.INC, the ultimate business simulation game where you transform raw materials into profitable products! Start small and build your way to becoming an industrial tycoon.
+
+**🎯 CORE GAMEPLAY**
+• **BUY** - Purchase raw materials at competitive prices
+• **BUILD** - Craft materials into valuable products  
+• **SELL** - Market your products for maximum profit
+• **EXPAND** - Reinvest earnings to grow your business
+
+**📦 RICH PRODUCT ECOSYSTEM**
+Start with simple cardboard boxes and progress to high-tech products:
+• Basic Materials: Cardboard, Plastic, Metals, Glass
+• Electronic Components: Circuits, Processors, Displays, Cameras
+• Consumer Products: Speakers, Power Banks, Solar Panels, Smartphones
+
+**💰 STRATEGIC BUSINESS MANAGEMENT**
+• Manage cash flow and production timing
+• Optimize profit margins on 15+ different products
+• Balance material costs with production efficiency
+• Plan your expansion strategy carefully
+
+**🎮 FEATURES**
+• Intuitive tap-to-play mobile interface
+• Real-time production system
+• Persistent game progress (never lose your empire!)
+• Cross-platform compatibility
+• Clean, modern UI optimized for phones
+• No ads or pay-to-win mechanics
+
+**📈 PROGRESSION SYSTEM**
+• Start with $100 and basic cardboard production
+• Unlock advanced materials and complex manufacturing
+• Build everything from simple boxes to cutting-edge smartphones
+• Each product tier offers higher profits and new challenges
+
+**🏆 PERFECT FOR**
+• Business simulation enthusiasts
+• Strategy game lovers
+• Anyone who enjoys building and optimization
+• Players seeking relaxing yet engaging gameplay
+
+Transform your entrepreneurial vision into reality! Download Production.INC now and start building your industrial empire today!
+
+**Note: This is an offline game - no internet required after download.**
+
+## Keywords/Tags
+business simulation, production game, manufacturing, strategy, tycoon, crafting, economy, management, offline game, industrial, factory, profit, materials, products, building, selling
+
+## Category
+Games > Simulation
+
+## Target Age Rating
+Everyone (3+)
+
+## Key Features for Store Listing
+• Business simulation gameplay
+• 15+ unique products to manufacture
+• 5 different material types
+• Offline gameplay (no internet required)
+• Clean, intuitive mobile interface
+• Real-time production system
+• Persistent game saves
+• No ads or microtransactions
+• Cross-platform compatibility
+
+## Privacy Policy Notes
+• Game saves data locally on device using SharedPreferences and SQLite
+• No personal data collection
+• No internet connectivity required
+• No third-party analytics or tracking
+• Fully offline experience
+
+## Technical Requirements
+• Android 5.0 (API level 21) or higher
+• 50MB storage space
+• No special permissions required
+• Works on phones and tablets
+
+## Screenshots Suggestions
+1. Main menu showing "Buy • Build • Sell" concept
+2. Buy Materials screen with different material types
+3. Build Products screen showing production in progress
+4. Sell Products screen with profit calculations
+5. Late-game view showing advanced products like smartphones
+6. Tutorial/getting started screen
+
+## Promotional Text (170 characters max)
+Start with $100 and cardboard. Build boxes, sell for profit, reinvest in advanced materials. Craft everything from speakers to smartphones in this addictive business sim!
+
+## What's New (Latest Update)
+Version 1.4.3 - Premium Products Update
+• Added smartphone manufacturing
+• New camera module complex part
+• Enhanced production chains
+• Improved mobile optimization
+• Bug fixes and performance improvements

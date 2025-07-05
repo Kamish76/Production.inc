@@ -5,6 +5,15 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.production.inc"
     compileSdk = 35
@@ -13,8 +22,8 @@ android {
         applicationId = "com.production.inc"
         minSdk = 24  
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.3.3"
+        versionCode = 6
+        versionName = "1.4.6"
         
         // Game-specific optimizations
         multiDexEnabled = true
@@ -30,19 +39,25 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
-
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+            storeFile = file(keystoreProperties["storeFile"] as String)
+            storePassword = keystoreProperties["storePassword"] as String
+        }
+    }
 
     buildTypes {
         release {
             // Game performance optimizations
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Using debug signing for now - update with proper signing config when ready for production
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isDebuggable = true
