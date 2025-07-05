@@ -9,6 +9,10 @@
 # Game-specific rules for Production.Inc
 -keep class com.production.inc.** { *; }
 
+# Google Play Core (for Flutter deferred components)
+-keep class com.google.android.play.core.** { *; }
+-dontwarn com.google.android.play.core.**
+
 # SQLite rules (for game persistence)
 -keep class org.sqlite.** { *; }
 -keep class org.sqlite.database.** { *; }
@@ -30,6 +34,21 @@
     public static ** valueOf(java.lang.String);
 }
 
+# Keep Parcelable classes
+-keep class * implements android.os.Parcelable {
+  public static final android.os.Parcelable$Creator *;
+}
+
+# Keep Serializable classes
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    private static final java.io.ObjectStreamField[] serialPersistentFields;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}
+
 # Remove logging in release
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);
@@ -43,3 +62,15 @@
 # Flutter specific optimizations
 -dontwarn io.flutter.plugin.**
 -dontwarn io.flutter.util.**
+
+# R8 full mode compatibility
+-keepattributes SourceFile,LineNumberTable
+-keepattributes *Annotation*
+
+# Keep crash reporting functionality
+-keep class com.google.firebase.crashlytics.** { *; }
+-dontwarn com.google.firebase.crashlytics.**
+
+# Flutter embedding optimizations
+-keep class io.flutter.embedding.** { *; }
+-dontwarn io.flutter.embedding.**

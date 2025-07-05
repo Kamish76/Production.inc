@@ -50,14 +50,19 @@ android {
 
     buildTypes {
         release {
-            // Game performance optimizations
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // Game performance optimizations with R8/ProGuard enabled
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
+            
+            // Enable debug symbols for better crash reporting
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
         debug {
             isDebuggable = true
