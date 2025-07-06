@@ -22,8 +22,8 @@ android {
         applicationId = "com.production.inc"
         minSdk = 24  
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.4.7"
+        versionCode = 8
+        versionName = "1.4.8"
         
         // Game-specific optimizations
         multiDexEnabled = true
