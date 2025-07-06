@@ -6,8 +6,10 @@
 
 ### App Bundle (Recommended for Google Play Store)
 - **AAB File:** `app-release.aab`
-- **File Size:** 22.2 MB (23,329,095 bytes)
+- **File Size:** 21.0 MB (21,971,672 bytes)
 - **Location:** `build\app\outputs\bundle\release\app-release.aab`
+- **Debug Symbols:** `build\app\outputs\symbols\` (3 architecture files)
+- **Mapping File:** `build\app\outputs\mapping\release\mapping.txt`
 
 ### APK (For Direct Distribution)
 - **APK File:** `app-release.apk`
@@ -21,12 +23,14 @@
 - **Minimum SDK:** 24 (Android 7.0)
 
 ## 🔑 Release Verification
-- **AAB SHA1:** Available in bundle metadata
+- **AAB with Debug Symbols:** Complete crash analysis support
+- **Obfuscation Mapping:** Available in `mapping.txt`
 - **APK SHA1:** Available in `app-release.apk.sha1`
 - **Signed:** Yes (Production keystore)
-- **Optimized:** Yes (R8/ProGuard enabled)
+- **Optimized:** Yes (R8/ProGuard enabled with obfuscation)
 - **Tree-shaking:** Enabled (99.7% font reduction)
 - **Bundle Format:** Android App Bundle (AAB) - optimized for Play Store
+- **Debug Symbols:** ARM, ARM64, and x64 architectures included
 
 ## 📱 What's New in v1.4.7
 ### Enhanced Mobile Experience Update
@@ -61,9 +65,19 @@
 ## 🚀 Distribution
 
 ### Google Play Store (Recommended)
-- Upload `app-release.aab` to Google Play Console
-- App Bundle provides smaller download sizes through dynamic delivery
-- Automatic optimization for different device configurations
+- **Upload `app-release.aab`** to Google Play Console
+- **Upload Debug Symbols:**
+  - Go to App Bundle Explorer → Downloads tab
+  - Upload `app.android-arm.symbols`
+  - Upload `app.android-arm64.symbols` 
+  - Upload `app.android-x64.symbols`
+- **Upload Mapping File:**
+  - Go to App Bundle Explorer → Downloads tab
+  - Upload `mapping.txt` as the deobfuscation file
+- **Benefits:**
+  - App Bundle provides smaller download sizes through dynamic delivery
+  - Automatic optimization for different device configurations
+  - Complete crash analysis and debugging support
 - Update store listing with v1.4.7 features
 - Set rollout percentage as desired
 

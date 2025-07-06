@@ -567,7 +567,7 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                       Icon(Icons.build, size: 14, color: Colors.white),
                       const SizedBox(width: 4),
                       const Text(
-                        'Currently in Production',
+                        'Producing',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.white,

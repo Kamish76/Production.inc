@@ -1,25 +1,44 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../models/game_state.dart';
 import '../models/game_models.dart';
 
 /// Service responsible for persisting and loading game state using SQLite
+/// v1.4.8: Enhanced with migration system, backup, and performance optimizations
 class GamePersistenceService {
   static const String _databaseName = 'production_inc_save.db';
-  static const int _databaseVersion = 1;
+  static const String _backupDatabaseName = 'production_inc_backup.db';
+  static const int _databaseVersion = 2; // Updated for v1.4.8 migration system
 
   Database? _database;
 
+  // Track what data has changed for incremental saves
+  final Set<String> _dirtyTables = <String>{};
+  final bool _isDirtyStateEnabled = true;
+
   /// Initialize database factory for desktop platforms if needed
   static void initializeDatabaseFactory() {
-    try {
-      // Only initialize for platforms that support it
-      // Web platform will use default sqflite implementation
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    } catch (e) {
-      // Web platform or other unsupported platforms - use default factory
-      print('Using default database factory for current platform');
+    // Only use FFI for desktop platforms (Windows, macOS, Linux)
+    // Android and iOS have native SQLite support and should NOT use FFI
+    if (!kIsWeb &&
+        (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
+      try {
+        sqfliteFfiInit();
+        databaseFactory = databaseFactoryFfi;
+        if (kDebugMode) {
+          print('Using FFI database factory for desktop platform');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Failed to initialize FFI database factory: $e');
+        }
+      }
+    } else {
+      if (kDebugMode) {
+        print('Using default database factory for mobile/web platform');
+      }
     }
   }
 
@@ -29,26 +48,207 @@ class GamePersistenceService {
     return _database!;
   }
 
-  /// Initialize the SQLite database with game tables
+  /// Initialize the SQLite database with game tables and migration support
   Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = '$dbPath/$_databaseName';
+    try {
+      final dbPath = await getDatabasesPath();
+      final path = '$dbPath/$_databaseName';
 
-    return await openDatabase(
-      path,
-      version: _databaseVersion,
-      onCreate: _createTables,
-    );
+      return await openDatabase(
+        path,
+        version: _databaseVersion,
+        onCreate: _createTables,
+        onUpgrade: _migrateTables,
+        onOpen: _verifyDatabaseIntegrity,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Database initialization error: $e');
+      }
+      // Attempt recovery by creating backup and retry
+      return await _recoverDatabase();
+    }
+  }
+
+  /// Handle database migrations between versions
+  Future<void> _migrateTables(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    try {
+      if (kDebugMode) {
+        print('Migrating database from version $oldVersion to $newVersion');
+      }
+
+      // Create backup before migration
+      await _createDatabaseBackup();
+
+      // Perform version-specific migrations
+      for (int version = oldVersion + 1; version <= newVersion; version++) {
+        await _migrateToVersion(db, version);
+      }
+
+      if (kDebugMode) {
+        print('Database migration completed successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Database migration failed: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Perform migration to specific version
+  Future<void> _migrateToVersion(Database db, int version) async {
+    switch (version) {
+      case 2:
+        // v1.4.8 migrations - add integrity tracking columns
+        await _migrateToVersion2(db);
+        break;
+      default:
+        if (kDebugMode) {
+          print('No migration defined for version $version');
+        }
+    }
+  }
+
+  /// Migration to version 2 (v1.4.8)
+  Future<void> _migrateToVersion2(Database db) async {
+    // Add checksum column for data integrity
+    try {
+      await db.execute('''
+        ALTER TABLE game_state ADD COLUMN 
+        data_checksum TEXT DEFAULT NULL
+      ''');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (checksum): $e');
+      }
+    }
+
+    // Add last backup timestamp
+    try {
+      await db.execute('''
+        ALTER TABLE game_state ADD COLUMN 
+        last_backup INTEGER DEFAULT 0
+      ''');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (backup): $e');
+      }
+    }
+  }
+
+  /// Create backup of existing database before major operations
+  Future<void> _createDatabaseBackup() async {
+    if (_database == null) return;
+
+    try {
+      final dbPath = await getDatabasesPath();
+      final sourcePath = '$dbPath/$_databaseName';
+      final backupPath = '$dbPath/$_backupDatabaseName';
+
+      // Copy current database to backup
+      final sourceFile = File(sourcePath);
+      if (await sourceFile.exists()) {
+        await sourceFile.copy(backupPath);
+        if (kDebugMode) {
+          print('Database backup created successfully');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Database backup failed: $e');
+      }
+    }
+  }
+
+  /// Recover database from backup or recreate
+  Future<Database> _recoverDatabase() async {
+    try {
+      final dbPath = await getDatabasesPath();
+      final backupPath = '$dbPath/$_backupDatabaseName';
+      final mainPath = '$dbPath/$_databaseName';
+
+      // Try to restore from backup
+      final backupFile = File(backupPath);
+      if (await backupFile.exists()) {
+        await backupFile.copy(mainPath);
+        if (kDebugMode) {
+          print('Database restored from backup');
+        }
+        return await openDatabase(mainPath, version: _databaseVersion);
+      }
+
+      // If no backup, create fresh database
+      if (kDebugMode) {
+        print('Creating fresh database after recovery attempt');
+      }
+      return await openDatabase(
+        mainPath,
+        version: _databaseVersion,
+        onCreate: _createTables,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Database recovery failed: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Verify database integrity on open
+  Future<void> _verifyDatabaseIntegrity(Database db) async {
+    try {
+      // Quick integrity check
+      final result = await db.rawQuery('PRAGMA integrity_check');
+      if (result.isNotEmpty && result.first.values.first != 'ok') {
+        if (kDebugMode) {
+          print('Database integrity check failed');
+        }
+      }
+
+      // Verify essential tables exist
+      final tables = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table'",
+      );
+      const requiredTables = [
+        'game_state',
+        'materials',
+        'products',
+        'active_productions',
+        'active_shipping_orders',
+        'shipping_order_items',
+        'shipping_history',
+        'shipping_history_items',
+      ];
+
+      final existingTables = tables.map((t) => t['name'] as String).toSet();
+      for (final table in requiredTables) {
+        if (!existingTables.contains(table)) {
+          throw Exception('Missing required table: $table');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Database verification failed: $e');
+      }
+      rethrow;
+    }
   }
 
   /// Create all necessary tables for game state persistence
   Future<void> _createTables(Database db, int version) async {
-    // Game state table - stores core game data
+    // Game state table - stores core game data with integrity tracking
     await db.execute('''
       CREATE TABLE game_state (
         id INTEGER PRIMARY KEY,
         money REAL NOT NULL,
-        last_saved INTEGER NOT NULL
+        last_saved INTEGER NOT NULL,
+        data_checksum TEXT DEFAULT NULL,
+        last_backup INTEGER DEFAULT 0
       )
     ''');
 
@@ -415,6 +615,211 @@ class GamePersistenceService {
     if (_database != null) {
       await _database!.close();
       _database = null;
+    }
+  }
+
+  /// Mark a data type as dirty for incremental saves
+  void markDirty(String dataType) {
+    if (_isDirtyStateEnabled) {
+      _dirtyTables.add(dataType);
+    }
+  }
+
+  /// Enhanced save with incremental optimization
+  Future<void> saveGameStateOptimized(
+    GameState state, {
+    bool forceFullSave = false,
+  }) async {
+    try {
+      final db = await database;
+
+      // Create backup before major operations
+      if (forceFullSave) {
+        await _createDatabaseBackup();
+      }
+
+      if (_isDirtyStateEnabled && !forceFullSave && _dirtyTables.isNotEmpty) {
+        await _saveIncrementalChanges(db, state);
+      } else {
+        await _saveFullGameState(db, state);
+      }
+
+      // Clear dirty state after successful save
+      _dirtyTables.clear();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error saving game state: $e');
+      }
+      // Fallback to original save method
+      await saveGameState(state);
+    }
+  }
+
+  /// Save only changed data for performance optimization
+  Future<void> _saveIncrementalChanges(Database db, GameState state) async {
+    await db.transaction((txn) async {
+      // Always update core game state
+      await txn.update(
+        'game_state',
+        {
+          'money': state.money,
+          'last_saved': DateTime.now().millisecondsSinceEpoch,
+        },
+        where: 'id = ?',
+        whereArgs: [1],
+      );
+
+      // Save only dirty tables
+      if (_dirtyTables.contains('materials')) {
+        await _saveMaterialsOptimized(txn, state.materials);
+      }
+
+      if (_dirtyTables.contains('products')) {
+        await _saveProductsOptimized(txn, state.products);
+      }
+
+      if (_dirtyTables.contains('productions')) {
+        await _saveProductionsOptimized(txn, state.activeProductions);
+      }
+
+      if (_dirtyTables.contains('shipping')) {
+        await _saveShippingOptimized(
+          txn,
+          state.activeShippingOrders,
+          state.shippingHistory,
+        );
+      }
+    });
+
+    if (kDebugMode) {
+      print(
+        'Incremental save completed for tables: ${_dirtyTables.join(", ")}',
+      );
+    }
+  }
+
+  /// Full save method (enhanced original)
+  Future<void> _saveFullGameState(Database db, GameState state) async {
+    await db.transaction((txn) async {
+      // Update core game state
+      await txn.update(
+        'game_state',
+        {
+          'money': state.money,
+          'last_saved': DateTime.now().millisecondsSinceEpoch,
+        },
+        where: 'id = ?',
+        whereArgs: [1],
+      );
+
+      await _saveMaterialsOptimized(txn, state.materials);
+      await _saveProductsOptimized(txn, state.products);
+      await _saveProductionsOptimized(txn, state.activeProductions);
+      await _saveShippingOptimized(
+        txn,
+        state.activeShippingOrders,
+        state.shippingHistory,
+      );
+    });
+  }
+
+  /// Optimized materials save
+  Future<void> _saveMaterialsOptimized(
+    Transaction txn,
+    Map<String, int> materials,
+  ) async {
+    await txn.delete('materials');
+    for (final entry in materials.entries) {
+      if (entry.value > 0) {
+        await txn.insert('materials', {
+          'material_id': entry.key,
+          'quantity': entry.value,
+        });
+      }
+    }
+  }
+
+  /// Optimized products save
+  Future<void> _saveProductsOptimized(
+    Transaction txn,
+    Map<String, int> products,
+  ) async {
+    await txn.delete('products');
+    for (final entry in products.entries) {
+      if (entry.value > 0) {
+        await txn.insert('products', {
+          'product_id': entry.key,
+          'quantity': entry.value,
+        });
+      }
+    }
+  }
+
+  /// Optimized productions save
+  Future<void> _saveProductionsOptimized(
+    Transaction txn,
+    List<ProductionTask> productions,
+  ) async {
+    await txn.delete('active_productions');
+    for (final task in productions) {
+      await txn.insert('active_productions', {
+        'id': task.id,
+        'product_id': task.productId,
+        'start_time': task.startTime.millisecondsSinceEpoch,
+        'duration_seconds': task.durationSeconds,
+        'quantity': task.quantity,
+      });
+    }
+  }
+
+  /// Optimized shipping data save
+  Future<void> _saveShippingOptimized(
+    Transaction txn,
+    List<ShippingOrder> orders,
+    List<ShippingHistory> history,
+  ) async {
+    // Clear and save active shipping orders
+    await txn.delete('shipping_order_items');
+    await txn.delete('active_shipping_orders');
+    for (final order in orders) {
+      await txn.insert('active_shipping_orders', {
+        'id': order.id,
+        'start_time': order.startTime.millisecondsSinceEpoch,
+        'total_shipping_time': order.totalShippingTime,
+        'total_revenue': order.totalRevenue,
+      });
+
+      // Save order items
+      for (final item in order.items) {
+        await txn.insert('shipping_order_items', {
+          'order_id': order.id,
+          'product_id': item.productId,
+          'quantity': item.quantity,
+        });
+      }
+    }
+
+    // Clear and save shipping history (keep only last 100 entries for performance)
+    await txn.delete('shipping_history_items');
+    await txn.delete('shipping_history');
+    final recentHistory =
+        history.length > 100 ? history.sublist(history.length - 100) : history;
+
+    for (final historyEntry in recentHistory) {
+      await txn.insert('shipping_history', {
+        'id': historyEntry.id,
+        'completed_time': historyEntry.completedTime.millisecondsSinceEpoch,
+        'total_revenue': historyEntry.totalRevenue,
+      });
+
+      // Save history items
+      for (final item in historyEntry.items) {
+        await txn.insert('shipping_history_items', {
+          'history_id': historyEntry.id,
+          'product_id': item.productId,
+          'quantity': item.quantity,
+        });
+      }
     }
   }
 }

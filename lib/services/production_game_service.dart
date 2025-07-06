@@ -34,9 +34,9 @@ class ProductionGameService extends ChangeNotifier {
       // Start optimized update timer (1 second for better battery life)
       _startUpdateTimer();
 
-      // Start periodic save timer (save every 30 seconds)
-      _saveTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-        _saveGameState();
+      // Start periodic save timer (optimized for v1.4.8 - reduced frequency)
+      _saveTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+        _saveGameStateOptimized();
       });
     } catch (e) {
       if (kDebugMode) {
@@ -115,11 +115,11 @@ class ProductionGameService extends ChangeNotifier {
   /// Pause all timers for battery optimization
   void _pauseTimers() {
     _updateTimer?.cancel();
-    // Keep save timer running but at lower frequency when paused
+    // Keep save timer running but at much lower frequency when paused (v1.4.8 optimization)
     _saveTimer?.cancel();
-    _saveTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+    _saveTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
       if (_isAppPaused) {
-        _saveGameState();
+        _saveGameStateOptimized();
       }
     });
   }
@@ -128,10 +128,10 @@ class ProductionGameService extends ChangeNotifier {
   void _resumeTimers() {
     _startUpdateTimer();
 
-    // Resume normal save frequency
+    // Resume normal save frequency (v1.4.8 optimization)
     _saveTimer?.cancel();
-    _saveTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _saveGameState();
+    _saveTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+      _saveGameStateOptimized();
     });
   }
 
@@ -142,6 +142,19 @@ class ProductionGameService extends ChangeNotifier {
     _saveGameState(); // Save one final time before disposing
     _persistenceService.dispose();
     super.dispose();
+  }
+
+  /// Save current game state to persistent storage (optimized for v1.4.8)
+  Future<void> _saveGameStateOptimized() async {
+    try {
+      await _persistenceService.saveGameStateOptimized(_state);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error saving game state (optimized): $e');
+      }
+      // Fallback to original save
+      await _saveGameState();
+    }
   }
 
   /// Save current game state to persistent storage
@@ -238,8 +251,11 @@ class ProductionGameService extends ChangeNotifier {
         materials: newMaterials,
       );
 
+      // Mark materials as dirty for incremental save (v1.4.8)
+      _persistenceService.markDirty('materials');
+
       notifyListeners();
-      _saveGameState(); // Save after major transaction
+      _saveGameStateOptimized(); // Use optimized save after major transaction
       return true;
     } catch (e) {
       if (kDebugMode) {
@@ -383,8 +399,13 @@ class ProductionGameService extends ChangeNotifier {
         activeProductions: newProductions,
       );
 
+      // Mark relevant data as dirty for incremental save (v1.4.8)
+      _persistenceService.markDirty('materials');
+      _persistenceService.markDirty('products');
+      _persistenceService.markDirty('productions');
+
       notifyListeners();
-      _saveGameState(); // Save after starting production
+      _saveGameStateOptimized(); // Use optimized save after starting production
       _startUpdateTimer(); // Restart timer with optimal frequency for new activity
       return true;
     } catch (e) {
@@ -494,8 +515,12 @@ class ProductionGameService extends ChangeNotifier {
         activeShippingOrders: newShippingOrders,
       );
 
+      // Mark relevant data as dirty for incremental save (v1.4.8)
+      _persistenceService.markDirty('products');
+      _persistenceService.markDirty('shipping');
+
       notifyListeners();
-      _saveGameState(); // Save after starting shipment
+      _saveGameStateOptimized(); // Use optimized save after starting shipment
       _startUpdateTimer(); // Restart timer with optimal frequency for new activity
       return true;
     } catch (e) {

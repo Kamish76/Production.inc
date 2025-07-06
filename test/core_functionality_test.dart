@@ -1,11 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game1/services/production_game_service.dart';
+import 'package:game1/services/game_persistence_service.dart';
 
 void main() {
   group('Core Functionality Tests', () {
     late ProductionGameService gameService;
 
     setUp(() {
+      // Initialize database factory before creating the game service
+      GamePersistenceService.initializeDatabaseFactory();
       gameService = ProductionGameService();
     });
 
