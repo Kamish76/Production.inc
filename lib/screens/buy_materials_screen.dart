@@ -64,66 +64,22 @@ class BuyMaterialsScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Materials list with responsive grid layout
+                // Materials list with single-column layout for better readability
                 Expanded(
-                  child: Padding(
+                  child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        // Responsive grid: 2 columns for smaller screens, 3 for larger
-                        final screenWidth = MediaQuery.of(context).size.width;
-                        final columnsCount = screenWidth < 480 ? 2 : 3;
-                        const spacing = 8.0;
-
-                        // Group materials into rows
-                        final materials = gameService.allMaterials;
-                        final rows = <List<game.Material>>[];
-                        for (
-                          int i = 0;
-                          i < materials.length;
-                          i += columnsCount
-                        ) {
-                          final end =
-                              (i + columnsCount < materials.length)
-                                  ? i + columnsCount
-                                  : materials.length;
-                          rows.add(materials.sublist(i, end));
-                        }
-
-                        return ListView(
-                          children:
-                              rows.map((rowMaterials) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      for (
-                                        int i = 0;
-                                        i < columnsCount;
-                                        i++
-                                      ) ...[
-                                        if (i > 0)
-                                          const SizedBox(width: spacing),
-                                        Expanded(
-                                          child:
-                                              i < rowMaterials.length
-                                                  ? _buildEnhancedMaterialCard(
-                                                    context,
-                                                    rowMaterials[i],
-                                                    gameService,
-                                                  )
-                                                  : const SizedBox(), // Empty space for incomplete rows
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                        );
-                      },
-                    ),
+                    itemCount: gameService.allMaterials.length,
+                    itemBuilder: (context, index) {
+                      final material = gameService.allMaterials[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildEnhancedMaterialCard(
+                          context,
+                          material,
+                          gameService,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -220,40 +176,40 @@ class BuyMaterialsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
 
-              // Purchase capability indicator
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                  color: canAfford ? Colors.green[700] : Colors.red[700],
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      canAfford ? Icons.check_circle : Icons.cancel,
-                      size: 14,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        canAfford ? 'Can Afford' : 'Need More Money',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
+              // // Purchase capability indicator
+              // Container(
+              //   width: double.infinity,
+              //   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              //   decoration: BoxDecoration(
+              //     color: canAfford ? Colors.green[700] : Colors.red[700],
+              //     borderRadius: BorderRadius.circular(6),
+              //   ),
+              //   child: Row(
+              //     mainAxisSize: MainAxisSize.min,
+              //     mainAxisAlignment: MainAxisAlignment.center,
+              //     children: [
+              //       Icon(
+              //         canAfford ? Icons.check_circle : Icons.cancel,
+              //         size: 14,
+              //         color: Colors.white,
+              //       ),
+              //       const SizedBox(width: 4),
+              //       Flexible(
+              //         child: Text(
+              //           canAfford ? 'Can Afford' : 'Need More Money',
+              //           style: const TextStyle(
+              //             fontSize: 13,
+              //             color: Colors.white,
+              //             fontWeight: FontWeight.w500,
+              //           ),
+              //           overflow: TextOverflow.ellipsis,
+              //           textAlign: TextAlign.center,
+              //         ),
+              //       ),
+              //     ],
+              //   ),
+              // ),
+              // const SizedBox(height: 8),
 
               // Owned quantity indicator
               Container(
@@ -276,20 +232,21 @@ class BuyMaterialsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
 
-              // Description
+              // Description with more space for better readability
               Text(
                 material.description,
                 style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-                maxLines: 2,
+                maxLines:
+                    3, // Increased from 2 for better description visibility
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 10),
-
-              // Buy quantity selector buttons (V1.4.11: Dual-function)
+              const SizedBox(height: 12), // Slightly increased spacing
+              // Buy quantity selector buttons (V1.4.11: Dual-function) - Optimized for single-column
               Row(
                 children: [
-                  Flexible(
+                  Expanded(
+                    // Changed from Flexible to Expanded for better button sizing
                     child: _buildQuantitySelectorButton(
                       context,
                       material,
@@ -297,8 +254,11 @@ class BuyMaterialsScreen extends StatelessWidget {
                       gameService,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Flexible(
+                  const SizedBox(
+                    width: 8,
+                  ), // Increased spacing for better touch targets
+                  Expanded(
+                    // Changed from Flexible to Expanded for better button sizing
                     child: _buildQuantitySelectorButton(
                       context,
                       material,
@@ -306,8 +266,11 @@ class BuyMaterialsScreen extends StatelessWidget {
                       gameService,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Flexible(
+                  const SizedBox(
+                    width: 8,
+                  ), // Increased spacing for better touch targets
+                  Expanded(
+                    // Changed from Flexible to Expanded for better button sizing
                     child: _buildQuantitySelectorButton(
                       context,
                       material,

@@ -13,6 +13,135 @@
         - Sound effects and haptic feedback
         - Leaderboards and social features
 
+✅ COMPLETED (v1.4.13): BUILD SCREEN INTERACTION IMPROVEMENTS ✅
+    PRIORITY: HIGH - Complete UI consistency across all screens by applying v1.4.11 improvements to Build Products screen
+    STATUS: ✅ IMPLEMENTED - Final step to achieve complete UI consistency across all quantity-based screens successfully completed
+    
+    🎯 MAIN OBJECTIVES ACHIEVED:
+        ✅ Applied the same v1.4.11 dual-function button system to Build Products screen
+        ✅ Converted "Build 1" and "Build 10" buttons to match Buy Materials and Sell Products behavior
+        ✅ Ensured Build Products screen has consistent interaction patterns with other screens
+        ✅ Completed the UI consistency initiative started in v1.4.11
+    
+    📋 SPECIFIC CHANGES COMPLETED:
+        
+        🏭 BUILD PRODUCTS SCREEN UPDATES:
+            ✅ Converted "Build 1" and "Build 10" buttons to dual-function buttons:
+                • ✅ Display current quantity preference (visual indicator like v1.4.11)
+                • ✅ Allow direct click to build that specific amount
+                • ✅ Clicking product card uses the selected quantity preference
+            ✅ Added visual preference indicators (highlighting/selection state)
+            ✅ Maintained existing queue system functionality from v1.4.10
+            ✅ Ensured proper integration with production queue logic
+        
+        🎨 UI/UX CONSISTENCY ACHIEVED:
+            ✅ Matched the card interaction patterns from Buy Materials and Sell Products screens
+            ✅ Consistent button styling and highlighting across all screens
+            ✅ Unified visual feedback for quantity selection
+            ✅ Maintained haptic feedback and visual transitions
+            ✅ Ensured accessibility improvements are consistent
+    
+    🔧 TECHNICAL IMPLEMENTATION COMPLETED:
+        ✅ Extended existing `buildQuantityPreferences` system (already implemented in v1.4.10)
+        ✅ Updated Build Products screen UI to match v1.4.11 interaction patterns
+        ✅ Ensured dual-function buttons work correctly with queue system
+        ✅ Maintained all existing v1.4.10 production queue functionality
+        ✅ Updated all visual preference indicators for consistency
+    
+    📱 USER EXPERIENCE GOALS ACHIEVED:
+        ✅ Complete elimination of UI inconsistency across all quantity-based screens
+        ✅ Muscle memory consistency - same interaction patterns everywhere
+        ✅ Reduced cognitive load with unified button behavior
+        ✅ Improved efficiency for repetitive build operations
+        ✅ Professional, polished feel with consistent interactions
+    
+    🧪 TESTING COMPLETED:
+        ✅ Verified dual-function buttons work correctly with existing queue system
+        ✅ Tested quantity preference persistence for build operations
+        ✅ Validated queue system still functions with new button behavior
+        ✅ Tested interaction consistency across Buy Materials, Sell Products, and Build Products
+        ✅ Verified visual indicators and haptic feedback work correctly
+        ✅ Tested edge cases (insufficient materials, complex production chains)
+    
+    💡 IMPLEMENTATION NOTES:
+        - Built on existing v1.4.10 queue system and v1.4.11 UI patterns
+        - Straightforward implementation since buildQuantityPreferences infrastructure already existed
+        - Focused on UI consistency rather than new functionality
+        - Maintained backward compatibility with existing save files
+        - Completed the UI consistency initiative spanning v1.4.10 and v1.4.11
+        - Minor update as expected since infrastructure was already in place
+        - All three quantity-based screens now have identical interaction patterns
+
+✅ COMPLETED (v1.4.12): BUY MATERIALS SCREEN UI LAYOUT REVERSION & MINOR IMPROVEMENTS ✅
+    PRIORITY: MEDIUM - User experience improvement based on feedback
+    STATUS: ✅ IMPLEMENTED - Successfully reverted to single-column layout for better usability with additional UI cleanup
+    
+    🎯 MAIN OBJECTIVES ACHIEVED:
+        ✅ Reverted Buy Materials screen from current responsive 2/3-column grid layout back to single-column list layout
+        ✅ Maintained all v1.4.11 functionality (card-based interaction, dual-function buttons, quantity preferences)
+        ✅ Improved material card readability and reduced visual clutter
+        ✅ Better utilized screen real estate for material information display
+        ✅ Removed unnecessary "Can Afford" indicator box for cleaner UI
+    
+    📋 SPECIFIC CHANGES COMPLETED:
+        
+        🛒 BUY MATERIALS SCREEN LAYOUT:
+            ✅ Removed responsive LayoutBuilder logic (lines 72-77 in buy_materials_screen.dart)
+            ✅ Replaced Row-based grid system with simple ListView of individual cards
+            ✅ Eliminated columnsCount calculation and row grouping logic
+            ✅ Converted from Row(Expanded widgets) to ListView.builder with full-width cards
+            ✅ Maintained current card design and interaction patterns from v1.4.11
+            ✅ Kept enhanced material card styling and dual-function buttons
+        
+        🎨 UI/UX IMPROVEMENTS:
+            ✅ Full-width material cards for better information display
+            ✅ Improved spacing between cards for better touch targets
+            ✅ Better material name and description visibility (increased maxLines from 2 to 3)
+            ✅ Larger quantity selector buttons with improved accessibility (Expanded instead of Flexible)
+            ✅ Maintained card-based interaction (tap anywhere to buy with current preference)
+            ✅ Kept visual preference indicators and haptic feedback
+            ✅ **REMOVED** unnecessary "Can Afford/Need More Money" indicator box
+            ✅ Commented out affordability indicator for potential future use
+            ✅ Cleaner card design with reduced visual clutter
+    
+    🔧 TECHNICAL IMPLEMENTATION COMPLETED:
+        ✅ Replaced LayoutBuilder with simple ListView.builder in buy_materials_screen.dart
+        ✅ Removed row/column grouping logic (lines 79-95)
+        ✅ Updated _buildEnhancedMaterialCard for full-width layout optimization
+        ✅ Adjusted card padding and margins for single-column presentation
+        ✅ Optimized button layout within cards for better single-column flow (increased spacing from 4px to 8px)
+        ✅ Commented out "Purchase capability indicator" section (lines 179-212) for future reference
+        ✅ Maintained affordability feedback through card border colors and button states
+        ✅ Tested on various screen sizes to ensure consistent presentation
+    
+    📱 EXPECTED BENEFITS ACHIEVED:
+        ✅ Improved material information readability
+        ✅ Better touch targets for mobile interaction
+        ✅ Reduced visual complexity and cognitive load
+        ✅ More consistent with single-column design pattern
+        ✅ Better material description visibility
+        ✅ Improved accessibility for users with varying vision abilities
+        ✅ Cleaner, more professional appearance without redundant information
+    
+    🧪 TESTING COMPLETED:
+        ✅ Verified all v1.4.11 functionality remains intact (quantity preferences, card interaction)
+        ✅ Tested buy operations work correctly with new layout
+        ✅ Validated proper spacing and visual hierarchy
+        ✅ Confirmed affordability feedback still clear through card borders and button states
+        ✅ Core functionality tests pass (core_functionality_test.dart)
+        ✅ Game persistence tests pass (game_persistence_test.dart)
+        ✅ UI consistency tests pass (v1_4_11_ui_consistency_test.dart)
+        ✅ Flutter analyze shows no errors related to changes
+    
+    💡 IMPLEMENTATION NOTES:
+        - Layout-only change - preserved all existing game logic
+        - Kept the current enhanced card design from v1.4.11
+        - Foundation laid for potential future material categorization
+        - Single-column layout enables future features like material search/filtering
+        - Improved button accessibility with Expanded widgets for better touch targets
+        - Affordability indicator preserved in comments for easy restoration if needed
+        - Affordability feedback maintained through existing visual cues (border colors, button states)
+
 ✅ COMPLETED (v1.4.11): UI CONSISTENCY & INTERACTION IMPROVEMENTS ✅
     PRIORITY: HIGH - Critical for user experience consistency and reducing confusion
     STATUS: ✅ IMPLEMENTED - Extended v1.4.10 UI improvements to all screens
@@ -121,7 +250,6 @@
             - Some UI-specific tests need refinement for test environment
             - Main features confirmed working in development/production
 
-
 ✅ COMPLETED (v1.4.10): GAMEPLAY ENHANCEMENTS ✅
         PRIORITY: MEDIUM - User experience improvements and strategic depth
         STATUS: ✅ IMPLEMENTED - Comprehensive UI/UX overhaul for production system completed
@@ -205,72 +333,72 @@
             ✅ Fixed all existing tests to work with new queue system
             ✅ Database migration testing and validation
 
-## 🔧 HOW THE QUEUE SYSTEM IS IMPLEMENTED
+    ## 🔧 HOW THE QUEUE SYSTEM IS IMPLEMENTED
 
-The v1.4.10 queue system is implemented with the following key components:
+    The v1.4.10 queue system is implemented with the following key components:
 
-### 📋 DATA MODEL:
-- `ProductionTask.isQueued` - Boolean flag to track whether a task is waiting in queue
-- `ProductionTask.quantity = 1` - Each task represents a single unit for proper sequential processing
-- Individual tasks are created for each unit when building multiple quantities
+    ### 📋 DATA MODEL:
+    - `ProductionTask.isQueued` - Boolean flag to track whether a task is waiting in queue
+    - `ProductionTask.quantity = 1` - Each task represents a single unit for proper sequential processing
+    - Individual tasks are created for each unit when building multiple quantities
 
-### ⚙️ QUEUE LOGIC IN `startProduction()`:
-```dart
-// Check if there's already an active production of this product type
-bool hasActiveProduction = existingActiveProductionExists;
+    ### ⚙️ QUEUE LOGIC IN `startProduction()`:
+    ```dart
+    // Check if there's already an active production of this product type
+    bool hasActiveProduction = existingActiveProductionExists;
 
-// Create individual tasks for each unit
-for (int i = 0; i < quantity; i++) {
-  // First task: queue only if there's already an active production
-  // Subsequent tasks: always queue them  
-  bool shouldQueue = hasActiveProduction || i > 0;
-  
-  // Create task with quantity = 1 for proper queueing
-  ProductionTask(
-    quantity: 1,
-    isQueued: shouldQueue,
-    // ... other fields
-  );
-}
-```
-
-### 🔄 QUEUE PROCESSING IN `updateProductions()`:
-```dart
-for (final task in activeProductions) {
-  if (task.isQueued) {
-    // Check if this queued task should start now
-    final hasActiveProductionOfSameType = activeTasks.any(
-      (otherTask) => otherTask.productId == task.productId && !otherTask.isQueued,
-    );
+    // Create individual tasks for each unit
+    for (int i = 0; i < quantity; i++) {
+    // First task: queue only if there's already an active production
+    // Subsequent tasks: always queue them  
+    bool shouldQueue = hasActiveProduction || i > 0;
     
-    if (!hasActiveProductionOfSameType) {
-      // Start this queued task
-      final startedTask = task.copyWith(isQueued: false, startTime: DateTime.now());
-      activeTasks.add(startedTask);
-    } else {
-      // Keep it queued
-      activeTasks.add(task);
+    // Create task with quantity = 1 for proper queueing
+    ProductionTask(
+        quantity: 1,
+        isQueued: shouldQueue,
+        // ... other fields
+    );
     }
-  }
-  // ... handle other task states
-}
-```
+    ```
 
-### 🐛 KNOWN ISSUE:
-Despite the correct implementation logic above, user testing on real devices indicates that the queue system is still batching tasks after the first one, rather than processing them strictly one at a time. The implementation should ensure only one task of each product type is active at any given time, with subsequent tasks waiting in queue until the previous task completes.
+    ### 🔄 QUEUE PROCESSING IN `updateProductions()`:
+    ```dart
+    for (final task in activeProductions) {
+    if (task.isQueued) {
+        // Check if this queued task should start now
+        final hasActiveProductionOfSameType = activeTasks.any(
+        (otherTask) => otherTask.productId == task.productId && !otherTask.isQueued,
+        );
+        
+        if (!hasActiveProductionOfSameType) {
+        // Start this queued task
+        final startedTask = task.copyWith(isQueued: false, startTime: DateTime.now());
+        activeTasks.add(startedTask);
+        } else {
+        // Keep it queued
+        activeTasks.add(task);
+        }
+    }
+    // ... handle other task states
+    }
+    ```
 
-### 🧪 TEST STATUS:
-- Core queue logic tests pass in the test environment
-- Build quantity preferences work correctly
-- Database persistence of queue state works correctly
-- **Issue**: Real device behavior differs from test environment expectations
+    ### 🐛 KNOWN ISSUE:
+    Despite the correct implementation logic above, user testing on real devices indicates that the queue system is still batching tasks after the first one, rather than processing them strictly one at a time. The implementation should ensure only one task of each product type is active at any given time, with subsequent tasks waiting in queue until the previous task completes.
 
-### 📱 DEVICE TESTING REQUIRED:
-Further investigation is needed to understand why the queue system works correctly in tests but may not behave as expected on real devices. This could be related to:
-- Timer update frequency differences between test and production
-- Async operation timing in real device environments  
-- UI update synchronization issues
-- Race conditions in the queue processing logic
+    ### 🧪 TEST STATUS:
+    - Core queue logic tests pass in the test environment
+    - Build quantity preferences work correctly
+    - Database persistence of queue state works correctly
+    - **Issue**: Real device behavior differs from test environment expectations
+
+    ### 📱 DEVICE TESTING REQUIRED:
+    Further investigation is needed to understand why the queue system works correctly in tests but may not behave as expected on real devices. This could be related to:
+    - Timer update frequency differences between test and production
+    - Async operation timing in real device environments  
+    - UI update synchronization issues
+    - Race conditions in the queue processing logic
 
 ✅ COMPLETED (v1.4.8): DATABASE ISSUES CAUSED BY RECENT UPDATE, AS WELL AS OPTIMIZATION AND STABILITY IMPROVEMENTS ✅
     PRIORITY: HIGH - Critical for game stability and player data integrity
@@ -377,8 +505,6 @@ Further investigation is needed to understand why the queue system works correct
         ✅ Enhanced migration system for future updates
         ✅ Platform-specific database initialization (FFI only on desktop)
         ✅ Portrait-only orientation for consistent mobile UX
-
-
 
 ✅ COMPLETED (V1.4.7): RESPONSIVE UI & APP ICON IMPLEMENTATION ✅
     PRIORITY: HIGH - Critical for mid-range and low-end phone compatibility + branding
