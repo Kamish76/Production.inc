@@ -22,8 +22,8 @@ android {
         applicationId = "com.production.inc"
         minSdk = 24  
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.4.8"
+        versionCode = 9
+        versionName = "1.4.14"
         
         // Game-specific optimizations
         multiDexEnabled = true
@@ -33,6 +33,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Enable desugaring for API features
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -69,8 +71,32 @@ android {
             applicationIdSuffix = ".debug"
         }
     }
+
+    // App Bundle configuration
+    bundle {
+        language {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
+        }
+    }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Core library desugaring
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    
+    // AndroidX Core for better compatibility
+    implementation("androidx.core:core-ktx:1.12.0")
+    
+    // Security library for better encryption
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }
