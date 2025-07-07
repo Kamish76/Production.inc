@@ -57,6 +57,7 @@ void main() {
             startTime: DateTime.now(),
             durationSeconds: 600,
             quantity: 1,
+            isQueued: false,
           ),
         ],
         activeShippingOrders: [

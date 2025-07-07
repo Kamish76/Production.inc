@@ -379,19 +379,59 @@ class ProductionGameService extends ChangeNotifier {
         return false;
       }
 
-      // Create production task
-      final task = ProductionTask(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        productId: productId,
-        startTime: DateTime.now(),
-        durationSeconds: totalDuration,
-        quantity: quantity,
+      // V1.4.10 QUEUE SYSTEM: Check if there's already a production of this product type
+      final existingProductionIndex = _state.activeProductions.indexWhere(
+        (task) => task.productId == productId && !task.isQueued,
       );
 
+      bool hasActiveProduction = existingProductionIndex != -1;
       final newProductions = List<ProductionTask>.from(
         _state.activeProductions,
       );
-      newProductions.add(task);
+
+      // Create individual tasks for each unit to ensure proper queueing
+      for (int i = 0; i < quantity; i++) {
+        // For each task, check if we should queue it
+        // First task: queue only if there's already an active production
+        // Subsequent tasks: always queue them
+        bool shouldQueue = hasActiveProduction || i > 0;
+
+        DateTime startTime = DateTime.now();
+        if (shouldQueue) {
+          // Find the latest task for this product type to chain after it
+          final lastTaskForProduct = newProductions
+              .where((task) => task.productId == productId)
+              .fold<ProductionTask?>(null, (latest, current) {
+                if (latest == null) return current;
+                final latestEnd = latest.startTime.add(
+                  Duration(seconds: latest.durationSeconds.round()),
+                );
+                final currentEnd = current.startTime.add(
+                  Duration(seconds: current.durationSeconds.round()),
+                );
+                return latestEnd.isAfter(currentEnd) ? latest : current;
+              });
+
+          if (lastTaskForProduct != null) {
+            startTime = lastTaskForProduct.startTime.add(
+              Duration(seconds: lastTaskForProduct.durationSeconds.round()),
+            );
+          }
+        }
+
+        // Create individual production task (quantity = 1 for proper queueing)
+        final task = ProductionTask(
+          id: '${DateTime.now().millisecondsSinceEpoch}_$i',
+          productId: productId,
+          startTime: startTime,
+          durationSeconds:
+              product.productionTimeSeconds, // Single item duration
+          quantity: 1, // Always 1 for proper queue behavior
+          isQueued: shouldQueue,
+        );
+
+        newProductions.add(task);
+      }
 
       _state = _state.copyWith(
         materials: newMaterials,
@@ -544,10 +584,28 @@ class ProductionGameService extends ChangeNotifier {
       final completedShipping = <ShippingOrder>[];
       final activeShipping = <ShippingOrder>[];
 
-      // Check production tasks
+      // V1.4.10 QUEUE SYSTEM: Check production tasks with queue processing
       for (final task in _state.activeProductions) {
         try {
-          if (task.isCompleted) {
+          if (task.isQueued) {
+            // Check if this queued task should start now by looking at activeTasks being built
+            final hasActiveProductionOfSameType = activeTasks.any(
+              (otherTask) =>
+                  otherTask.productId == task.productId && !otherTask.isQueued,
+            );
+
+            if (!hasActiveProductionOfSameType) {
+              // Start this queued task
+              final startedTask = task.copyWith(
+                isQueued: false,
+                startTime: DateTime.now(),
+              );
+              activeTasks.add(startedTask);
+            } else {
+              // Keep it queued
+              activeTasks.add(task);
+            }
+          } else if (task.isCompleted) {
             completedTasks.add(task);
           } else {
             activeTasks.add(task);
@@ -771,4 +829,47 @@ class ProductionGameService extends ChangeNotifier {
 
   // Get tier display name
   String getTierName(ProductLevel level) => GameData.getLevelName(level);
+
+  // V1.4.10 Build Quantity Preference Management
+  int getBuildQuantityPreference(String productId) {
+    return _state.buildQuantityPreferences[productId] ?? 1;
+  }
+
+  void setBuildQuantityPreference(String productId, int quantity) {
+    if (quantity != 1 && quantity != 10) return; // Only allow 1 or 10
+
+    final newPreferences = Map<String, int>.from(
+      _state.buildQuantityPreferences,
+    );
+    newPreferences[productId] = quantity;
+
+    _state = _state.copyWith(buildQuantityPreferences: newPreferences);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  // Get the current build quantity for display
+  String getBuildQuantityDisplay(String productId) {
+    final quantity = getBuildQuantityPreference(productId);
+    return quantity == 1 ? 'Build 1' : 'Build 10';
+  }
+
+  // Get queued count for a specific product
+  int getQueuedCount(String productId) {
+    return _state.activeProductions
+        .where((task) => task.productId == productId && task.isQueued)
+        .fold(0, (sum, task) => sum + task.quantity);
+  }
+
+  // Get active production count for a specific product
+  int getActiveProductionCount(String productId) {
+    return _state.activeProductions
+        .where((task) => task.productId == productId && !task.isQueued)
+        .fold(0, (sum, task) => sum + task.quantity);
+  }
+
+  // Check if there's any production (active or queued) for a product
+  bool hasAnyProduction(String productId) {
+    return _state.activeProductions.any((task) => task.productId == productId);
+  }
 }

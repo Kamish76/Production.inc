@@ -19,6 +19,7 @@ void main() {
           money: 500.0,
           materials: {'cardboard': 10, 'plastic': 5},
           products: {'box': 3, 'bottle': 2},
+          buildQuantityPreferences: {'box': 5, 'bottle': 10},
           activeProductions: [
             ProductionTask(
               id: 'test_prod_1',
@@ -26,6 +27,7 @@ void main() {
               startTime: DateTime.now().subtract(const Duration(minutes: 5)),
               durationSeconds: 600,
               quantity: 2,
+              isQueued: false,
             ),
           ],
           activeShippingOrders: [
@@ -58,6 +60,10 @@ void main() {
         expect(loadedState.materials, equals(testState.materials));
         expect(loadedState.products, equals(testState.products));
         expect(
+          loadedState.buildQuantityPreferences,
+          equals(testState.buildQuantityPreferences),
+        );
+        expect(
           loadedState.activeProductions.length,
           equals(testState.activeProductions.length),
         );
@@ -83,6 +89,7 @@ void main() {
           loadedProduction.durationSeconds,
           equals(originalProduction.durationSeconds),
         );
+        expect(loadedProduction.isQueued, equals(originalProduction.isQueued));
 
         // Verify shipping order details
         final loadedShipping = loadedState.activeShippingOrders.first;
@@ -117,6 +124,7 @@ void main() {
               startTime: DateTime.now(),
               durationSeconds: 600,
               quantity: 1,
+              isQueued: false,
             ),
           ],
         );
@@ -133,6 +141,7 @@ void main() {
         expect(loadedState.money, equals(100.0)); // Default starting money
         expect(loadedState.materials, isEmpty);
         expect(loadedState.products, isEmpty);
+        expect(loadedState.buildQuantityPreferences, isEmpty);
         expect(loadedState.activeProductions, isEmpty);
         expect(loadedState.activeShippingOrders, isEmpty);
         expect(loadedState.shippingHistory, isEmpty);
@@ -152,6 +161,7 @@ void main() {
         expect(loadedState.money, equals(100.0));
         expect(loadedState.materials, isEmpty);
         expect(loadedState.products, isEmpty);
+        expect(loadedState.buildQuantityPreferences, isEmpty);
         expect(loadedState.activeProductions, isEmpty);
         expect(loadedState.activeShippingOrders, isEmpty);
         expect(loadedState.shippingHistory, isEmpty);

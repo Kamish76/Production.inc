@@ -423,7 +423,16 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => HapticFeedback.lightImpact(),
+        onTap: () {
+          // V1.4.10: Entire card is now clickable for production
+          final quantity = gameService.getBuildQuantityPreference(product.id);
+          if (canProduce) {
+            HapticFeedback.mediumImpact();
+            gameService.startProduction(product.id, quantity);
+          } else {
+            HapticFeedback.lightImpact();
+          }
+        },
         onLongPress: () => _showProductDetails(context, product, gameService),
         child: Container(
           // Add orange production indicator as background overlay
@@ -659,28 +668,26 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                 const SizedBox(height: 8),
               ],
 
-              // Production buttons (1 and 10 as requested)
+              // Production buttons (1 and 10 as requested) - V1.4.10: Now quantity selectors
               Row(
                 children: [
                   Flexible(
-                    child: _buildEnhancedProduceButton(
+                    child: _buildQuantitySelectorButton(
                       context,
                       product,
                       1,
                       gameService,
-                      canProduce,
                     ),
                   ),
                   const SizedBox(
                     width: 4,
                   ), // Reduced spacing for narrow columns
                   Flexible(
-                    child: _buildEnhancedProduceButton(
+                    child: _buildQuantitySelectorButton(
                       context,
                       product,
                       10,
                       gameService,
-                      canProduce,
                     ),
                   ),
                 ],
@@ -692,22 +699,18 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     );
   }
 
-  Widget _buildEnhancedProduceButton(
+  Widget _buildQuantitySelectorButton(
     BuildContext context,
     game.Product product,
     int quantity,
     ProductionGameService gameService,
-    bool canProduce,
   ) {
-    // Check if we have materials for this quantity
-    final requiredMaterials = <String, int>{};
-    for (final entry in product.requiredMaterials.entries) {
-      requiredMaterials[entry.key] = entry.value * quantity;
-    }
+    final isSelected =
+        gameService.getBuildQuantityPreference(product.id) == quantity;
 
-    final canProduceQuantity = gameService.state.hasMaterialsFor(
-      requiredMaterials,
-    );
+    // Calculate queued and active counts for this product
+    final activeCount = gameService.getActiveProductionCount(product.id);
+    final queuedCount = gameService.getQueuedCount(product.id);
 
     // Calculate total production time for this quantity
     final totalTimeMinutes = (product.productionTimeSeconds * quantity / 60);
@@ -717,27 +720,25 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
             : '${(totalTimeMinutes / 60).toStringAsFixed(1)}h';
 
     return SizedBox(
-      height: 34, // Increased by 2 (was 32)
+      height: 40, // Slightly taller for better visibility
       child: ElevatedButton(
-        onPressed:
-            canProduceQuantity
-                ? () {
-                  HapticFeedback.mediumImpact();
-                  gameService.startProduction(product.id, quantity);
-                }
-                : null,
+        onPressed: () {
+          // V1.4.10: This is now a quantity selector, not a direct build button
+          HapticFeedback.lightImpact();
+          gameService.setBuildQuantityPreference(product.id, quantity);
+        },
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-              canProduceQuantity ? Colors.blue[600] : Colors.grey[600],
+          backgroundColor: isSelected ? Colors.blue[600] : Colors.grey[700],
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 2,
-            vertical: 1,
-          ), // Reduced padding
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-          ), // Smaller radius
-          elevation: canProduceQuantity ? 4 : 1,
+            borderRadius: BorderRadius.circular(8),
+            side:
+                isSelected
+                    ? BorderSide(color: Colors.blue[300]!, width: 2)
+                    : BorderSide.none,
+          ),
+          elevation: isSelected ? 6 : 2,
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
@@ -746,18 +747,33 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Build $quantity',
-                style: const TextStyle(
-                  fontSize: 12, // Increased by 2 (was 10)
-                  fontWeight: FontWeight.bold,
+                quantity == 1 ? 'Build 1' : 'Build 10',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
               ),
               Text(
                 '($timeText)',
-                style: const TextStyle(fontSize: 10), // Increased by 2 (was 8)
+                style: const TextStyle(fontSize: 9),
                 textAlign: TextAlign.center,
               ),
+              // Show queue info if there's any production
+              if (activeCount > 0 || queuedCount > 0)
+                Text(
+                  activeCount > 0
+                      ? (queuedCount > 0 ? 'Active+${queuedCount}Q' : 'Active')
+                      : '${queuedCount}Q',
+                  style: TextStyle(
+                    fontSize: 8,
+                    color:
+                        activeCount > 0
+                            ? Colors.orange[300]
+                            : Colors.yellow[300],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
             ],
           ),
         ),

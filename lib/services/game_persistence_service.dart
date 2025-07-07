@@ -10,7 +10,7 @@ import '../models/game_models.dart';
 class GamePersistenceService {
   static const String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
-  static const int _databaseVersion = 2; // Updated for v1.4.8 migration system
+  static const int _databaseVersion = 3; // Updated for v1.4.10 queue system
 
   Database? _database;
 
@@ -107,6 +107,10 @@ class GamePersistenceService {
         // v1.4.8 migrations - add integrity tracking columns
         await _migrateToVersion2(db);
         break;
+      case 3:
+        // v1.4.10 migrations - queue system and build preferences
+        await _migrateToVersion3(db);
+        break;
       default:
         if (kDebugMode) {
           print('No migration defined for version $version');
@@ -137,6 +141,41 @@ class GamePersistenceService {
     } catch (e) {
       if (kDebugMode) {
         print('Migration warning (backup): $e');
+      }
+    }
+  }
+
+  /// Migration to version 3 (v1.4.10)
+  Future<void> _migrateToVersion3(Database db) async {
+    try {
+      // Add is_queued column to active_productions table
+      await db.execute('''
+        ALTER TABLE active_productions ADD COLUMN 
+        is_queued INTEGER DEFAULT 0
+      ''');
+      if (kDebugMode) {
+        print('Added is_queued column to active_productions');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (is_queued): $e');
+      }
+    }
+
+    try {
+      // Create build_quantity_preferences table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS build_quantity_preferences (
+          product_id TEXT PRIMARY KEY,
+          quantity INTEGER NOT NULL DEFAULT 1
+        )
+      ''');
+      if (kDebugMode) {
+        print('Created build_quantity_preferences table');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (build_quantity_preferences): $e');
       }
     }
   }
@@ -223,6 +262,7 @@ class GamePersistenceService {
         'shipping_order_items',
         'shipping_history',
         'shipping_history_items',
+        'build_quantity_preferences', // V1.4.10
       ];
 
       final existingTables = tables.map((t) => t['name'] as String).toSet();
@@ -275,7 +315,8 @@ class GamePersistenceService {
         product_id TEXT NOT NULL,
         start_time INTEGER NOT NULL,
         duration_seconds REAL NOT NULL,
-        quantity INTEGER NOT NULL
+        quantity INTEGER NOT NULL,
+        is_queued INTEGER DEFAULT 0
       )
     ''');
 
@@ -315,6 +356,14 @@ class GamePersistenceService {
         product_id TEXT NOT NULL,
         quantity INTEGER NOT NULL,
         FOREIGN KEY (history_id) REFERENCES shipping_history (id)
+      )
+    ''');
+
+    // Build quantity preferences table (V1.4.10)
+    await db.execute('''
+      CREATE TABLE build_quantity_preferences (
+        product_id TEXT PRIMARY KEY,
+        quantity INTEGER NOT NULL DEFAULT 1
       )
     ''');
 
@@ -373,6 +422,16 @@ class GamePersistenceService {
           'start_time': task.startTime.millisecondsSinceEpoch,
           'duration_seconds': task.durationSeconds,
           'quantity': task.quantity,
+          'is_queued': task.isQueued ? 1 : 0,
+        });
+      }
+
+      // Clear and save build quantity preferences
+      await txn.delete('build_quantity_preferences');
+      for (final entry in state.buildQuantityPreferences.entries) {
+        await txn.insert('build_quantity_preferences', {
+          'product_id': entry.key,
+          'quantity': entry.value,
         });
       }
 
@@ -471,8 +530,17 @@ class GamePersistenceService {
           ),
           durationSeconds: row['duration_seconds'] as double,
           quantity: row['quantity'] as int,
+          isQueued: (row['is_queued'] as int?) == 1,
         ),
       );
+    }
+
+    // Load build quantity preferences
+    final preferencesResult = await db.query('build_quantity_preferences');
+    final buildQuantityPreferences = <String, int>{};
+    for (final row in preferencesResult) {
+      buildQuantityPreferences[row['product_id'] as String] =
+          row['quantity'] as int;
     }
 
     // Load active shipping orders
@@ -555,6 +623,7 @@ class GamePersistenceService {
       activeProductions: activeProductions,
       activeShippingOrders: activeShippingOrders,
       shippingHistory: shippingHistory,
+      buildQuantityPreferences: buildQuantityPreferences,
     );
   }
 
@@ -689,6 +758,13 @@ class GamePersistenceService {
           state.shippingHistory,
         );
       }
+
+      if (_dirtyTables.contains('preferences')) {
+        await _saveBuildQuantityPreferencesOptimized(
+          txn,
+          state.buildQuantityPreferences,
+        );
+      }
     });
 
     if (kDebugMode) {
@@ -719,6 +795,10 @@ class GamePersistenceService {
         txn,
         state.activeShippingOrders,
         state.shippingHistory,
+      );
+      await _saveBuildQuantityPreferencesOptimized(
+        txn,
+        state.buildQuantityPreferences,
       );
     });
   }
@@ -768,6 +848,7 @@ class GamePersistenceService {
         'start_time': task.startTime.millisecondsSinceEpoch,
         'duration_seconds': task.durationSeconds,
         'quantity': task.quantity,
+        'is_queued': task.isQueued ? 1 : 0,
       });
     }
   }
@@ -820,6 +901,20 @@ class GamePersistenceService {
           'quantity': item.quantity,
         });
       }
+    }
+  }
+
+  /// Optimized build quantity preferences save
+  Future<void> _saveBuildQuantityPreferencesOptimized(
+    Transaction txn,
+    Map<String, int> buildQuantityPreferences,
+  ) async {
+    await txn.delete('build_quantity_preferences');
+    for (final entry in buildQuantityPreferences.entries) {
+      await txn.insert('build_quantity_preferences', {
+        'product_id': entry.key,
+        'quantity': entry.value,
+      });
     }
   }
 }

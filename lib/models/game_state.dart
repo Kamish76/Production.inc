@@ -9,6 +9,7 @@ class ProductionTask {
   final DateTime startTime;
   final double durationSeconds;
   final int quantity;
+  final bool isQueued; // New field for queue system
 
   const ProductionTask({
     required this.id,
@@ -16,6 +17,7 @@ class ProductionTask {
     required this.startTime,
     required this.durationSeconds,
     required this.quantity,
+    this.isQueued = false,
   });
 
   bool get isCompleted {
@@ -25,9 +27,29 @@ class ProductionTask {
   }
 
   double get progress {
+    if (isQueued) return 0.0; // Queued items show 0% progress
     final now = DateTime.now();
     final elapsed = now.difference(startTime).inMilliseconds / 1000.0;
     return (elapsed / durationSeconds).clamp(0.0, 1.0);
+  }
+
+  // Create a copy with updated fields for queue management
+  ProductionTask copyWith({
+    String? id,
+    String? productId,
+    DateTime? startTime,
+    double? durationSeconds,
+    int? quantity,
+    bool? isQueued,
+  }) {
+    return ProductionTask(
+      id: id ?? this.id,
+      productId: productId ?? this.productId,
+      startTime: startTime ?? this.startTime,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      quantity: quantity ?? this.quantity,
+      isQueued: isQueued ?? this.isQueued,
+    );
   }
 }
 
@@ -40,6 +62,8 @@ class GameState {
   final List<ShippingOrder> activeShippingOrders;
   final List<ShippingHistory> shippingHistory;
   final Map<String, int> machines; // machineId -> quantity owned (future)
+  final Map<String, int>
+  buildQuantityPreferences; // productId -> preferred quantity (1 or 10)
 
   const GameState({
     this.money = 100.0, // Starting money
@@ -49,6 +73,7 @@ class GameState {
     this.activeShippingOrders = const [],
     this.shippingHistory = const [],
     this.machines = const {},
+    this.buildQuantityPreferences = const {},
   });
 
   GameState copyWith({
@@ -59,6 +84,7 @@ class GameState {
     List<ShippingOrder>? activeShippingOrders,
     List<ShippingHistory>? shippingHistory,
     Map<String, int>? machines,
+    Map<String, int>? buildQuantityPreferences,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -68,6 +94,8 @@ class GameState {
       activeShippingOrders: activeShippingOrders ?? this.activeShippingOrders,
       shippingHistory: shippingHistory ?? this.shippingHistory,
       machines: machines ?? this.machines,
+      buildQuantityPreferences:
+          buildQuantityPreferences ?? this.buildQuantityPreferences,
     );
   }
 
