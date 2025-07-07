@@ -906,8 +906,9 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   void setBuyQuantityPreference(String materialId, int quantity) {
-    if (quantity != 1 && quantity != 5 && quantity != 10)
+    if (quantity != 1 && quantity != 5 && quantity != 10) {
       return; // Only allow 1, 5, or 10
+    }
 
     final newPreferences = Map<String, int>.from(_state.buyQuantityPreferences);
     newPreferences[materialId] = quantity;
@@ -923,8 +924,9 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   void setSellQuantityPreference(String productId, int quantity) {
-    if (quantity != 1 && quantity != 5 && quantity != 10)
+    if (quantity != 1 && quantity != 5 && quantity != 10) {
       return; // Only allow 1, 5, or 10
+    }
 
     final newPreferences = Map<String, int>.from(
       _state.sellQuantityPreferences,

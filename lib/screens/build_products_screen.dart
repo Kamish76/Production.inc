@@ -5,6 +5,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
 
+// Helper class for grouped production display in v1.4.14
+class GroupedProduction {
+  final String productId;
+  final int quantity;
+  final double totalDuration;
+  final double currentProgress; // Progress of the currently active item
+  final bool isQueued;
+  final DateTime earliestStartTime;
+
+  GroupedProduction({
+    required this.productId,
+    required this.quantity,
+    required this.totalDuration,
+    required this.currentProgress,
+    required this.isQueued,
+    required this.earliestStartTime,
+  });
+}
+
 class BuildProductsScreen extends StatefulWidget {
   const BuildProductsScreen({super.key});
 
@@ -156,24 +175,31 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                         ),
                         const SizedBox(height: 8),
                         if (_isProductionExpanded)
-                          // Show all productions when expanded
+                          // Show all productions when expanded - v1.4.14: Now grouped
                           SizedBox(
                             height: 200,
-                            child: ListView.builder(
-                              itemCount:
-                                  gameService.state.activeProductions.length,
-                              itemBuilder: (context, index) {
-                                final production =
-                                    gameService.state.activeProductions[index];
-                                return _buildProductionItem(
-                                  production,
-                                  gameService,
+                            child: Builder(
+                              builder: (context) {
+                                final groupedProductions =
+                                    _groupProductionTasks(
+                                      gameService.state.activeProductions,
+                                    );
+                                return ListView.builder(
+                                  itemCount: groupedProductions.length,
+                                  itemBuilder: (context, index) {
+                                    final groupedProduction =
+                                        groupedProductions[index];
+                                    return _buildGroupedProductionItem(
+                                      groupedProduction,
+                                      gameService,
+                                    );
+                                  },
                                 );
                               },
                             ),
                           )
                         else
-                          // Show only the next production to finish when collapsed
+                          // Show only the next production to finish when collapsed - v1.4.14: Now grouped
                           Builder(
                             builder: (context) {
                               // Check if there are any active productions
@@ -184,15 +210,19 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                                 );
                               }
 
-                              // Find the production that will finish first (highest progress)
-                              final nextProduction = gameService
-                                  .state
-                                  .activeProductions
+                              // Group productions and find the one with highest progress
+                              final groupedProductions = _groupProductionTasks(
+                                gameService.state.activeProductions,
+                              );
+                              final nextGroupedProduction = groupedProductions
                                   .reduce(
-                                    (a, b) => a.progress > b.progress ? a : b,
+                                    (a, b) =>
+                                        a.currentProgress > b.currentProgress
+                                            ? a
+                                            : b,
                                   );
-                              return _buildProductionItem(
-                                nextProduction,
+                              return _buildGroupedProductionItem(
+                                nextGroupedProduction,
                                 gameService,
                               );
                             },
@@ -938,15 +968,59 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     );
   }
 
-  Widget _buildProductionItem(
-    dynamic production,
+  // v1.4.14 - Group production tasks by product type for cleaner display
+  List<GroupedProduction> _groupProductionTasks(List<dynamic> productions) {
+    final Map<String, List<dynamic>> grouped = {};
+
+    // Group by product ID
+    for (final production in productions) {
+      final productId = production.productId;
+      grouped.putIfAbsent(productId, () => []).add(production);
+    }
+
+    // Convert to GroupedProduction objects
+    return grouped.entries.map((entry) {
+      final productId = entry.key;
+      final tasks = entry.value;
+
+      // Calculate consolidated information
+      final quantity = tasks.length;
+      final totalDuration = tasks.fold<double>(
+        0,
+        (sum, task) => sum + task.durationSeconds,
+      );
+      // Show progress of the currently active item (highest progress), not average
+      final currentProgress = tasks
+          .map((task) => task.progress)
+          .reduce((a, b) => a > b ? a : b);
+      final isQueued = tasks.any((task) => task.isQueued);
+      final earliestStartTime = tasks
+          .map((task) => task.startTime)
+          .reduce((a, b) => a.isBefore(b) ? a : b);
+
+      return GroupedProduction(
+        productId: productId,
+        quantity: quantity,
+        totalDuration: totalDuration,
+        currentProgress: currentProgress,
+        isQueued: isQueued,
+        earliestStartTime: earliestStartTime,
+      );
+    }).toList();
+  }
+
+  // v1.4.14 - Build grouped production item widget with consolidated display
+  Widget _buildGroupedProductionItem(
+    GroupedProduction groupedProduction,
     ProductionGameService gameService,
   ) {
-    final product = gameService.getProduct(production.productId);
+    final product = gameService.getProduct(groupedProduction.productId);
     if (product == null) {
       return const SizedBox.shrink(); // Handle missing product gracefully
     }
-    final progress = (production.progress * 100).toInt();
+
+    final progress = (groupedProduction.currentProgress * 100).toInt();
+    final quantity = groupedProduction.quantity;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -956,7 +1030,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           Row(
             children: [
               Text(
-                '${product.emoji} ${product.name} x${production.quantity}',
+                '${product.emoji} ${product.name} x$quantity',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -977,7 +1051,10 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           TweenAnimationBuilder<double>(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            tween: Tween<double>(begin: 0, end: production.progress),
+            tween: Tween<double>(
+              begin: 0,
+              end: groupedProduction.currentProgress,
+            ),
             builder: (context, value, child) {
               return LinearProgressIndicator(
                 value: value,
@@ -993,7 +1070,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
               Icon(Icons.access_time, size: 12, color: Colors.white60),
               const SizedBox(width: 4),
               Text(
-                _getRemainingTime(production),
+                _getGroupedRemainingTime(groupedProduction),
                 style: const TextStyle(color: Colors.white60, fontSize: 10),
               ),
             ],
@@ -1003,23 +1080,26 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     );
   }
 
-  String _getRemainingTime(dynamic production) {
-    final elapsed = DateTime.now().difference(production.startTime).inSeconds;
-    final total = production.durationSeconds;
-    final remaining = total - elapsed;
+  // v1.4.14 - Calculate remaining time for grouped production
+  String _getGroupedRemainingTime(GroupedProduction groupedProduction) {
+    final now = DateTime.now();
+    final elapsed =
+        now.difference(groupedProduction.earliestStartTime).inSeconds;
+    final totalSeconds = groupedProduction.totalDuration;
+    final remaining = (totalSeconds - elapsed).round();
 
     if (remaining <= 0) return 'Completing...';
 
     if (remaining < 60) {
-      return '${remaining}s left';
+      return '${remaining}s total';
     } else if (remaining < 3600) {
       final minutes = (remaining / 60).floor();
       final seconds = remaining % 60;
-      return '${minutes}m ${seconds}s left';
+      return '${minutes}m ${seconds}s total';
     } else {
       final hours = (remaining / 3600).floor();
       final minutes = ((remaining % 3600) / 60).floor();
-      return '${hours}h ${minutes}m left';
+      return '${hours}h ${minutes}m total';
     }
   }
 }
