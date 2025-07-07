@@ -64,6 +64,10 @@ class GameState {
   final Map<String, int> machines; // machineId -> quantity owned (future)
   final Map<String, int>
   buildQuantityPreferences; // productId -> preferred quantity (1 or 10)
+  final Map<String, int>
+  buyQuantityPreferences; // materialId -> preferred quantity (1, 5, or 10)
+  final Map<String, int>
+  sellQuantityPreferences; // productId -> preferred quantity (1, 5, or 10)
 
   const GameState({
     this.money = 100.0, // Starting money
@@ -74,6 +78,8 @@ class GameState {
     this.shippingHistory = const [],
     this.machines = const {},
     this.buildQuantityPreferences = const {},
+    this.buyQuantityPreferences = const {},
+    this.sellQuantityPreferences = const {},
   });
 
   GameState copyWith({
@@ -85,6 +91,8 @@ class GameState {
     List<ShippingHistory>? shippingHistory,
     Map<String, int>? machines,
     Map<String, int>? buildQuantityPreferences,
+    Map<String, int>? buyQuantityPreferences,
+    Map<String, int>? sellQuantityPreferences,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -96,6 +104,10 @@ class GameState {
       machines: machines ?? this.machines,
       buildQuantityPreferences:
           buildQuantityPreferences ?? this.buildQuantityPreferences,
+      buyQuantityPreferences:
+          buyQuantityPreferences ?? this.buyQuantityPreferences,
+      sellQuantityPreferences:
+          sellQuantityPreferences ?? this.sellQuantityPreferences,
     );
   }
 

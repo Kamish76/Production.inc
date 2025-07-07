@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
@@ -62,18 +63,67 @@ class BuyMaterialsScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                
-                // Materials list
+
+                // Materials list with responsive grid layout
                 Expanded(
-                  child: ListView.builder(
+                  child: Padding(
                     padding: const EdgeInsets.all(16),
-                    itemCount: gameService.allMaterials.length,
-                    itemBuilder: (context, index) {
-                      final material = gameService.allMaterials[index];
-                      final owned = gameService.state.getMaterialCount(material.id);
-                      
-                      return _buildMaterialCard(context, material, owned, gameService);
-                    },
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Responsive grid: 2 columns for smaller screens, 3 for larger
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        final columnsCount = screenWidth < 480 ? 2 : 3;
+                        const spacing = 8.0;
+
+                        // Group materials into rows
+                        final materials = gameService.allMaterials;
+                        final rows = <List<game.Material>>[];
+                        for (
+                          int i = 0;
+                          i < materials.length;
+                          i += columnsCount
+                        ) {
+                          final end =
+                              (i + columnsCount < materials.length)
+                                  ? i + columnsCount
+                                  : materials.length;
+                          rows.add(materials.sublist(i, end));
+                        }
+
+                        return ListView(
+                          children:
+                              rows.map((rowMaterials) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      for (
+                                        int i = 0;
+                                        i < columnsCount;
+                                        i++
+                                      ) ...[
+                                        if (i > 0)
+                                          const SizedBox(width: spacing),
+                                        Expanded(
+                                          child:
+                                              i < rowMaterials.length
+                                                  ? _buildEnhancedMaterialCard(
+                                                    context,
+                                                    rowMaterials[i],
+                                                    gameService,
+                                                  )
+                                                  : const SizedBox(), // Empty space for incomplete rows
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -84,91 +134,263 @@ class BuyMaterialsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMaterialCard(
+  Widget _buildEnhancedMaterialCard(
     BuildContext context,
     game.Material material,
-    int owned,
     ProductionGameService gameService,
   ) {
+    final owned = gameService.state.getMaterialCount(material.id);
+    final currentPreference = gameService.getBuyQuantityPreference(material.id);
+    final cost = material.buyPrice * currentPreference;
+    final canAfford = gameService.state.canAfford(cost);
+
     return Card(
       color: Colors.grey[850],
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  material.emoji,
-                  style: const TextStyle(fontSize: 32),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        material.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        material.description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[400],
-                        ),
-                      ),
-                      Text(
-                        'Price: \$${material.buyPrice.toStringAsFixed(2)} | Owned: $owned',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[300],
-                        ),
-                      ),
-                    ],
+      margin: const EdgeInsets.all(4),
+      elevation: 8,
+      shadowColor: Colors.black.withValues(alpha: 0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color:
+              canAfford
+                  ? Colors.green.withValues(alpha: 0.3)
+                  : Colors.red.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          // V1.4.11: Entire card is now clickable for buying
+          if (canAfford) {
+            HapticFeedback.mediumImpact();
+            gameService.buyMaterial(material.id, currentPreference);
+          } else {
+            HapticFeedback.lightImpact();
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Material emoji and name with enhanced styling
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[700],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      material.emoji,
+                      style: const TextStyle(fontSize: 26),
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          material.name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '\$${material.buyPrice.toStringAsFixed(2)} each',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Purchase capability indicator
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: canAfford ? Colors.green[700] : Colors.red[700],
+                  borderRadius: BorderRadius.circular(6),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildBuyButton(context, material, 1, gameService),
-                _buildBuyButton(context, material, 5, gameService),
-                _buildBuyButton(context, material, 10, gameService),
-              ],
-            ),
-          ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      canAfford ? Icons.check_circle : Icons.cancel,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        canAfford ? 'Can Afford' : 'Need More Money',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Owned quantity indicator
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.blue[700],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Owned: $owned',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Description
+              Text(
+                material.description,
+                style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+
+              // Buy quantity selector buttons (V1.4.11: Dual-function)
+              Row(
+                children: [
+                  Flexible(
+                    child: _buildQuantitySelectorButton(
+                      context,
+                      material,
+                      1,
+                      gameService,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: _buildQuantitySelectorButton(
+                      context,
+                      material,
+                      5,
+                      gameService,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: _buildQuantitySelectorButton(
+                      context,
+                      material,
+                      10,
+                      gameService,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBuyButton(
+  Widget _buildQuantitySelectorButton(
     BuildContext context,
     game.Material material,
     int quantity,
     ProductionGameService gameService,
   ) {
+    final isSelected =
+        gameService.getBuyQuantityPreference(material.id) == quantity;
     final cost = material.buyPrice * quantity;
     final canAfford = gameService.state.canAfford(cost);
-    
-    return ElevatedButton(
-      onPressed: canAfford
-          ? () => gameService.buyMaterial(material.id, quantity)
-          : null,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: canAfford ? Colors.green[600] : Colors.grey[600],
-        foregroundColor: Colors.white,
+
+    return SizedBox(
+      height: 40,
+      child: ElevatedButton(
+        onPressed: () {
+          // V1.4.11: Dual-function button
+          if (canAfford) {
+            HapticFeedback.mediumImpact();
+            // Direct buy action
+            gameService.buyMaterial(material.id, quantity);
+            // Also set as preference
+            gameService.setBuyQuantityPreference(material.id, quantity);
+          } else {
+            // Just set preference even if can't afford
+            HapticFeedback.lightImpact();
+            gameService.setBuyQuantityPreference(material.id, quantity);
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              isSelected
+                  ? (canAfford ? Colors.green[600] : Colors.orange[600])
+                  : (canAfford ? Colors.grey[700] : Colors.red[800]),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side:
+                isSelected
+                    ? BorderSide(color: Colors.blue[300]!, width: 2)
+                    : BorderSide.none,
+          ),
+          elevation: isSelected ? 6 : 2,
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Buy $quantity',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              Text(
+                '\$${cost.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 9),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Text('Buy $quantity\n\$${cost.toStringAsFixed(2)}'),
     );
   }
 }

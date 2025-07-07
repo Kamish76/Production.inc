@@ -282,556 +282,578 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+    return Material(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+          ),
         ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Screen title
-            Container(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Icon(Icons.settings, color: Colors.grey[400], size: 28),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Settings',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Screen title
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: Colors.grey[400], size: 28),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Settings',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            // Settings content
-            Expanded(
-              child: Consumer<ProductionGameService>(
-                builder: (context, gameService, child) {
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        // Game Data Section
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.save,
-                                    color: Colors.blue[400],
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    'Game Data',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
+              // Settings content
+              Expanded(
+                child: Consumer<ProductionGameService>(
+                  builder: (context, gameService, child) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          // Game Data Section
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
                               ),
-                              const Divider(color: Colors.white24),
-                              const SizedBox(height: 16),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.save,
+                                      color: Colors.blue[400],
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Game Data',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(color: Colors.white24),
+                                const SizedBox(height: 16),
 
-                              // Save Game Button
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: () async {
-                                    await gameService.saveGame();
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            '✅ Game saved successfully!',
+                                // Save Game Button
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () async {
+                                      await gameService.saveGame();
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              '✅ Game saved successfully!',
+                                            ),
+                                            backgroundColor: Colors.green,
+                                            duration: Duration(seconds: 2),
                                           ),
-                                          backgroundColor: Colors.green,
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  icon: const Icon(Icons.save_alt),
-                                  label: const Text('Save Game'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green[600],
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 12),
-
-                              // Reset Game Button
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed:
-                                      () => _showResetConfirmation(
-                                        context,
-                                        gameService,
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.save_alt),
+                                    label: const Text('Save Game'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green[600],
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
                                       ),
-                                  icon: const Icon(Icons.restart_alt),
-                                  label: const Text('Reset Game'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red[600],
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
 
-                        const SizedBox(height: 24),
+                                const SizedBox(height: 12),
 
-                        // App Settings Section
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
+                                // Reset Game Button
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed:
+                                        () => _showResetConfirmation(
+                                          context,
+                                          gameService,
+                                        ),
+                                    icon: const Icon(Icons.restart_alt),
+                                    label: const Text('Reset Game'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red[600],
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.tune,
-                                    color: Colors.purple[400],
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    'App Settings',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+
+                          const SizedBox(height: 24),
+
+                          // App Settings Section
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.tune,
+                                      color: Colors.purple[400],
+                                      size: 24,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const Divider(color: Colors.white24),
-                              const SizedBox(height: 16),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'App Settings',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(color: Colors.white24),
+                                const SizedBox(height: 16),
 
-                              // Notifications Toggle (Placeholder for future feature)
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.notifications,
-                                        color: Colors.white70,
-                                        size: 20,
+                                // Notifications Toggle (Placeholder for future feature)
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.notifications,
+                                            color: Colors.white70,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'Notifications',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 8),
-                                      const Text(
-                                        'Notifications',
-                                        style: TextStyle(color: Colors.white70),
-                                      ),
-                                    ],
-                                  ),
-                                  Switch(
-                                    value:
-                                        true, // Placeholder - would be from preferences
-                                    onChanged: null, // Disabled for now
-                                    activeColor: Colors.green,
-                                  ),
-                                ],
-                              ),
+                                    ),
+                                    Switch(
+                                      value:
+                                          true, // Placeholder - would be from preferences
+                                      onChanged: null, // Disabled for now
+                                      activeColor: Colors.green,
+                                    ),
+                                  ],
+                                ),
 
-                              const SizedBox(height: 12),
+                                const SizedBox(height: 12),
 
-                              // Sound Effects Toggle (Placeholder for future feature)
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.volume_up,
-                                        color: Colors.white70,
-                                        size: 20,
+                                // Sound Effects Toggle (Placeholder for future feature)
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.volume_up,
+                                            color: Colors.white70,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'Sound Effects',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 8),
-                                      const Text(
-                                        'Sound Effects',
-                                        style: TextStyle(color: Colors.white70),
-                                      ),
-                                    ],
-                                  ),
-                                  Switch(
-                                    value:
-                                        false, // Placeholder - would be from preferences
-                                    onChanged: null, // Disabled for now
-                                    activeColor: Colors.green,
-                                  ),
-                                ],
-                              ),
+                                    ),
+                                    Switch(
+                                      value:
+                                          false, // Placeholder - would be from preferences
+                                      onChanged: null, // Disabled for now
+                                      activeColor: Colors.green,
+                                    ),
+                                  ],
+                                ),
 
-                              const SizedBox(height: 12),
+                                const SizedBox(height: 12),
 
-                              // Performance Mode Toggle
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.speed,
-                                        color: Colors.white70,
-                                        size: 20,
+                                // Performance Mode Toggle
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.speed,
+                                            color: Colors.white70,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'Performance Mode',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 8),
-                                      const Text(
-                                        'Performance Mode',
-                                        style: TextStyle(color: Colors.white70),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle,
-                                        color: Colors.green,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      const Text(
-                                        'Enabled',
-                                        style: TextStyle(
+                                    ),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle,
                                           color: Colors.green,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Text(
+                                          'Enabled',
+                                          style: TextStyle(
+                                            color: Colors.green,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Help & Tutorial Section
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.help_outline,
+                                      color: Colors.yellow[600],
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Help & Tutorial',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(color: Colors.white24),
+                                const SizedBox(height: 16),
+
+                                // How to Play Button
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _showHowToPlay(context),
+                                    icon: const Icon(Icons.play_circle_outline),
+                                    label: const Text('How to Play'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.white,
+                                      side: BorderSide(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.3,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Help & Tutorial Section
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.help_outline,
-                                    color: Colors.yellow[600],
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    'Help & Tutorial',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Divider(color: Colors.white24),
-                              const SizedBox(height: 16),
-
-                              // How to Play Button
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: () => _showHowToPlay(context),
-                                  icon: const Icon(Icons.play_circle_outline),
-                                  label: const Text('How to Play'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    side: BorderSide(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.3,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
                                       ),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
                                     ),
                                   ),
                                 ),
-                              ),
 
-                              const SizedBox(height: 12),
+                                const SizedBox(height: 12),
 
-                              // Game Tips Button
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: () => _showGameTips(context),
-                                  icon: const Icon(Icons.lightbulb_outline),
-                                  label: const Text('Game Tips'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    side: BorderSide(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.3,
+                                // Game Tips Button
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _showGameTips(context),
+                                    icon: const Icon(Icons.lightbulb_outline),
+                                    label: const Text('Game Tips'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.white,
+                                      side: BorderSide(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.3,
+                                        ),
                                       ),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Game Information Section
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              ],
                             ),
                           ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.info_outline,
-                                    color: Colors.orange[400],
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    'Game Information',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
+
+                          const SizedBox(height: 24),
+
+                          // Game Information Section
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
                               ),
-                              const Divider(color: Colors.white24),
-                              const SizedBox(height: 16),
-
-                              // Game Stats
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Money:',
-                                    style: TextStyle(color: Colors.white70),
-                                  ),
-                                  Text(
-                                    '\$${gameService.state.money.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: Colors.orange[400],
+                                      size: 24,
                                     ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 8),
-
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Active Productions:',
-                                    style: TextStyle(color: Colors.white70),
-                                  ),
-                                  Text(
-                                    '${gameService.state.activeProductions.length}',
-                                    style: const TextStyle(
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 8),
-
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Active Shipments:',
-                                    style: TextStyle(color: Colors.white70),
-                                  ),
-                                  Text(
-                                    '${gameService.state.activeShippingOrders.length}',
-                                    style: const TextStyle(
-                                      color: Colors.orange,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 8),
-
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'App State:',
-                                    style: TextStyle(color: Colors.white70),
-                                  ),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        gameService.isAppPaused
-                                            ? Icons.pause
-                                            : Icons.play_arrow,
-                                        size: 16,
-                                        color:
-                                            gameService.isAppPaused
-                                                ? Colors.orange
-                                                : Colors.green,
+                                    const SizedBox(width: 12),
+                                    const Text(
+                                      'Game Information',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        gameService.isAppPaused
-                                            ? 'Paused'
-                                            : 'Active',
-                                        style: TextStyle(
+                                    ),
+                                  ],
+                                ),
+                                const Divider(color: Colors.white24),
+                                const SizedBox(height: 16),
+
+                                // Game Stats
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'Money:',
+                                        style: TextStyle(color: Colors.white70),
+                                      ),
+                                    ),
+                                    Text(
+                                      '\$${gameService.state.money.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 8),
+
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'Active Productions:',
+                                        style: TextStyle(color: Colors.white70),
+                                      ),
+                                    ),
+                                    Text(
+                                      '${gameService.state.activeProductions.length}',
+                                      style: const TextStyle(
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 8),
+
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'Active Shipments:',
+                                        style: TextStyle(color: Colors.white70),
+                                      ),
+                                    ),
+                                    Text(
+                                      '${gameService.state.activeShippingOrders.length}',
+                                      style: const TextStyle(
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 8),
+
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'App State:',
+                                        style: TextStyle(color: Colors.white70),
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          gameService.isAppPaused
+                                              ? Icons.pause
+                                              : Icons.play_arrow,
+                                          size: 16,
                                           color:
                                               gameService.isAppPaused
                                                   ? Colors.orange
                                                   : Colors.green,
-                                          fontWeight: FontWeight.bold,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Performance & Auto-save info
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.blue.withValues(alpha: 0.3),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          gameService.isAppPaused
+                                              ? 'Paused'
+                                              : 'Active',
+                                          style: TextStyle(
+                                            color:
+                                                gameService.isAppPaused
+                                                    ? Colors.orange
+                                                    : Colors.green,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.autorenew,
-                                    color: Colors.blue[300],
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Auto-save: Every 30 seconds and when app goes to background',
-                                      style: TextStyle(
-                                        color: Colors.blue[300],
-                                        fontSize: 12,
+
+                          const SizedBox(height: 24),
+
+                          // Performance & Auto-save info
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.blue.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.autorenew,
+                                      color: Colors.blue[300],
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Auto-save: Every 30 seconds and when app goes to background',
+                                        style: TextStyle(
+                                          color: Colors.blue[300],
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.battery_saver,
-                                    color: Colors.green[300],
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Battery optimized: Smart timers (1s active, 5s idle, paused when backgrounded)',
-                                      style: TextStyle(
-                                        color: Colors.green[300],
-                                        fontSize: 12,
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.battery_saver,
+                                      color: Colors.green[300],
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Battery optimized: Smart timers (1s active, 5s idle, paused when backgrounded)',
+                                        style: TextStyle(
+                                          color: Colors.green[300],
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
+            ], // closes Column children
+          ), // closes Column widget
+        ), // closes SafeArea
+      ), // closes Container
+    ); // closes Material
   }
 }

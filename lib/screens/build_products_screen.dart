@@ -86,15 +86,16 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                     children: [
                       Icon(Icons.build, color: Colors.blue[400], size: 28),
                       const SizedBox(width: 12),
-                      const Text(
-                        'Build Products',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      const Expanded(
+                        child: Text(
+                          'Build Products',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                      const Spacer(),
                       // Expand/Collapse All button
                       IconButton(
                         onPressed: _toggleAllTiers,

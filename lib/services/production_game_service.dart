@@ -14,18 +14,29 @@ class ProductionGameService extends ChangeNotifier {
   final GamePersistenceService _persistenceService = GamePersistenceService();
   bool _isLoaded = false;
   bool _isAppPaused = false;
+  bool _isTestMode = false;
 
   GameState get state => _state;
   bool get isLoaded => _isLoaded;
   bool get isAppPaused => _isAppPaused;
+  bool get isTestMode => _isTestMode;
 
-  ProductionGameService() {
+  ProductionGameService({bool testMode = false}) {
+    _isTestMode = testMode;
     _initializeGame();
   }
 
   /// Initialize the game by loading saved state and starting timers
   Future<void> _initializeGame() async {
     try {
+      if (_isTestMode) {
+        // In test mode, use default state and don't start timers
+        _state = const GameState();
+        _isLoaded = true;
+        notifyListeners();
+        return;
+      }
+
       // Load saved game state
       _state = await _persistenceService.loadGameState();
       _isLoaded = true;
@@ -46,12 +57,14 @@ class ProductionGameService extends ChangeNotifier {
       _isLoaded = true;
       notifyListeners();
 
-      // Still start timers
-      _startUpdateTimer();
+      if (!_isTestMode) {
+        // Still start timers (except in test mode)
+        _startUpdateTimer();
 
-      _saveTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-        _saveGameState();
-      });
+        _saveTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+          _saveGameState();
+        });
+      }
     }
   }
 
@@ -59,8 +72,8 @@ class ProductionGameService extends ChangeNotifier {
   void _startUpdateTimer() {
     _updateTimer?.cancel();
 
-    if (_isAppPaused) {
-      // Don't run timer when app is paused for battery optimization
+    if (_isAppPaused || _isTestMode) {
+      // Don't run timer when app is paused or in test mode for battery optimization
       return;
     }
 
@@ -139,13 +152,17 @@ class ProductionGameService extends ChangeNotifier {
   void dispose() {
     _updateTimer?.cancel();
     _saveTimer?.cancel();
-    _saveGameState(); // Save one final time before disposing
+    if (!_isTestMode) {
+      _saveGameState(); // Save one final time before disposing (except in test mode)
+    }
     _persistenceService.dispose();
     super.dispose();
   }
 
   /// Save current game state to persistent storage (optimized for v1.4.8)
   Future<void> _saveGameStateOptimized() async {
+    if (_isTestMode) return; // Skip save operations in test mode
+
     try {
       await _persistenceService.saveGameStateOptimized(_state);
     } catch (e) {
@@ -159,6 +176,8 @@ class ProductionGameService extends ChangeNotifier {
 
   /// Save current game state to persistent storage
   Future<void> _saveGameState() async {
+    if (_isTestMode) return; // Skip save operations in test mode
+
     try {
       await _persistenceService.saveGameState(_state);
     } catch (e) {
@@ -170,11 +189,19 @@ class ProductionGameService extends ChangeNotifier {
 
   /// Manually save game state (for user-triggered saves)
   Future<void> saveGame() async {
+    if (_isTestMode) return; // Skip save operations in test mode
     await _saveGameState();
   }
 
   /// Reset game to initial state
   Future<void> resetGame() async {
+    if (_isTestMode) {
+      // In test mode, just reset state without database operations
+      _state = const GameState();
+      notifyListeners();
+      return;
+    }
+
     try {
       await _persistenceService.resetGameData();
       _state = const GameState();
@@ -871,5 +898,41 @@ class ProductionGameService extends ChangeNotifier {
   // Check if there's any production (active or queued) for a product
   bool hasAnyProduction(String productId) {
     return _state.activeProductions.any((task) => task.productId == productId);
+  }
+
+  // V1.4.11 Buy Quantity Preference Management
+  int getBuyQuantityPreference(String materialId) {
+    return _state.buyQuantityPreferences[materialId] ?? 1;
+  }
+
+  void setBuyQuantityPreference(String materialId, int quantity) {
+    if (quantity != 1 && quantity != 5 && quantity != 10)
+      return; // Only allow 1, 5, or 10
+
+    final newPreferences = Map<String, int>.from(_state.buyQuantityPreferences);
+    newPreferences[materialId] = quantity;
+
+    _state = _state.copyWith(buyQuantityPreferences: newPreferences);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  // V1.4.11 Sell Quantity Preference Management
+  int getSellQuantityPreference(String productId) {
+    return _state.sellQuantityPreferences[productId] ?? 1;
+  }
+
+  void setSellQuantityPreference(String productId, int quantity) {
+    if (quantity != 1 && quantity != 5 && quantity != 10)
+      return; // Only allow 1, 5, or 10
+
+    final newPreferences = Map<String, int>.from(
+      _state.sellQuantityPreferences,
+    );
+    newPreferences[productId] = quantity;
+
+    _state = _state.copyWith(sellQuantityPreferences: newPreferences);
+    notifyListeners();
+    _saveGameStateOptimized();
   }
 }

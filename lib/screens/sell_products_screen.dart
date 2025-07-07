@@ -446,7 +446,16 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => HapticFeedback.lightImpact(),
+        onTap: () {
+          // V1.4.11: Entire card is now clickable for selling
+          final quantity = gameService.getSellQuantityPreference(product.id);
+          if (available >= quantity) {
+            HapticFeedback.mediumImpact();
+            gameService.sellProduct(product.id, quantity);
+          } else {
+            HapticFeedback.lightImpact();
+          }
+        },
         onLongPress:
             () => _showProductDetails(context, product, gameService, available),
         child: Container(
@@ -601,11 +610,11 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                 const SizedBox(height: 8),
               ],
 
-              // Sell buttons (1 and 10 as requested)
+              // Sell buttons (1, 5, and 10 with dual-function) - V1.4.11
               Row(
                 children: [
-                  Expanded(
-                    child: _buildEnhancedSellButton(
+                  Flexible(
+                    child: _buildQuantitySelectorButton(
                       context,
                       product,
                       1,
@@ -613,9 +622,19 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                       available,
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: _buildEnhancedSellButton(
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: _buildQuantitySelectorButton(
+                      context,
+                      product,
+                      5,
+                      gameService,
+                      available,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: _buildQuantitySelectorButton(
                       context,
                       product,
                       10,
@@ -664,48 +683,73 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
     }
   }
 
-  Widget _buildEnhancedSellButton(
+  Widget _buildQuantitySelectorButton(
     BuildContext context,
     game.Product product,
     int quantity,
     ProductionGameService gameService,
     int available,
   ) {
+    final isSelected =
+        gameService.getSellQuantityPreference(product.id) == quantity;
     final canSell = available >= quantity;
     final revenue = product.sellPrice * quantity;
 
-    return ElevatedButton(
-      onPressed:
-          canSell
-              ? () {
-                HapticFeedback.lightImpact();
-                gameService.sellProduct(product.id, quantity);
-              }
-              : null,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: canSell ? Colors.purple[600] : Colors.grey[600],
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Sell $quantity',
-            style: const TextStyle(
-              fontSize: 11, // Mobile-optimized button text
-              fontWeight: FontWeight.bold,
-            ),
+    return SizedBox(
+      height: 40,
+      child: ElevatedButton(
+        onPressed: () {
+          // V1.4.11: Dual-function button
+          if (canSell) {
+            HapticFeedback.mediumImpact();
+            // Direct sell action
+            gameService.sellProduct(product.id, quantity);
+            // Also set as preference
+            gameService.setSellQuantityPreference(product.id, quantity);
+          } else {
+            // Just set preference even if can't sell
+            HapticFeedback.lightImpact();
+            gameService.setSellQuantityPreference(product.id, quantity);
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              isSelected
+                  ? (canSell ? Colors.purple[600] : Colors.orange[600])
+                  : (canSell ? Colors.grey[700] : Colors.red[800]),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side:
+                isSelected
+                    ? BorderSide(color: Colors.purple[300]!, width: 2)
+                    : BorderSide.none,
           ),
-          Text(
-            '\$${revenue.toStringAsFixed(2)}',
-            style: const TextStyle(
-              fontSize: 9, // Revenue display
-              fontWeight: FontWeight.w500,
-            ),
+          elevation: isSelected ? 6 : 2,
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Sell $quantity',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              Text(
+                '\$${revenue.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 9),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

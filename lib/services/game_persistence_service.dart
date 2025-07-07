@@ -10,7 +10,8 @@ import '../models/game_models.dart';
 class GamePersistenceService {
   static const String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
-  static const int _databaseVersion = 3; // Updated for v1.4.10 queue system
+  static const int _databaseVersion =
+      4; // Updated for v1.4.11 buy/sell preferences
 
   Database? _database;
 
@@ -22,17 +23,31 @@ class GamePersistenceService {
   static void initializeDatabaseFactory() {
     // Only use FFI for desktop platforms (Windows, macOS, Linux)
     // Android and iOS have native SQLite support and should NOT use FFI
+    // Also use FFI for test environment
     if (!kIsWeb &&
-        (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
+        (Platform.isWindows ||
+            Platform.isMacOS ||
+            Platform.isLinux ||
+            Platform.environment.containsKey('FLUTTER_TEST'))) {
       try {
         sqfliteFfiInit();
         databaseFactory = databaseFactoryFfi;
         if (kDebugMode) {
-          print('Using FFI database factory for desktop platform');
+          print('Using FFI database factory for desktop/test platform');
         }
       } catch (e) {
         if (kDebugMode) {
           print('Failed to initialize FFI database factory: $e');
+        }
+        // Fallback for test environment
+        if (Platform.environment.containsKey('FLUTTER_TEST')) {
+          try {
+            databaseFactory = databaseFactoryFfi;
+          } catch (fallbackError) {
+            if (kDebugMode) {
+              print('Fallback FFI initialization also failed: $fallbackError');
+            }
+          }
         }
       }
     } else {
@@ -111,6 +126,10 @@ class GamePersistenceService {
         // v1.4.10 migrations - queue system and build preferences
         await _migrateToVersion3(db);
         break;
+      case 4:
+        // v1.4.11 migrations - buy/sell quantity preferences
+        await _migrateToVersion4(db);
+        break;
       default:
         if (kDebugMode) {
           print('No migration defined for version $version');
@@ -176,6 +195,43 @@ class GamePersistenceService {
     } catch (e) {
       if (kDebugMode) {
         print('Migration warning (build_quantity_preferences): $e');
+      }
+    }
+  }
+
+  /// Migration to version 4 (v1.4.11)
+  Future<void> _migrateToVersion4(Database db) async {
+    try {
+      // Create buy_quantity_preferences table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS buy_quantity_preferences (
+          material_id TEXT PRIMARY KEY,
+          quantity INTEGER NOT NULL DEFAULT 1
+        )
+      ''');
+      if (kDebugMode) {
+        print('Created buy_quantity_preferences table');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (buy_quantity_preferences): $e');
+      }
+    }
+
+    try {
+      // Create sell_quantity_preferences table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS sell_quantity_preferences (
+          product_id TEXT PRIMARY KEY,
+          quantity INTEGER NOT NULL DEFAULT 1
+        )
+      ''');
+      if (kDebugMode) {
+        print('Created sell_quantity_preferences table');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (sell_quantity_preferences): $e');
       }
     }
   }
@@ -263,6 +319,8 @@ class GamePersistenceService {
         'shipping_history',
         'shipping_history_items',
         'build_quantity_preferences', // V1.4.10
+        'buy_quantity_preferences', // V1.4.11
+        'sell_quantity_preferences', // V1.4.11
       ];
 
       final existingTables = tables.map((t) => t['name'] as String).toSet();
@@ -367,6 +425,22 @@ class GamePersistenceService {
       )
     ''');
 
+    // Buy quantity preferences table (V1.4.11)
+    await db.execute('''
+      CREATE TABLE buy_quantity_preferences (
+        material_id TEXT PRIMARY KEY,
+        quantity INTEGER NOT NULL DEFAULT 1
+      )
+    ''');
+
+    // Sell quantity preferences table (V1.4.11)
+    await db.execute('''
+      CREATE TABLE sell_quantity_preferences (
+        product_id TEXT PRIMARY KEY,
+        quantity INTEGER NOT NULL DEFAULT 1
+      )
+    ''');
+
     // Insert initial game state record
     await db.insert('game_state', {
       'id': 1,
@@ -430,6 +504,24 @@ class GamePersistenceService {
       await txn.delete('build_quantity_preferences');
       for (final entry in state.buildQuantityPreferences.entries) {
         await txn.insert('build_quantity_preferences', {
+          'product_id': entry.key,
+          'quantity': entry.value,
+        });
+      }
+
+      // Clear and save buy quantity preferences (V1.4.11)
+      await txn.delete('buy_quantity_preferences');
+      for (final entry in state.buyQuantityPreferences.entries) {
+        await txn.insert('buy_quantity_preferences', {
+          'material_id': entry.key,
+          'quantity': entry.value,
+        });
+      }
+
+      // Clear and save sell quantity preferences (V1.4.11)
+      await txn.delete('sell_quantity_preferences');
+      for (final entry in state.sellQuantityPreferences.entries) {
+        await txn.insert('sell_quantity_preferences', {
           'product_id': entry.key,
           'quantity': entry.value,
         });
@@ -543,6 +635,22 @@ class GamePersistenceService {
           row['quantity'] as int;
     }
 
+    // Load buy quantity preferences (V1.4.11)
+    final buyPreferencesResult = await db.query('buy_quantity_preferences');
+    final buyQuantityPreferences = <String, int>{};
+    for (final row in buyPreferencesResult) {
+      buyQuantityPreferences[row['material_id'] as String] =
+          row['quantity'] as int;
+    }
+
+    // Load sell quantity preferences (V1.4.11)
+    final sellPreferencesResult = await db.query('sell_quantity_preferences');
+    final sellQuantityPreferences = <String, int>{};
+    for (final row in sellPreferencesResult) {
+      sellQuantityPreferences[row['product_id'] as String] =
+          row['quantity'] as int;
+    }
+
     // Load active shipping orders
     final shippingOrdersResult = await db.query('active_shipping_orders');
     final activeShippingOrders = <ShippingOrder>[];
@@ -624,6 +732,8 @@ class GamePersistenceService {
       activeShippingOrders: activeShippingOrders,
       shippingHistory: shippingHistory,
       buildQuantityPreferences: buildQuantityPreferences,
+      buyQuantityPreferences: buyQuantityPreferences,
+      sellQuantityPreferences: sellQuantityPreferences,
     );
   }
 
@@ -760,9 +870,11 @@ class GamePersistenceService {
       }
 
       if (_dirtyTables.contains('preferences')) {
-        await _saveBuildQuantityPreferencesOptimized(
+        await _saveAllQuantityPreferencesOptimized(
           txn,
           state.buildQuantityPreferences,
+          state.buyQuantityPreferences,
+          state.sellQuantityPreferences,
         );
       }
     });
@@ -796,9 +908,11 @@ class GamePersistenceService {
         state.activeShippingOrders,
         state.shippingHistory,
       );
-      await _saveBuildQuantityPreferencesOptimized(
+      await _saveAllQuantityPreferencesOptimized(
         txn,
         state.buildQuantityPreferences,
+        state.buyQuantityPreferences,
+        state.sellQuantityPreferences,
       );
     });
   }
@@ -904,14 +1018,35 @@ class GamePersistenceService {
     }
   }
 
-  /// Optimized build quantity preferences save
-  Future<void> _saveBuildQuantityPreferencesOptimized(
+  /// Optimized quantity preferences save (V1.4.11)
+  Future<void> _saveAllQuantityPreferencesOptimized(
     Transaction txn,
     Map<String, int> buildQuantityPreferences,
+    Map<String, int> buyQuantityPreferences,
+    Map<String, int> sellQuantityPreferences,
   ) async {
+    // Save build quantity preferences
     await txn.delete('build_quantity_preferences');
     for (final entry in buildQuantityPreferences.entries) {
       await txn.insert('build_quantity_preferences', {
+        'product_id': entry.key,
+        'quantity': entry.value,
+      });
+    }
+
+    // Save buy quantity preferences
+    await txn.delete('buy_quantity_preferences');
+    for (final entry in buyQuantityPreferences.entries) {
+      await txn.insert('buy_quantity_preferences', {
+        'material_id': entry.key,
+        'quantity': entry.value,
+      });
+    }
+
+    // Save sell quantity preferences
+    await txn.delete('sell_quantity_preferences');
+    for (final entry in sellQuantityPreferences.entries) {
+      await txn.insert('sell_quantity_preferences', {
         'product_id': entry.key,
         'quantity': entry.value,
       });
