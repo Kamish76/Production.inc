@@ -68,6 +68,9 @@ class GameState {
   buyQuantityPreferences; // materialId -> preferred quantity (1, 5, or 10)
   final Map<String, int>
   sellQuantityPreferences; // productId -> preferred quantity (1, 5, or 10)
+  final Set<String> unlockedProducts; // productId -> unlocked status
+  final Map<String, bool>
+  productUnlockStatus; // productId -> unlock status cache for performance
 
   const GameState({
     this.money = 100.0, // Starting money
@@ -80,6 +83,8 @@ class GameState {
     this.buildQuantityPreferences = const {},
     this.buyQuantityPreferences = const {},
     this.sellQuantityPreferences = const {},
+    this.unlockedProducts = const {},
+    this.productUnlockStatus = const {},
   });
 
   GameState copyWith({
@@ -93,6 +98,8 @@ class GameState {
     Map<String, int>? buildQuantityPreferences,
     Map<String, int>? buyQuantityPreferences,
     Map<String, int>? sellQuantityPreferences,
+    Set<String>? unlockedProducts,
+    Map<String, bool>? productUnlockStatus,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -108,6 +115,8 @@ class GameState {
           buyQuantityPreferences ?? this.buyQuantityPreferences,
       sellQuantityPreferences:
           sellQuantityPreferences ?? this.sellQuantityPreferences,
+      unlockedProducts: unlockedProducts ?? this.unlockedProducts,
+      productUnlockStatus: productUnlockStatus ?? this.productUnlockStatus,
     );
   }
 
@@ -115,6 +124,8 @@ class GameState {
   int getMaterialCount(String materialId) => materials[materialId] ?? 0;
   int getProductCount(String productId) => products[productId] ?? 0;
   bool canAfford(double price) => money >= price;
+  bool isProductUnlocked(String productId) =>
+      unlockedProducts.contains(productId);
 
   bool hasMaterialsFor(Map<String, int> required) {
     for (final entry in required.entries) {
@@ -127,5 +138,10 @@ class GameState {
       }
     }
     return true;
+  }
+
+  // Check if player has ever produced a specific product (for unlock logic)
+  bool hasProduced(String productId) {
+    return getProductCount(productId) > 0;
   }
 }

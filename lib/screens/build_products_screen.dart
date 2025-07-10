@@ -233,12 +233,71 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
 
                 const SizedBox(height: 16),
 
-                // Products list - organized by tiers
+                // Products list - organized by tiers with unlock filtering
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      // Build sections for each tier that has products
+                      // Show welcome message for completely new players
+                      if (gameService.state.unlockedProducts.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.blue[900]!.withValues(alpha: 0.3),
+                                Colors.blue[800]!.withValues(alpha: 0.2),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.blue[400]!.withValues(alpha: 0.5),
+                              width: 2,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.lightbulb_outline,
+                                color: Colors.blue[400],
+                                size: 48,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Welcome to Production.Inc!',
+                                style: TextStyle(
+                                  color: Colors.blue[300],
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Visit the Buy Materials screen to purchase materials and discover what you can build!',
+                                style: TextStyle(
+                                  color: Colors.blue[200],
+                                  fontSize: 14,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Start with cardboard to unlock your first product: Box 📦',
+                                style: TextStyle(
+                                  color: Colors.blue[100],
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // Build sections for each tier (always show for discovery)
                       ...gameService.productsByTier.entries
                           .where((entry) => entry.value.isNotEmpty)
                           .map(
@@ -247,6 +306,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                               gameService.getTierName(entry.key),
                               entry.value,
                               gameService,
+                              tierLevel: entry.key,
                             ),
                           ),
                     ],
@@ -264,18 +324,32 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     BuildContext context,
     String tierName,
     List<game.Product> products,
-    ProductionGameService gameService,
-  ) {
+    ProductionGameService gameService, {
+    game.ProductLevel? tierLevel,
+  }) {
     final isExpanded = _tierExpanded[tierName] ?? true;
+
+    // Filter products to only show unlocked ones (v1.4.18)
+    final unlockedProducts =
+        products
+            .where((product) => gameService.isProductUnlocked(product.id))
+            .toList();
 
     // Count products with available materials for this tier
     final availableCount =
-        products
+        unlockedProducts
             .where(
               (product) =>
                   gameService.state.hasMaterialsFor(product.requiredMaterials),
             )
             .length;
+
+    // Get tier progress for display (v1.4.18)
+    final tierProgressString =
+        tierLevel != null ? gameService.getTierProgressString(tierLevel) : '';
+
+    // Always show tier headers, even when empty, to give players context
+    // This is especially important for new players who have no unlocked products
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,7 +373,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    tierName,
+                    '$tierName $tierProgressString',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -307,7 +381,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                     ),
                   ),
                 ),
-                // Product count badge
+                // Product count badge (now showing unlocked count)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -318,7 +392,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${products.length}${availableCount > 0 ? ' ($availableCount ready)' : ''}',
+                    '${unlockedProducts.length}${availableCount > 0 ? ' ($availableCount ready)' : ''}',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.blue[300],
@@ -346,57 +420,102 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
         if (isExpanded)
           Column(
             children: [
-              // Responsive column grid: 2 columns for smaller screens, 3 for larger
-              // Adapts to phone resolution for better UI on mid/low-end devices
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  // Get actual screen width for more accurate responsive behavior
-                  final screenWidth = MediaQuery.of(context).size.width;
+              // Show helpful message if no products are unlocked in this tier
+              if (unlockedProducts.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800]?.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.grey[600]!,
+                      style: BorderStyle.solid,
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.lock_outline,
+                        color: Colors.grey[400],
+                        size: 32,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No products unlocked yet',
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _getTierUnlockHint(tierName),
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                )
+              else
+                // Responsive column grid: 2 columns for smaller screens, 3 for larger
+                // Adapts to phone resolution for better UI on mid/low-end devices
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Get actual screen width for more accurate responsive behavior
+                    final screenWidth = MediaQuery.of(context).size.width;
 
-                  // Use screen width to determine optimal column count
-                  // 480px breakpoint optimized for 720p/1080p vs high-res phones
-                  final columnsCount = screenWidth < 480 ? 2 : 3;
+                    // Use screen width to determine optimal column count
+                    // 480px breakpoint optimized for 720p/1080p vs high-res phones
+                    final columnsCount = screenWidth < 480 ? 2 : 3;
 
-                  const spacing = 8.0;
+                    const spacing = 8.0;
 
-                  // Group products into rows based on responsive column count
-                  final rows = <List<game.Product>>[];
-                  for (int i = 0; i < products.length; i += columnsCount) {
-                    final end =
-                        (i + columnsCount < products.length)
-                            ? i + columnsCount
-                            : products.length;
-                    rows.add(products.sublist(i, end));
-                  }
+                    // Group unlocked products into rows based on responsive column count
+                    final rows = <List<game.Product>>[];
+                    for (
+                      int i = 0;
+                      i < unlockedProducts.length;
+                      i += columnsCount
+                    ) {
+                      final end =
+                          (i + columnsCount < unlockedProducts.length)
+                              ? i + columnsCount
+                              : unlockedProducts.length;
+                      rows.add(unlockedProducts.sublist(i, end));
+                    }
 
-                  return Column(
-                    children:
-                        rows.map((rowProducts) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                for (int i = 0; i < columnsCount; i++) ...[
-                                  if (i > 0) const SizedBox(width: spacing),
-                                  Expanded(
-                                    child:
-                                        i < rowProducts.length
-                                            ? _buildEnhancedProductCard(
-                                              context,
-                                              rowProducts[i],
-                                              gameService,
-                                            )
-                                            : const SizedBox(), // Empty space for incomplete rows
-                                  ),
+                    return Column(
+                      children:
+                          rows.map((rowProducts) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (int i = 0; i < columnsCount; i++) ...[
+                                    if (i > 0) const SizedBox(width: spacing),
+                                    Expanded(
+                                      child:
+                                          i < rowProducts.length
+                                              ? _buildEnhancedProductCard(
+                                                context,
+                                                rowProducts[i],
+                                                gameService,
+                                              )
+                                              : const SizedBox(), // Empty space for incomplete rows
+                                    ),
+                                  ],
                                 ],
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                  );
-                },
-              ),
+                              ),
+                            );
+                          }).toList(),
+                    );
+                  },
+                ),
               const SizedBox(height: 16),
             ],
           ),
@@ -416,6 +535,21 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
         return Icons.storefront;
       default:
         return Icons.category;
+    }
+  }
+
+  String _getTierUnlockHint(String tierName) {
+    switch (tierName) {
+      case 'Basic Parts':
+        return 'Buy materials from the Buy Materials screen to unlock basic products';
+      case 'Intermediate':
+        return 'Produce basic parts to unlock intermediate products';
+      case 'Complex':
+        return 'Produce intermediate parts to unlock complex products';
+      case 'Retail':
+        return 'Produce complex parts to unlock retail products';
+      default:
+        return 'Complete previous tiers to unlock these products';
     }
   }
 

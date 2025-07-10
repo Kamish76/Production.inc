@@ -5,6 +5,7 @@ import '../models/game_state.dart';
 import '../models/game_data.dart';
 import '../models/game_models.dart';
 import 'game_persistence_service.dart';
+import 'product_unlock_service.dart';
 
 // Production.INC Game Service - handles all game logic
 class ProductionGameService extends ChangeNotifier {
@@ -32,6 +33,10 @@ class ProductionGameService extends ChangeNotifier {
       if (_isTestMode) {
         // In test mode, use default state and don't start timers
         _state = const GameState();
+
+        // Initialize unlock state for test mode (v1.4.18)
+        _initializeUnlockState();
+
         _isLoaded = true;
         notifyListeners();
         return;
@@ -39,6 +44,10 @@ class ProductionGameService extends ChangeNotifier {
 
       // Load saved game state
       _state = await _persistenceService.loadGameState();
+
+      // Initialize unlock state after loading (v1.4.18)
+      _initializeUnlockState();
+
       _isLoaded = true;
       notifyListeners();
 
@@ -54,6 +63,11 @@ class ProductionGameService extends ChangeNotifier {
         print('Error loading game state: $e');
       }
       // If loading fails, start with default state
+      _state = const GameState();
+
+      // Initialize unlock state for error fallback (v1.4.18)
+      _initializeUnlockState();
+
       _isLoaded = true;
       notifyListeners();
 
@@ -277,6 +291,9 @@ class ProductionGameService extends ChangeNotifier {
         money: _state.money - totalCost,
         materials: newMaterials,
       );
+
+      // Check for newly unlocked products after material purchase (v1.4.18)
+      _checkAndUpdateUnlocks();
 
       // Mark materials as dirty for incremental save (v1.4.8)
       _persistenceService.markDirty('materials');
@@ -736,6 +753,11 @@ class ProductionGameService extends ChangeNotifier {
           shippingHistory: newHistory,
         );
 
+        // Check for newly unlocked products after production completion (v1.4.18)
+        if (completedTasks.isNotEmpty) {
+          _checkAndUpdateUnlocks();
+        }
+
         notifyListeners();
 
         // Optimize timer frequency if all operations completed
@@ -750,6 +772,110 @@ class ProductionGameService extends ChangeNotifier {
       // In case of error, still notify listeners to update UI
       notifyListeners();
     }
+  }
+
+  // V1.4.18: Product unlock system methods
+
+  /// Check for newly unlocked products and update state
+  void _checkAndUpdateUnlocks() {
+    try {
+      final newlyUnlocked = ProductUnlockService.updateUnlockStatus(_state);
+
+      if (newlyUnlocked.isNotEmpty) {
+        // Update state with newly unlocked products
+        final updatedUnlockedProducts = Set<String>.from(
+          _state.unlockedProducts,
+        )..addAll(newlyUnlocked);
+
+        // Update the unlock status cache for performance
+        final updatedUnlockStatus = Map<String, bool>.from(
+          _state.productUnlockStatus,
+        );
+        for (final productId in newlyUnlocked) {
+          updatedUnlockStatus[productId] = true;
+        }
+
+        _state = _state.copyWith(
+          unlockedProducts: updatedUnlockedProducts,
+          productUnlockStatus: updatedUnlockStatus,
+        );
+
+        // Show unlock notifications for newly unlocked products
+        _showUnlockNotifications(newlyUnlocked);
+
+        // Mark as dirty for saving
+        _persistenceService.markDirty('unlocked_products');
+
+        if (kDebugMode) {
+          print('Unlocked new products: ${newlyUnlocked.join(', ')}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error checking unlocks: $e');
+      }
+    }
+  }
+
+  /// Show notifications for newly unlocked products
+  void _showUnlockNotifications(Set<String> newlyUnlocked) {
+    // For now, just log - could be extended to show UI notifications
+    for (final productId in newlyUnlocked) {
+      final product = GameData.getProduct(productId);
+      if (product != null && kDebugMode) {
+        print('🔓 NEW PRODUCT UNLOCKED: ${product.emoji} ${product.name}');
+      }
+    }
+  }
+
+  /// Initialize unlock state when game loads
+  void _initializeUnlockState() {
+    try {
+      final allUnlockedProducts = ProductUnlockService.getAllUnlockedProducts(
+        _state,
+      );
+      final unlockStatusMap = <String, bool>{};
+
+      // Cache unlock status for all products for performance
+      for (final product in GameData.products) {
+        unlockStatusMap[product.id] = allUnlockedProducts.contains(product.id);
+      }
+
+      _state = _state.copyWith(
+        unlockedProducts: allUnlockedProducts,
+        productUnlockStatus: unlockStatusMap,
+      );
+
+      if (kDebugMode) {
+        print(
+          'Initialized unlock state: ${allUnlockedProducts.length} products unlocked',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error initializing unlock state: $e');
+      }
+    }
+  }
+
+  /// Check if a product is unlocked
+  bool isProductUnlocked(String productId) {
+    // Use cached status for performance, fallback to service check
+    return _state.productUnlockStatus[productId] ??
+        ProductUnlockService.isProductUnlocked(productId, _state);
+  }
+
+  /// Get filtered products by tier (only unlocked)
+  List<Product> getUnlockedProductsByTier(ProductLevel tier) {
+    final tierProducts = productsByTier[tier] ?? [];
+    return tierProducts
+        .where((product) => isProductUnlocked(product.id))
+        .toList();
+  }
+
+  /// Get tier unlock progress
+  String getTierProgressString(ProductLevel tier) {
+    return ProductUnlockService.getTierProgressString(tier, _state);
   }
 
   // Get material info

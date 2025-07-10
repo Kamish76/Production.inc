@@ -11,7 +11,7 @@ class GamePersistenceService {
   static const String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      4; // Updated for v1.4.11 buy/sell preferences
+      5; // Updated for v1.4.18 product unlock system
 
   Database? _database;
 
@@ -130,6 +130,10 @@ class GamePersistenceService {
         // v1.4.11 migrations - buy/sell quantity preferences
         await _migrateToVersion4(db);
         break;
+      case 5:
+        // v1.4.18 migrations - product unlock system
+        await _migrateToVersion5(db);
+        break;
       default:
         if (kDebugMode) {
           print('No migration defined for version $version');
@@ -232,6 +236,26 @@ class GamePersistenceService {
     } catch (e) {
       if (kDebugMode) {
         print('Migration warning (sell_quantity_preferences): $e');
+      }
+    }
+  }
+
+  /// Migration to version 5 (v1.4.18)
+  Future<void> _migrateToVersion5(Database db) async {
+    try {
+      // Create unlocked_products table
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS unlocked_products (
+          product_id TEXT PRIMARY KEY,
+          unlocked_time INTEGER NOT NULL
+        )
+      ''');
+      if (kDebugMode) {
+        print('Created unlocked_products table');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (unlocked_products): $e');
       }
     }
   }
@@ -441,6 +465,14 @@ class GamePersistenceService {
       )
     ''');
 
+    // Unlocked products table (V1.4.18)
+    await db.execute('''
+      CREATE TABLE unlocked_products (
+        product_id TEXT PRIMARY KEY,
+        unlocked_time INTEGER NOT NULL
+      )
+    ''');
+
     // Insert initial game state record
     await db.insert('game_state', {
       'id': 1,
@@ -524,6 +556,15 @@ class GamePersistenceService {
         await txn.insert('sell_quantity_preferences', {
           'product_id': entry.key,
           'quantity': entry.value,
+        });
+      }
+
+      // Clear and save unlocked products (V1.4.18)
+      await txn.delete('unlocked_products');
+      for (final productId in state.unlockedProducts) {
+        await txn.insert('unlocked_products', {
+          'product_id': productId,
+          'unlocked_time': DateTime.now().millisecondsSinceEpoch,
         });
       }
 
@@ -651,6 +692,13 @@ class GamePersistenceService {
           row['quantity'] as int;
     }
 
+    // Load unlocked products (V1.4.18)
+    final unlockedProductsResult = await db.query('unlocked_products');
+    final unlockedProducts = <String>{};
+    for (final row in unlockedProductsResult) {
+      unlockedProducts.add(row['product_id'] as String);
+    }
+
     // Load active shipping orders
     final shippingOrdersResult = await db.query('active_shipping_orders');
     final activeShippingOrders = <ShippingOrder>[];
@@ -734,6 +782,7 @@ class GamePersistenceService {
       buildQuantityPreferences: buildQuantityPreferences,
       buyQuantityPreferences: buyQuantityPreferences,
       sellQuantityPreferences: sellQuantityPreferences,
+      unlockedProducts: unlockedProducts,
     );
   }
 
