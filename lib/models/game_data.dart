@@ -313,7 +313,7 @@ class GameData {
       id: 'smartphone',
       name: 'Smartphone',
       description: 'Advanced mobile device',
-      sellPrice: 547.0,
+      sellPrice: 765.0,
       emoji: '📱',
       requiredMaterials: {
         'circuits': 2,
@@ -325,6 +325,7 @@ class GameData {
         'sound_driver': 1,
         'display_screen': 1,
         'enclosure_plastic': 1,
+        'camera_module': 1,
         'box': 1, // Added packaging requirement
       },
       productionTimeSeconds: 90.0,

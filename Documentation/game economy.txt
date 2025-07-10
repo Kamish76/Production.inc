@@ -5,91 +5,89 @@
 
 ### 🎯 TIER-BASED PRICING RULES:
 
-**BASIC PARTS TIER RULES:**
-- ✅ Target: 5-15% profit margins based on production time
-- ✅ Minimum Profit Rule: All items must have at least +$1 profit (overrides percentage when needed)
-- ✅ Production Time Scaling: Longer production time = higher margin (when possible within constraints)
-- ✅ Whole Numbers Only: All prices must be whole dollar amounts
-- ✅ Profit Rate Cap: Maximum $0.33/second to prevent exploitation
+    **BASIC PARTS TIER RULES:**
+    - ✅ Target: 5-15% profit margins based on production time
+    - ✅ Minimum Profit Rule: All items must have at least +$1 profit (overrides percentage when needed)
+    - ✅ Production Time Scaling: Longer production time = higher margin (when possible within constraints)
+    - ✅ Whole Numbers Only: All prices must be whole dollar amounts
+    - ✅ Profit Rate Cap: Maximum $0.33/second to prevent exploitation
 
-**INTERMEDIATE PARTS TIER RULES:**
-- ✅ Target: 15-25% profit margins based on production time
-- ✅ Time-Based Progression: 20s = 15%, 25s = 20%, 30s = 25%
-- ✅ Profitability Requirement: All intermediate parts must be profitable (no losses)
-- ✅ Tier Progression: Higher margins than basic parts but lower than retail
+    **INTERMEDIATE PARTS TIER RULES:**
+    - ✅ Target: 15-25% profit margins based on production time
+    - ✅ Time-Based Progression: 20s = 15%, 25s = 20%, 30s = 25%
+    - ✅ Profitability Requirement: All intermediate parts must be profitable (no losses)
+    - ✅ Tier Progression: Higher margins than basic parts but lower than retail
 
-**COMPLEX PARTS TIER RULES:**
-- ✅ Target: ~14% profit margin with $40 profit target
-- ✅ Balance Constraint: Must not exceed retail-level profitability
-- ✅ Production Time Consideration: 50s production time justified by $40 profit
+    **COMPLEX PARTS TIER RULES:**
+    - ✅ Target: ~14% profit margin with $40 profit target
+    - ✅ Balance Constraint: Must not exceed retail-level profitability
+    - ✅ Production Time Consideration: 50s production time justified by $40 profit
 
-**RETAIL PRODUCTS TIER RULES:**
-- ✅ **MASTER RULE**: $0.5/second profit based on TOTAL CHAIN TIME (not just production time)
-- ✅ Pricing Formula: Materials Cost + (Total Chain Time × $0.5)
-- ✅ Packaging Requirements: All retail products must include box packaging costs
-- ✅ Complexity Fairness: More complex supply chains earn proportionally more total profit
-- ✅ Anti-Exploitation: Prevents "skip to highest value product" strategies
+    **RETAIL PRODUCTS TIER RULES:**
+    - ✅ **MASTER RULE**: $0.5/second profit based on TOTAL CHAIN TIME (not just production time)
+    - ✅ Pricing Formula: Materials Cost + (Total Chain Time × $0.5)
+    - ✅ Packaging Requirements: All retail products must include box packaging costs
+    - ✅ Complexity Fairness: More complex supply chains earn proportionally more total profit
+    - ✅ Anti-Exploitation: Prevents "skip to highest value product" strategies
 
-### 📊 SPECIFIC PRICING IMPLEMENTATIONS:
+    ### 📊 SPECIFIC PRICING IMPLEMENTATIONS:
 
-**Basic Parts (Applied min+$1 rule where needed):**
-- Box: $5 → $4 (33% margin, min+$1 applied)
-- Wires: $12 → $9 (13% margin, min+$1 applied)
-- Circuits: $25 → $15 (15% margin for 8s)
-- Plastic Enclosure: $18 → $10 (25% margin, min+$1 applied)
-- Sound Driver: $45 → $22 (16% margin for 15s)
-- Metal Enclosure: $15 → $9 (13% margin, min+$1 applied)
-- Lens: $25 → $24 (14% margin for 10s)
-- Battery: $35 → $23 (15% margin for 12s)
-- Solar Cells: $40 → $38 (15% margin for 15s)
+    **Basic Parts (Applied min+$1 rule where needed):**
+    - Box: $5 → $4 (33% margin, min+$1 applied)
+    - Wires: $12 → $9 (13% margin, min+$1 applied)
+    - Circuits: $25 → $15 (15% margin for 8s)
+    - Plastic Enclosure: $18 → $10 (25% margin, min+$1 applied)
+    - Sound Driver: $45 → $22 (16% margin for 15s)
+    - Metal Enclosure: $15 → $9 (13% margin, min+$1 applied)
+    - Lens: $25 → $24 (14% margin for 10s)
+    - Battery: $35 → $23 (15% margin for 12s)
+    - Solar Cells: $40 → $38 (15% margin for 15s)
 
-**Intermediate Parts (Time-based margins):**
-- Display Screen: $50 → $77 (15% margin for 20s)
-- Processor: $60 → $98 (20% margin for 25s)
-- Image Sensor: $80 → $149 (25% margin for 30s)
+    **Intermediate Parts (Time-based margins):**
+    - Display Screen: $50 → $77 (15% margin for 20s)
+    - Processor: $60 → $98 (20% margin for 25s)
+    - Image Sensor: $80 → $149 (25% margin for 30s)
 
-**Complex Parts (Balanced progression):**
-- Camera Module: $150 → $330 (14% margin, $40 profit for 50s)
+    **Complex Parts (Balanced progression):**
+    - Camera Module: $150 → $330 (14% margin, $40 profit for 50s)
 
-**Retail Products ($0.5/second total chain time):**
-- Speaker: $80 → $146 (+$66, 64s chain = $32 profit)
-- Power Bank: $120 → $169 (+$49, 82s chain = $41 profit)
-- Solar Panel: $200 → $250 (+$50, 120s chain = $60 profit)
-- Digital Camera: $350 → $353 (+$3, 156s chain = $78 profit)
-- Smartphone: $800 → $547 (-$253, 208s chain = $104 profit)
+    **Retail Products ($0.5/second total chain time):**
+    - Speaker: $80 → $146 (+$66, 64s chain = $32 profit)
+    - Power Bank: $120 → $169 (+$49, 82s chain = $41 profit)
+    - Solar Panel: $200 → $250 (+$50, 120s chain = $60 profit)
+    - Digital Camera: $350 → $353 (+$3, 156s chain = $78 profit)
+    - Smartphone: $800 → $547 (-$253, 208s chain = $104 profit)
 
-### 🏗️ STRUCTURAL RULES IMPLEMENTED:
+    ### 🏗️ STRUCTURAL RULES IMPLEMENTED:
 
-**Packaging Requirements:**
-- ✅ All retail products must include box packaging in material costs
-- ✅ Packaging amounts: Speaker(2), Power Bank(1), Solar Panel(4), Digital Camera(2), Smartphone(1)
+    **Packaging Requirements:**
+    - ✅ All retail products must include box packaging in material costs
+    - ✅ Packaging amounts: Speaker(2), Power Bank(1), Solar Panel(4), Digital Camera(2), Smartphone(1)
 
-**Supply Chain Complexity Calculation:**
-- ✅ Total Chain Time = Production Time + All Prerequisites Production Time
-- ✅ Complexity measured by unique component count
-- ✅ Both factors influence final retail pricing
+    **Supply Chain Complexity Calculation:**
+    - ✅ Total Chain Time = Production Time + All Prerequisites Production Time
+    - ✅ Complexity measured by unique component count
+    - ✅ Both factors influence final retail pricing
 
-**Progression Incentives:**
-- ✅ Each tier must be profitable when sold directly
-- ✅ Higher tiers have better margins but require more investment
-- ✅ No single product can dominate the entire economy
+    **Progression Incentives:**
+    - ✅ Each tier must be profitable when sold directly
+    - ✅ Higher tiers have better margins but require more investment
+    - ✅ No single product can dominate the entire economy
 
-### 🎮 GAME BALANCE ACHIEVEMENTS:
+    ### 🎮 GAME BALANCE ACHIEVEMENTS:
 
-**Problems Solved:**
-- ✅ Eliminated "skip to Smartphone" exploitation (reduced from $800 to $547)
-- ✅ Made Speaker and Power Bank profitable (were losing money)
-- ✅ Created incentives to use full production chain
-- ✅ Balanced profit rates across all tiers
-- ✅ Consistent $0.5/second reward for retail complexity
+    **Problems Solved:**
+    - ✅ Eliminated "skip to Smartphone" exploitation (reduced from $800 to $547)
+    - ✅ Made Speaker and Power Bank profitable (were losing money)
+    - ✅ Created incentives to use full production chain
+    - ✅ Balanced profit rates across all tiers
+    - ✅ Consistent $0.5/second reward for retail complexity
 
-**Economic Health Indicators:**
-- ✅ All 18 products are now profitable
-- ✅ Profit margins scale appropriately by tier (13-33% → 15-25% → 14% → 22-32%)
-- ✅ No single product provides excessive profit per second
-- ✅ Complex supply chains are fairly rewarded
-
----
+    **Economic Health Indicators:**
+    - ✅ All 18 products are now profitable
+    - ✅ Profit margins scale appropriately by tier (13-33% → 15-25% → 14% → 22-32%)
+    - ✅ No single product provides excessive profit per second
+    - ✅ Complex supply chains are fairly rewarded
 
 ## RETAIL PRODUCTS TIER (ADJUSTED FOR $0.5/SECOND TOTAL CHAIN TIME)
     Product Name         | Current Price | Materials Cost | New Target Price | New Profit | New Margin | Production Time | Complexity | Total Chain Time
@@ -98,7 +96,7 @@
     Power Bank          | $169.00       | $128.00       | $169.00          | $41.00     | 32%        | 35 seconds     | 6 items    | 82 seconds
     Solar Panel         | $250.00       | $190.00       | $250.00          | $60.00     | 32%        | 45 seconds     | 9 items    | 120 seconds
     Digital Camera      | $353.00       | $275.00       | $353.00          | $78.00     | 28%        | 60 seconds     | 7 items    | 156 seconds
-    Smartphone          | $547.00       | $443.00       | $547.00          | $104.00    | 23%        | 90 seconds     | 10 items   | 208 seconds
+    Smartphone          | $765.00       | $636.00       | $765.00          | $129.00    | 20%        | 90 seconds     | 11 items   | 258 seconds
 
 ### ✅ PRICE ADJUSTMENTS IMPLEMENTED FOR $0.5/SECOND CHAIN PROFIT:
     **Target Calculation: Materials Cost + (Total Chain Time × $0.5)**
@@ -106,7 +104,7 @@
     - Power Bank: $128 + (82s × $0.5) = $128 + $41 = $169 (was $120, +$49 increase) ✅ IMPLEMENTED
     - Solar Panel: $190 + (120s × $0.5) = $190 + $60 = $250 (was $200, +$50 increase) ✅ IMPLEMENTED
     - Digital Camera: $275 + (156s × $0.5) = $275 + $78 = $353 (was $350, +$3 increase) ✅ IMPLEMENTED
-    - Smartphone: $443 + (208s × $0.5) = $443 + $104 = $547 (was $800, -$253 decrease) ✅ IMPLEMENTED
+    - Smartphone: $636 + (258s × $0.5) = $636 + $129 = $765 (was $547, +$218 increase) ✅ IMPLEMENTED
 
 ### COMPLEXITY & PRODUCTION CHAIN ANALYSIS:
     **Speaker (8 items, 64s total):**
@@ -125,9 +123,9 @@
     - Direct: circuits(8s) + processor(25s) + metal_enclosure(7s) + basic_metals(0s) + wires(5s) + battery(12s) + image_sensor(30s) + box(3s×2) = 96s
     - Chain: 60s production + 96s prerequisites = 156s total (corrected)
 
-    **Smartphone (10 items, 265s total):**
-    - Direct: circuits(8s×2) + processor(25s) + metal_enclosure(7s) + basic_metals(0s×2) + wires(5s×3) + battery(12s) + sound_driver(15s) + display_screen(20s) + enclosure_plastic(6s) + box(3s) = 118s
-    - Chain: 90s production + 118s prerequisites = 208s total (corrected), 2025
+    **Smartphone (11 items, 258s total):**
+    - Direct: circuits(8s×2) + processor(25s) + metal_enclosure(7s) + basic_metals(0s×2) + wires(5s×3) + battery(12s) + sound_driver(15s) + display_screen(20s) + enclosure_plastic(6s) + camera_module(50s) + box(3s) = 168s
+    - Chain: 90s production + 168s prerequisites = 258s total (updated with camera_module)
     # Purpose: Balance analysis for potential revenue adjustments
 
 ## MATERIALS (RAW RESOURCES)
@@ -195,7 +193,7 @@
         Power Bank          | $169.00    | $128.00       | $41.00 | 32%    | 35 seconds (+1 box)
         Solar Panel         | $250.00    | $190.00       | $60.00 | 32%    | 45 seconds (+4 box)
         Digital Camera      | $353.00    | $275.00       | $78.00 | 28%    | 60 seconds (+2 box)
-        Smartphone          | $547.00    | $443.00       | $104.00| 23%    | 90 seconds (+1 box)
+        Smartphone          | $765.00    | $636.00       | $129.00| 20%    | 90 seconds (+1 box)
 
 ### UPDATED MATERIAL REQUIREMENTS WITH PACKAGING:
     **Packaging Requirements Added:**
@@ -203,7 +201,7 @@
     - Power Bank: Original materials + 1 box ($124 + $4 = $128)
     - Solar Panel: Original materials + 4 boxes ($174 + $16 = $190)
     - Digital Camera: Original materials + 2 boxes ($267 + $8 = $275)
-    - Smartphone: Original materials + 1 box ($439 + $4 = $443)
+    - Smartphone: Original materials + 1 box ($632 + $4 = $636)
 
 ## MAJOR ECONOMIC IMBALANCES IDENTIFIED
 
@@ -232,7 +230,7 @@
    - Power Bank: $41.00 profit (32% margin) - balanced for 82s total chain time
    - Solar Panel: $60.00 profit (32% margin) - balanced for 120s total chain time
    - Digital Camera: $78.00 profit (28% margin) - balanced for 156s total chain time
-   - Smartphone: $104.00 profit (23% margin) - balanced for 208s total chain time
+   - Smartphone: $129.00 profit (20% margin) - balanced for 258s total chain time
    - All 5 retail products are now profitable with consistent $0.5/second total chain profit
 
 ### 📊 PROFIT PER SECOND ANALYSIS (UPDATED BASIC & INTERMEDIATE):
@@ -261,14 +259,14 @@
 - Power Bank: $1.17/second profit (production only) | $0.50/second total chain time ✅
 - Solar Panel: $1.33/second profit (production only) | $0.50/second total chain time ✅
 - Digital Camera: $1.30/second profit (production only) | $0.50/second total chain time ✅
-- Smartphone: $1.16/second profit (production only) | $0.50/second total chain time ✅
+- Smartphone: $1.43/second profit (production only) | $0.50/second total chain time ✅
 
 **Total Chain Time Profit Analysis (BALANCED):**
 - Speaker: 8 items, 64s chain → $0.50/second profit ✅
 - Power Bank: 6 items, 82s chain → $0.50/second profit ✅
 - Solar Panel: 9 items, 120s chain → $0.50/second profit ✅
 - Digital Camera: 7 items, 156s chain → $0.50/second profit ✅
-- Smartphone: 10 items, 208s chain → $0.50/second profit ✅
+- Smartphone: 11 items, 258s chain → $0.50/second profit ✅
 
 ## RECOMMENDED BALANCE CHANGES
 
@@ -354,3 +352,27 @@
 
 ---
 *✅ ECONOMIC BALANCE COMPLETED: All production tiers now have balanced profit margins and progression incentives. The $0.5/second total chain time profit system ensures that retail products reward complexity while maintaining fair progression. Players can now profitably use all tiers of the production chain, creating engaging strategic depth and preventing the previous "skip to Smartphone" exploitation.*
+
+## 🔄 RECENT UPDATE - SMARTPHONE ENHANCEMENT (July 10, 2025)
+
+### Camera Module Integration:
+- **Added Component:** Camera module to smartphone required materials
+- **Materials Cost Impact:** $443 → $636 (+$193 due to camera_module at $330)
+- **Chain Time Impact:** 208s → 258s (+50s from camera_module production)
+- **Price Adjustment:** $547 → $765 (+$218 to maintain $0.5/second chain profit rule)
+- **New Profit:** $129 (20% margin)
+- **Strategic Impact:** Smartphone now requires more complex supply chain, justifying higher price point
+
+### Updated Smartphone Specifications:
+- **Materials:** 11 components (was 10)
+- **Total Materials Cost:** $636 (was $443)
+- **Total Chain Time:** 258 seconds (was 208)
+- **Sell Price:** $765 (was $547)
+- **Profit Margin:** 20% (was 23%)
+- **Chain Profit Rate:** $0.50/second (maintained consistency)
+
+### Economic Balance Maintained:
+✅ **$0.5/second rule preserved:** $636 + (258s × $0.5) = $765
+✅ **Progression logic maintained:** More components = higher investment = higher reward
+✅ **Supply chain complexity rewarded:** Camera integration adds strategic depth
+✅ **No exploitation created:** Price increase proportional to complexity increase
