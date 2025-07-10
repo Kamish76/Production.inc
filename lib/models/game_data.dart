@@ -228,6 +228,19 @@ class GameData {
       levelId: ProductLevel.basicParts,
     ),
 
+    // v1.4.17: New basic part - Mechanical Systems
+    Product(
+      id: 'gears',
+      name: 'Gears',
+      description: 'Precision mechanical gears for clockwork mechanisms',
+      sellPrice: 5.0,
+      emoji: '⚙️',
+      requiredMaterials: {'basic_metals': 1},
+      productionTimeSeconds: 2.0,
+      baseShippingTimeSeconds: 1.0,
+      levelId: ProductLevel.basicParts,
+    ),
+
     // v1.4.1 Phase 2: New intermediate parts
     Product(
       id: 'image_sensor',
@@ -243,6 +256,19 @@ class GameData {
       },
       productionTimeSeconds: 30.0,
       baseShippingTimeSeconds: 12.0,
+      levelId: ProductLevel.intermediate,
+    ),
+
+    // v1.4.17: New intermediate part - Mechanical Systems
+    Product(
+      id: 'gear_mechanism',
+      name: 'Gear Mechanism',
+      description: 'Precision clockwork mechanism with springs and gears',
+      sellPrice: 25.0,
+      emoji: '🕰️',
+      requiredMaterials: {'gears': 2, 'advanced_metals': 1, 'basic_metals': 1},
+      productionTimeSeconds: 15.0,
+      baseShippingTimeSeconds: 6.0,
       levelId: ProductLevel.intermediate,
     ),
 
@@ -330,6 +356,44 @@ class GameData {
       },
       productionTimeSeconds: 90.0,
       baseShippingTimeSeconds: 35.0,
+      levelId: ProductLevel.retail,
+    ),
+
+    // v1.4.17 Phase 1: Mechanical System - Retail Products
+    Product(
+      id: 'wall_clock',
+      name: 'Analog Wall Clock',
+      description: 'Classic analog timepiece with gear mechanism',
+      sellPrice: 74.0,
+      emoji: '🕰️',
+      requiredMaterials: {
+        'gear_mechanism': 1,
+        'metal_enclosure': 1,
+        'enclosure_plastic': 1,
+        'plastic': 1,
+        'box': 1,
+      },
+      productionTimeSeconds: 31.0,
+      baseShippingTimeSeconds: 12.0,
+      levelId: ProductLevel.retail,
+    ),
+
+    Product(
+      id: 'toy_robot',
+      name: 'Toy Robot',
+      description: 'Interactive mechanical toy with gear movement',
+      sellPrice: 154.0,
+      emoji: '🤖',
+      requiredMaterials: {
+        'gears': 3,
+        'circuits': 1,
+        'battery': 1,
+        'enclosure_plastic': 2,
+        'wires': 2,
+        'box': 2,
+      },
+      productionTimeSeconds: 54.0,
+      baseShippingTimeSeconds: 22.0,
       levelId: ProductLevel.retail,
     ),
   ];

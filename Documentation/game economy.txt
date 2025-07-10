@@ -307,7 +307,7 @@
    - Retail Products: 22-32% profit margins with consistent $0.50/second total chain profit
 
 ✅ **PROGRESSION INCENTIVES CREATED:**
-   - Each tier is profitable when sold directly
+   - Each tier is profitable when sold
    - Higher tiers have better profit margins but require more complex supply chains
    - Total chain time profit consistency prevents exploitation of single high-value products
 
@@ -352,6 +352,44 @@
 
 ---
 *✅ ECONOMIC BALANCE COMPLETED: All production tiers now have balanced profit margins and progression incentives. The $0.5/second total chain time profit system ensures that retail products reward complexity while maintaining fair progression. Players can now profitably use all tiers of the production chain, creating engaging strategic depth and preventing the previous "skip to Smartphone" exploitation.*
+
+## 🔄 RECENT UPDATE - V1.4.17 MECHANICAL SYSTEMS (January 2025)
+
+### New Production Chain - Mechanical Components:
+Added a complete new production chain focusing on mechanical systems and gear-based products.
+
+#### New Basic Parts:
+- **Gears (Basic Part):** $5 (25% margin, materials: basic_metals $3, production: 2s)
+  - Note: Gears is a BASIC PART produced from basic_metals, not a purchasable material
+
+#### New Intermediate Parts:
+- **Gear Mechanism:** $25 (19% margin, materials: gears(2) $10 + advanced_metals $8 + basic_metals $3 = $21, production: 15s)
+
+#### New Retail Products:
+- **Analog Wall Clock:** $74 (materials: $50, chain time: 47s, profit rate: $0.51/s)
+  - Materials: gear_mechanism $25, metal_enclosure $9, enclosure_plastic $10, plastic $2, box $4 = $50
+  - Total Chain Cost: $50 (includes all upstream production)
+  - Total Chain Time: 47 seconds
+  - Price Formula: $50 + (47s × $0.5) = $74
+
+- **Toy Robot:** $154 (materials: $109, chain time: 89s, profit rate: $0.51/s)
+  - Materials: gears(3) $15, circuits $15, battery $23, enclosure_plastic(2) $20, wires(2) $18, box(2) $8 = $109
+  - Total Chain Cost: $109 (includes all upstream production)
+  - Total Chain Time: 89 seconds  
+  - Price Formula: $109 + (89s × $0.5) = $154
+
+### Economic Balance Analysis:
+✅ **Pricing Rule Compliance:** All new products follow established tier-based margin rules
+✅ **Chain Profit Consistency:** Retail products maintain $0.5/second total chain time rule
+✅ **Progression Logic:** Mechanical chain offers alternative path with comparable profitability
+✅ **Material Efficiency:** Gear mechanism provides shared component for wall clock production
+✅ **Strategic Depth:** New production options without power-creep or balance disruption
+
+### Production Chain Summary:
+- **Basic Metals** → **Gears (Basic Part)** → **Gear Mechanism** → **Wall Clock**
+- **Basic Metals** → **Gears (Basic Part)** → **Toy Robot** (direct gears usage)
+- **Alternative Integration:** Both products connect to existing electronic components
+- **Market Positioning:** Mid-tier retail products ($74-154 range) filling gap between power bank and speaker
 
 ## 🔄 RECENT UPDATE - SMARTPHONE ENHANCEMENT (July 10, 2025)
 
