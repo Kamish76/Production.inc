@@ -1,0 +1,17 @@
+# Production.Inc - Version 1.4 Documentation
+# All v1.5.x Automation
+
+🚧 TODO in the future (v1.5+): 🚧
+    PRIORITY: TBD - Future enhancements based on user feedback
+    
+    📋 POTENTIAL MAJOR FEATURES:
+        - Cloud save synchronization and cross-device play
+        - Achievement system with unlock rewards
+        - Production automation and advanced factory management
+        - Sound effects, haptic feedback, and audio experience
+        - Leaderboards and social features
+        - Advanced analytics and production optimization tools
+        - Multi-language support and accessibility improvements
+        - Advanced tutorial system and guided progression
+        - Custom production goals and challenges
+        - Export/import production data and statistics

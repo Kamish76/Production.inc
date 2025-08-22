@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../models/game_state.dart';
 import '../models/game_models.dart';
+import '../constants/game_constants.dart';
 
 /// Service responsible for persisting and loading game state using SQLite
 /// v1.4.8: Enhanced with migration system, backup, and performance optimizations
@@ -486,143 +487,192 @@ class GamePersistenceService {
     final db = await database;
 
     await db.transaction((txn) async {
-      // Update core game state
-      await txn.update(
-        'game_state',
-        {
-          'money': state.money,
-          'last_saved': DateTime.now().millisecondsSinceEpoch,
-        },
-        where: 'id = ?',
-        whereArgs: [1],
-      );
+      await _saveCoreGameState(txn, state);
+      await _saveMaterials(txn, state);
+      await _saveProducts(txn, state);
+      await _saveActiveProductions(txn, state);
+      await _saveQuantityPreferences(txn, state);
+      await _saveUnlockedProducts(txn, state);
+      await _saveShippingData(txn, state);
+    });
+  }
 
-      // Clear and save materials
-      await txn.delete('materials');
-      for (final entry in state.materials.entries) {
-        if (entry.value > 0) {
-          await txn.insert('materials', {
-            'material_id': entry.key,
-            'quantity': entry.value,
-          });
-        }
-      }
+  /// Save core game state (money, last saved time)
+  Future<void> _saveCoreGameState(DatabaseExecutor txn, GameState state) async {
+    await txn.update(
+      'game_state',
+      {
+        'money': state.money,
+        'last_saved': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'id = ?',
+      whereArgs: [1],
+    );
+  }
 
-      // Clear and save products
-      await txn.delete('products');
-      for (final entry in state.products.entries) {
-        if (entry.value > 0) {
-          await txn.insert('products', {
-            'product_id': entry.key,
-            'quantity': entry.value,
-          });
-        }
-      }
-
-      // Clear and save active productions
-      await txn.delete('active_productions');
-      for (final task in state.activeProductions) {
-        await txn.insert('active_productions', {
-          'id': task.id,
-          'product_id': task.productId,
-          'start_time': task.startTime.millisecondsSinceEpoch,
-          'duration_seconds': task.durationSeconds,
-          'quantity': task.quantity,
-          'is_queued': task.isQueued ? 1 : 0,
-        });
-      }
-
-      // Clear and save build quantity preferences
-      await txn.delete('build_quantity_preferences');
-      for (final entry in state.buildQuantityPreferences.entries) {
-        await txn.insert('build_quantity_preferences', {
-          'product_id': entry.key,
-          'quantity': entry.value,
-        });
-      }
-
-      // Clear and save buy quantity preferences (V1.4.11)
-      await txn.delete('buy_quantity_preferences');
-      for (final entry in state.buyQuantityPreferences.entries) {
-        await txn.insert('buy_quantity_preferences', {
+  /// Save materials inventory
+  Future<void> _saveMaterials(DatabaseExecutor txn, GameState state) async {
+    await txn.delete('materials');
+    for (final entry in state.materials.entries) {
+      if (entry.value > 0) {
+        await txn.insert('materials', {
           'material_id': entry.key,
           'quantity': entry.value,
         });
       }
+    }
+  }
 
-      // Clear and save sell quantity preferences (V1.4.11)
-      await txn.delete('sell_quantity_preferences');
-      for (final entry in state.sellQuantityPreferences.entries) {
-        await txn.insert('sell_quantity_preferences', {
+  /// Save products inventory
+  Future<void> _saveProducts(DatabaseExecutor txn, GameState state) async {
+    await txn.delete('products');
+    for (final entry in state.products.entries) {
+      if (entry.value > 0) {
+        await txn.insert('products', {
           'product_id': entry.key,
           'quantity': entry.value,
         });
       }
+    }
+  }
 
-      // Clear and save unlocked products (V1.4.18)
-      await txn.delete('unlocked_products');
-      for (final productId in state.unlockedProducts) {
-        await txn.insert('unlocked_products', {
-          'product_id': productId,
-          'unlocked_time': DateTime.now().millisecondsSinceEpoch,
+  /// Save active production tasks
+  Future<void> _saveActiveProductions(
+    DatabaseExecutor txn,
+    GameState state,
+  ) async {
+    await txn.delete('active_productions');
+    for (final task in state.activeProductions) {
+      await txn.insert('active_productions', {
+        'id': task.id,
+        'product_id': task.productId,
+        'start_time': task.startTime.millisecondsSinceEpoch,
+        'duration_seconds': task.durationSeconds,
+        'quantity': task.quantity,
+        'is_queued': task.isQueued ? 1 : 0,
+      });
+    }
+  }
+
+  /// Save all quantity preferences (build, buy, sell)
+  Future<void> _saveQuantityPreferences(
+    DatabaseExecutor txn,
+    GameState state,
+  ) async {
+    // Save build quantity preferences
+    await txn.delete('build_quantity_preferences');
+    for (final entry in state.buildQuantityPreferences.entries) {
+      await txn.insert('build_quantity_preferences', {
+        'product_id': entry.key,
+        'quantity': entry.value,
+      });
+    }
+
+    // Save buy quantity preferences (V1.4.11)
+    await txn.delete('buy_quantity_preferences');
+    for (final entry in state.buyQuantityPreferences.entries) {
+      await txn.insert('buy_quantity_preferences', {
+        'material_id': entry.key,
+        'quantity': entry.value,
+      });
+    }
+
+    // Save sell quantity preferences (V1.4.11)
+    await txn.delete('sell_quantity_preferences');
+    for (final entry in state.sellQuantityPreferences.entries) {
+      await txn.insert('sell_quantity_preferences', {
+        'product_id': entry.key,
+        'quantity': entry.value,
+      });
+    }
+  }
+
+  /// Save unlocked products (V1.4.18)
+  Future<void> _saveUnlockedProducts(
+    DatabaseExecutor txn,
+    GameState state,
+  ) async {
+    await txn.delete('unlocked_products');
+    for (final productId in state.unlockedProducts) {
+      await txn.insert('unlocked_products', {
+        'product_id': productId,
+        'unlocked_time': DateTime.now().millisecondsSinceEpoch,
+      });
+    }
+  }
+
+  /// Save shipping data (active orders and history)
+  Future<void> _saveShippingData(DatabaseExecutor txn, GameState state) async {
+    await _saveActiveShippingOrders(txn, state);
+    await _saveShippingHistory(txn, state);
+  }
+
+  /// Save active shipping orders
+  Future<void> _saveActiveShippingOrders(
+    DatabaseExecutor txn,
+    GameState state,
+  ) async {
+    await txn.delete('shipping_order_items');
+    await txn.delete('active_shipping_orders');
+
+    for (final order in state.activeShippingOrders) {
+      await txn.insert('active_shipping_orders', {
+        'id': order.id,
+        'start_time': order.startTime.millisecondsSinceEpoch,
+        'total_shipping_time': order.totalShippingTime,
+        'total_revenue': order.totalRevenue,
+      });
+
+      // Save order items
+      for (final item in order.items) {
+        await txn.insert('shipping_order_items', {
+          'order_id': order.id,
+          'product_id': item.productId,
+          'quantity': item.quantity,
         });
       }
+    }
+  }
 
-      // Clear and save active shipping orders
-      await txn.delete('shipping_order_items');
-      await txn.delete('active_shipping_orders');
-      for (final order in state.activeShippingOrders) {
-        await txn.insert('active_shipping_orders', {
-          'id': order.id,
-          'start_time': order.startTime.millisecondsSinceEpoch,
-          'total_shipping_time': order.totalShippingTime,
-          'total_revenue': order.totalRevenue,
+  /// Save shipping history (limited to last 100 entries for performance)
+  Future<void> _saveShippingHistory(
+    DatabaseExecutor txn,
+    GameState state,
+  ) async {
+    await txn.delete('shipping_history_items');
+    await txn.delete('shipping_history');
+
+    final maxEntries = LimitsConstants.maxShippingHistoryEntries;
+    final recentHistory =
+        state.shippingHistory.length > maxEntries
+            ? state.shippingHistory.sublist(
+              state.shippingHistory.length - maxEntries,
+            )
+            : state.shippingHistory;
+
+    for (final history in recentHistory) {
+      await txn.insert('shipping_history', {
+        'id': history.id,
+        'completed_time': history.completedTime.millisecondsSinceEpoch,
+        'total_revenue': history.totalRevenue,
+      });
+
+      // Save history items
+      for (final item in history.items) {
+        await txn.insert('shipping_history_items', {
+          'history_id': history.id,
+          'product_id': item.productId,
+          'quantity': item.quantity,
         });
-
-        // Save order items
-        for (final item in order.items) {
-          await txn.insert('shipping_order_items', {
-            'order_id': order.id,
-            'product_id': item.productId,
-            'quantity': item.quantity,
-          });
-        }
       }
-
-      // Clear and save shipping history (keep only last 100 entries for performance)
-      await txn.delete('shipping_history_items');
-      await txn.delete('shipping_history');
-      final recentHistory =
-          state.shippingHistory.length > 100
-              ? state.shippingHistory.sublist(
-                state.shippingHistory.length - 100,
-              )
-              : state.shippingHistory;
-
-      for (final history in recentHistory) {
-        await txn.insert('shipping_history', {
-          'id': history.id,
-          'completed_time': history.completedTime.millisecondsSinceEpoch,
-          'total_revenue': history.totalRevenue,
-        });
-
-        // Save history items
-        for (final item in history.items) {
-          await txn.insert('shipping_history_items', {
-            'history_id': history.id,
-            'product_id': item.productId,
-            'quantity': item.quantity,
-          });
-        }
-      }
-    });
+    }
   }
 
   /// Load complete game state from database
   Future<GameState> loadGameState() async {
     final db = await database;
 
-    // Load core game state
+    // Load core game state first
     final gameStateResult = await db.query(
       'game_state',
       where: 'id = ?',
@@ -633,24 +683,53 @@ class GamePersistenceService {
       return const GameState();
     }
 
-    final gameStateRow = gameStateResult.first;
-    final money = gameStateRow['money'] as double;
+    final money = gameStateResult.first['money'] as double;
 
-    // Load materials
+    // Load all game components in parallel where possible
+    final materials = await _loadMaterials(db);
+    final products = await _loadProducts(db);
+    final activeProductions = await _loadActiveProductions(db);
+    final quantityPreferences = await _loadQuantityPreferences(db);
+    final unlockedProducts = await _loadUnlockedProducts(db);
+    final activeShippingOrders = await _loadActiveShippingOrders(db);
+    final shippingHistory = await _loadShippingHistory(db);
+
+    return GameState(
+      money: money,
+      materials: materials,
+      products: products,
+      activeProductions: activeProductions,
+      activeShippingOrders: activeShippingOrders,
+      shippingHistory: shippingHistory,
+      buildQuantityPreferences: quantityPreferences.build,
+      buyQuantityPreferences: quantityPreferences.buy,
+      sellQuantityPreferences: quantityPreferences.sell,
+      unlockedProducts: unlockedProducts,
+    );
+  }
+
+  /// Load materials inventory from database
+  Future<Map<String, int>> _loadMaterials(Database db) async {
     final materialsResult = await db.query('materials');
     final materials = <String, int>{};
     for (final row in materialsResult) {
       materials[row['material_id'] as String] = row['quantity'] as int;
     }
+    return materials;
+  }
 
-    // Load products
+  /// Load products inventory from database
+  Future<Map<String, int>> _loadProducts(Database db) async {
     final productsResult = await db.query('products');
     final products = <String, int>{};
     for (final row in productsResult) {
       products[row['product_id'] as String] = row['quantity'] as int;
     }
+    return products;
+  }
 
-    // Load active productions
+  /// Load active production tasks from database
+  Future<List<ProductionTask>> _loadActiveProductions(Database db) async {
     final productionsResult = await db.query('active_productions');
     final activeProductions = <ProductionTask>[];
     for (final row in productionsResult) {
@@ -667,7 +746,14 @@ class GamePersistenceService {
         ),
       );
     }
+    return activeProductions;
+  }
 
+  /// Load all quantity preferences from database
+  Future<
+    ({Map<String, int> build, Map<String, int> buy, Map<String, int> sell})
+  >
+  _loadQuantityPreferences(Database db) async {
     // Load build quantity preferences
     final preferencesResult = await db.query('build_quantity_preferences');
     final buildQuantityPreferences = <String, int>{};
@@ -692,14 +778,25 @@ class GamePersistenceService {
           row['quantity'] as int;
     }
 
-    // Load unlocked products (V1.4.18)
+    return (
+      build: buildQuantityPreferences,
+      buy: buyQuantityPreferences,
+      sell: sellQuantityPreferences,
+    );
+  }
+
+  /// Load unlocked products set from database (V1.4.18)
+  Future<Set<String>> _loadUnlockedProducts(Database db) async {
     final unlockedProductsResult = await db.query('unlocked_products');
     final unlockedProducts = <String>{};
     for (final row in unlockedProductsResult) {
       unlockedProducts.add(row['product_id'] as String);
     }
+    return unlockedProducts;
+  }
 
-    // Load active shipping orders
+  /// Load active shipping orders from database
+  Future<List<ShippingOrder>> _loadActiveShippingOrders(Database db) async {
     final shippingOrdersResult = await db.query('active_shipping_orders');
     final activeShippingOrders = <ShippingOrder>[];
 
@@ -736,7 +833,11 @@ class GamePersistenceService {
       );
     }
 
-    // Load shipping history
+    return activeShippingOrders;
+  }
+
+  /// Load shipping history from database
+  Future<List<ShippingHistory>> _loadShippingHistory(Database db) async {
     final shippingHistoryResult = await db.query('shipping_history');
     final shippingHistory = <ShippingHistory>[];
 
@@ -772,18 +873,7 @@ class GamePersistenceService {
       );
     }
 
-    return GameState(
-      money: money,
-      materials: materials,
-      products: products,
-      activeProductions: activeProductions,
-      activeShippingOrders: activeShippingOrders,
-      shippingHistory: shippingHistory,
-      buildQuantityPreferences: buildQuantityPreferences,
-      buyQuantityPreferences: buyQuantityPreferences,
-      sellQuantityPreferences: sellQuantityPreferences,
-      unlockedProducts: unlockedProducts,
-    );
+    return shippingHistory;
   }
 
   /// Check if a save file exists

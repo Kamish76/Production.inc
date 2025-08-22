@@ -4,8 +4,34 @@ import 'dart:async';
 import '../models/game_state.dart';
 import '../models/game_data.dart';
 import '../models/game_models.dart';
+import '../constants/game_constants.dart';
 import 'game_persistence_service.dart';
 import 'product_unlock_service.dart';
+
+/// Container for operation processing results
+/// Used internally by ProductionGameService for updateProductions refactoring
+class _OperationResults {
+  final List<ProductionTask> completedTasks;
+  final List<ProductionTask> activeTasks;
+  final List<ShippingOrder> completedShipping;
+  final List<ShippingOrder> activeShipping;
+
+  _OperationResults({
+    required this.completedTasks,
+    required this.activeTasks,
+    required this.completedShipping,
+    required this.activeShipping,
+  });
+}
+
+/// Container for money and history results
+/// Used internally by ProductionGameService for shipping completion processing
+class _MoneyAndHistory {
+  final double money;
+  final List<ShippingHistory> history;
+
+  _MoneyAndHistory({required this.money, required this.history});
+}
 
 // Production.INC Game Service - handles all game logic
 class ProductionGameService extends ChangeNotifier {
@@ -83,6 +109,7 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   /// Start the update timer with intelligent frequency management
+  /// Uses constants from GameConstants for consistent timing across the app
   void _startUpdateTimer() {
     _updateTimer?.cancel();
 
@@ -91,15 +118,13 @@ class ProductionGameService extends ChangeNotifier {
       return;
     }
 
-    // Determine timer interval based on activity
+    // Determine timer interval based on activity using centralized constants
     final Duration interval =
         _hasActiveOperations()
-            ? const Duration(
-              seconds: 1,
-            ) // 1 second when active (battery optimized)
-            : const Duration(
-              seconds: 5,
-            ); // 5 seconds when idle (more battery friendly)
+            ? Duration(
+              milliseconds: TimerConstants.normalUpdateMs,
+            ) // Active operations
+            : Duration(milliseconds: TimerConstants.idleUpdateMs); // Idle state
 
     _updateTimer = Timer.periodic(interval, (timer) {
       if (!_isAppPaused) {
@@ -107,7 +132,7 @@ class ProductionGameService extends ChangeNotifier {
 
         // Dynamically adjust timer frequency based on current activity
         if (_hasActiveOperations() !=
-            (interval == const Duration(seconds: 1))) {
+            (interval.inMilliseconds == TimerConstants.normalUpdateMs)) {
           _startUpdateTimer(); // Restart with new interval
         }
       }
@@ -615,7 +640,8 @@ class ProductionGameService extends ChangeNotifier {
     }
   }
 
-  // Check and complete finished productions and shipping orders with error handling
+  /// Main update method - coordinates all production and shipping updates
+  /// This is the central orchestrator for all game progress updates
   void updateProductions() {
     try {
       // Early return if no active operations (battery optimization)
@@ -623,147 +649,13 @@ class ProductionGameService extends ChangeNotifier {
         return;
       }
 
-      final completedTasks = <ProductionTask>[];
-      final activeTasks = <ProductionTask>[];
-      final completedShipping = <ShippingOrder>[];
-      final activeShipping = <ShippingOrder>[];
+      // Process all active operations
+      final operationResults = _processActiveOperations();
 
-      // V1.4.10 QUEUE SYSTEM: Check production tasks with queue processing
-      for (final task in _state.activeProductions) {
-        try {
-          if (task.isQueued) {
-            // Check if this queued task should start now by looking at activeTasks being built
-            final hasActiveProductionOfSameType = activeTasks.any(
-              (otherTask) =>
-                  otherTask.productId == task.productId && !otherTask.isQueued,
-            );
-
-            if (!hasActiveProductionOfSameType) {
-              // Start this queued task
-              final startedTask = task.copyWith(
-                isQueued: false,
-                startTime: DateTime.now(),
-              );
-              activeTasks.add(startedTask);
-            } else {
-              // Keep it queued
-              activeTasks.add(task);
-            }
-          } else if (task.isCompleted) {
-            completedTasks.add(task);
-          } else {
-            activeTasks.add(task);
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            print('Error checking production task ${task.id}: $e');
-          }
-          // If there's an error with a task, consider it active to prevent data loss
-          activeTasks.add(task);
-        }
-      }
-
-      // Check shipping orders
-      for (final order in _state.activeShippingOrders) {
-        try {
-          if (order.isCompleted) {
-            completedShipping.add(order);
-          } else {
-            activeShipping.add(order);
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            print('Error checking shipping order ${order.id}: $e');
-          }
-          // If there's an error with an order, consider it active to prevent data loss
-          activeShipping.add(order);
-        }
-      }
-
-      // Only update state if there are changes or active operations for progress updates
-      if (completedTasks.isNotEmpty ||
-          completedShipping.isNotEmpty ||
-          _state.activeProductions.isNotEmpty ||
-          _state.activeShippingOrders.isNotEmpty) {
-        // Add completed products to inventory
-        final newProducts = Map<String, int>.from(_state.products);
-        for (final task in completedTasks) {
-          try {
-            final currentCount = newProducts[task.productId] ?? 0;
-            const maxProducts = 1000000;
-
-            // Prevent overflow
-            if (currentCount > maxProducts - task.quantity) {
-              if (kDebugMode) {
-                print(
-                  'Product overflow prevented: ${task.productId}, current: $currentCount, adding: ${task.quantity}',
-                );
-              }
-              // Add what we can without overflow
-              newProducts[task.productId] = maxProducts;
-            } else {
-              newProducts[task.productId] = currentCount + task.quantity;
-            }
-          } catch (e) {
-            if (kDebugMode) {
-              print('Error completing production task ${task.id}: $e');
-            }
-          }
-        }
-
-        // Add revenue from completed shipping orders and create history
-        double newMoney = _state.money;
-        final newHistory = List<ShippingHistory>.from(_state.shippingHistory);
-
-        for (final order in completedShipping) {
-          try {
-            // Prevent money overflow
-            const maxMoney = 999999999.0;
-            if (newMoney > maxMoney - order.totalRevenue) {
-              if (kDebugMode) {
-                print(
-                  'Money overflow prevented: current: $newMoney, adding: ${order.totalRevenue}',
-                );
-              }
-              newMoney = maxMoney;
-            } else {
-              newMoney += order.totalRevenue;
-            }
-
-            // Add to history
-            final historyEntry = ShippingHistory(
-              id: order.id,
-              items: order.items,
-              completedTime: DateTime.now(),
-              totalRevenue: order.totalRevenue,
-            );
-            newHistory.add(historyEntry);
-          } catch (e) {
-            if (kDebugMode) {
-              print('Error completing shipping order ${order.id}: $e');
-            }
-          }
-        }
-
-        _state = _state.copyWith(
-          money: newMoney,
-          products: newProducts,
-          activeProductions: activeTasks,
-          activeShippingOrders: activeShipping,
-          shippingHistory: newHistory,
-        );
-
-        // Check for newly unlocked products after production completion (v1.4.18)
-        if (completedTasks.isNotEmpty) {
-          _checkAndUpdateUnlocks();
-        }
-
-        notifyListeners();
-
-        // Optimize timer frequency if all operations completed
-        if (completedTasks.isNotEmpty || completedShipping.isNotEmpty) {
-          _startUpdateTimer(); // Restart with optimal frequency
-        }
+      // Apply completed operations to game state if any changes occurred
+      if (_shouldUpdateGameState(operationResults)) {
+        _applyCompletedOperations(operationResults);
+        _handlePostUpdateTasks(operationResults);
       }
     } catch (e) {
       if (kDebugMode) {
@@ -771,6 +663,229 @@ class ProductionGameService extends ChangeNotifier {
       }
       // In case of error, still notify listeners to update UI
       notifyListeners();
+    }
+  }
+
+  /// Process all active production tasks and shipping orders
+  /// Returns the results of processing for state updates
+  _OperationResults _processActiveOperations() {
+    final completedTasks = <ProductionTask>[];
+    final activeTasks = <ProductionTask>[];
+    final completedShipping = <ShippingOrder>[];
+    final activeShipping = <ShippingOrder>[];
+
+    // Process production tasks with queue system (V1.4.10)
+    _processProductionTasks(activeTasks, completedTasks);
+
+    // Process shipping orders
+    _processShippingOrders(activeShipping, completedShipping);
+
+    return _OperationResults(
+      completedTasks: completedTasks,
+      activeTasks: activeTasks,
+      completedShipping: completedShipping,
+      activeShipping: activeShipping,
+    );
+  }
+
+  /// Process production tasks including queue management (V1.4.10 QUEUE SYSTEM)
+  void _processProductionTasks(
+    List<ProductionTask> activeTasks,
+    List<ProductionTask> completedTasks,
+  ) {
+    for (final task in _state.activeProductions) {
+      try {
+        if (task.isQueued) {
+          _handleQueuedTask(task, activeTasks);
+        } else if (task.isCompleted) {
+          completedTasks.add(task);
+        } else {
+          activeTasks.add(task);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error checking production task ${task.id}: $e');
+        }
+        // If there's an error with a task, consider it active to prevent data loss
+        activeTasks.add(task);
+      }
+    }
+  }
+
+  /// Handle queued task logic - start if no active production of same type
+  void _handleQueuedTask(
+    ProductionTask task,
+    List<ProductionTask> activeTasks,
+  ) {
+    // Check if this queued task should start now
+    final hasActiveProductionOfSameType = activeTasks.any(
+      (otherTask) =>
+          otherTask.productId == task.productId && !otherTask.isQueued,
+    );
+
+    if (!hasActiveProductionOfSameType) {
+      // Start this queued task
+      final startedTask = task.copyWith(
+        isQueued: false,
+        startTime: DateTime.now(),
+      );
+      activeTasks.add(startedTask);
+    } else {
+      // Keep it queued
+      activeTasks.add(task);
+    }
+  }
+
+  /// Process shipping orders - separate completed from active
+  void _processShippingOrders(
+    List<ShippingOrder> activeShipping,
+    List<ShippingOrder> completedShipping,
+  ) {
+    for (final order in _state.activeShippingOrders) {
+      try {
+        if (order.isCompleted) {
+          completedShipping.add(order);
+        } else {
+          activeShipping.add(order);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error checking shipping order ${order.id}: $e');
+        }
+        // If there's an error with an order, consider it active to prevent data loss
+        activeShipping.add(order);
+      }
+    }
+  }
+
+  /// Check if game state should be updated based on operation results
+  bool _shouldUpdateGameState(_OperationResults results) {
+    return results.completedTasks.isNotEmpty ||
+        results.completedShipping.isNotEmpty ||
+        _state.activeProductions.isNotEmpty ||
+        _state.activeShippingOrders.isNotEmpty;
+  }
+
+  /// Apply completed operations to game state
+  void _applyCompletedOperations(_OperationResults results) {
+    // Process completed productions and add to inventory
+    final newProducts = _addCompletedProductionsToInventory(
+      results.completedTasks,
+    );
+
+    // Process completed shipping and add revenue/history
+    final moneyAndHistory = _processCompletedShipping(
+      results.completedShipping,
+    );
+
+    // Update game state with all changes
+    _state = _state.copyWith(
+      money: moneyAndHistory.money,
+      products: newProducts,
+      activeProductions: results.activeTasks,
+      activeShippingOrders: results.activeShipping,
+      shippingHistory: moneyAndHistory.history,
+    );
+  }
+
+  /// Add completed production tasks to product inventory
+  Map<String, int> _addCompletedProductionsToInventory(
+    List<ProductionTask> completedTasks,
+  ) {
+    final newProducts = Map<String, int>.from(_state.products);
+
+    for (final task in completedTasks) {
+      try {
+        final currentCount = newProducts[task.productId] ?? 0;
+        const maxProducts = LimitsConstants.maxProducts;
+
+        // Prevent overflow
+        if (currentCount > maxProducts - task.quantity) {
+          if (kDebugMode) {
+            print(
+              'Product overflow prevented: ${task.productId}, current: $currentCount, adding: ${task.quantity}',
+            );
+          }
+          // Add what we can without overflow
+          newProducts[task.productId] = maxProducts;
+        } else {
+          newProducts[task.productId] = currentCount + task.quantity;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error completing production task ${task.id}: $e');
+        }
+      }
+    }
+
+    return newProducts;
+  }
+
+  /// Process completed shipping orders - add revenue and create history
+  _MoneyAndHistory _processCompletedShipping(
+    List<ShippingOrder> completedShipping,
+  ) {
+    double newMoney = _state.money;
+    final newHistory = List<ShippingHistory>.from(_state.shippingHistory);
+
+    for (final order in completedShipping) {
+      try {
+        // Add revenue with overflow protection
+        newMoney = _addRevenueWithOverflowProtection(
+          newMoney,
+          order.totalRevenue,
+        );
+
+        // Add to shipping history
+        final historyEntry = ShippingHistory(
+          id: order.id,
+          items: order.items,
+          completedTime: DateTime.now(),
+          totalRevenue: order.totalRevenue,
+        );
+        newHistory.add(historyEntry);
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error completing shipping order ${order.id}: $e');
+        }
+      }
+    }
+
+    return _MoneyAndHistory(money: newMoney, history: newHistory);
+  }
+
+  /// Add revenue to player money with overflow protection
+  double _addRevenueWithOverflowProtection(
+    double currentMoney,
+    double revenue,
+  ) {
+    const maxMoney = LimitsConstants.maxMoney;
+
+    if (currentMoney > maxMoney - revenue) {
+      if (kDebugMode) {
+        print(
+          'Money overflow prevented: current: $currentMoney, adding: $revenue',
+        );
+      }
+      return maxMoney;
+    } else {
+      return currentMoney + revenue;
+    }
+  }
+
+  /// Handle post-update tasks like unlock checking and timer optimization
+  void _handlePostUpdateTasks(_OperationResults results) {
+    // Check for newly unlocked products after production completion (v1.4.18)
+    if (results.completedTasks.isNotEmpty) {
+      _checkAndUpdateUnlocks();
+    }
+
+    notifyListeners();
+
+    // Optimize timer frequency if operations completed
+    if (results.completedTasks.isNotEmpty ||
+        results.completedShipping.isNotEmpty) {
+      _startUpdateTimer(); // Restart with optimal frequency
     }
   }
 
@@ -823,7 +938,8 @@ class ProductionGameService extends ChangeNotifier {
     for (final productId in newlyUnlocked) {
       final product = GameData.getProduct(productId);
       if (product != null && kDebugMode) {
-        print('🔓 NEW PRODUCT UNLOCKED: ${product.emoji} ${product.name}');
+        // Could show UI notifications here in the future
+        // Product unlocked: ${product.emoji} ${product.name}
       }
     }
   }

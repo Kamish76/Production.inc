@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/services/production_game_service.dart';
+import 'package:game1/services/production_game_service.dart';
 
 void main() {
   group('New Player Experience Tests v1.4.18', () {
