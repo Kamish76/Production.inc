@@ -233,6 +233,7 @@ flutter build appbundle --release
 
 ### 📱 Platform Expansion
 - **iOS Release**: Native iOS deployment
+- **iOS Release**: (removed - project now targets Android only in this branch)
 - **Cloud Saves**: Cross-device synchronization
 - **Analytics**: Performance and engagement tracking
 - **Localization**: Multi-language support
