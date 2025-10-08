@@ -55,8 +55,13 @@ class ItemCard extends StatelessWidget {
             children: [
               _buildHeader(),
               const SizedBox(height: 10),
-              _buildStatusIndicator(),
-              const SizedBox(height: 10),
+              // For build mode we show a small check/X next to the emoji in the
+              // header, so the larger status box is redundant. Only render the
+              // status indicator for buy/sell modes.
+              if (mode != ItemCardMode.build) ...[
+                _buildStatusIndicator(),
+                const SizedBox(height: 10),
+              ],
               // Show a compact per-unit materials summary for build items (always visible when unlocked)
               if (mode == ItemCardMode.build && _isProduct && gameService.isProductUnlocked(_product.id)) ...[
                 _buildScaledMaterialsSummary(),
@@ -76,17 +81,33 @@ class ItemCard extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: 36,
-          child: Center(
-            child: Text(
-              _isMaterial ? _material.emoji : _product.emoji,
-              style: const TextStyle(fontSize: 28),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+          width: 48,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: Center(
+                  child: Text(
+                    _isMaterial ? _material.emoji : _product.emoji,
+                    style: const TextStyle(fontSize: 28),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              // Buildable indicator: show check or X for build-mode products
+              if (mode == ItemCardMode.build && _isProduct) ...[
+                const SizedBox(width: 6),
+                Icon(
+                  _canProduce ? Icons.check_circle : Icons.cancel,
+                  size: 18,
+                  color: _canProduce ? Colors.greenAccent : Colors.redAccent,
+                ),
+              ],
+            ],
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Flexible(
           fit: FlexFit.loose,
           child: Column(
@@ -605,7 +626,7 @@ class ItemCard extends StatelessWidget {
         return _canProduce ? Icons.check_circle : Icons.cancel;
     }
   }
-
+  
   String _getStatusText() {
     switch (mode) {
       case ItemCardMode.buy:
@@ -619,7 +640,6 @@ class ItemCard extends StatelessWidget {
         return _canProduce ? 'Ready to Build' : 'Need Materials';
     }
   }
-
   // Stock level helpers for sell mode
   String _getStockLevel() {
     final available = gameService.state.getProductCount(_product.id);
@@ -648,7 +668,7 @@ class ItemCard extends StatelessWidget {
 
   // Production helpers for build mode
   bool get _canProduce => _isProduct && gameService.state.hasMaterialsFor(_product.requiredMaterials);
-  bool get _isInProduction => _isProduct && gameService.state.activeProductions.any((task) => task.productId == _product.id);
+  // Note: production queuing now handled by service; removed _isInProduction guard.
 
   // Action handlers
   void _handleCardTap() {
@@ -674,7 +694,9 @@ class ItemCard extends StatelessWidget {
         }
         break;
       case ItemCardMode.build:
-        if (_canProduce && !_isInProduction) {
+        if (_canProduce) {
+          // Allow queuing even if there's already production in progress;
+          // startProduction will handle queuing logic.
           _handleBuildAction();
         } else if (onProductDetails != null) {
           onProductDetails!();
@@ -730,9 +752,10 @@ class ItemCard extends StatelessWidget {
   }
 
   void _handleBuildAction() {
-    if (_canProduce && !_isInProduction) {
+    if (_canProduce) {
       HapticFeedback.mediumImpact();
-      gameService.startProduction(_product.id, 1);
+      final qty = gameService.getBuildQuantityPreference(_product.id);
+      gameService.startProduction(_product.id, qty);
     }
   }
 }
