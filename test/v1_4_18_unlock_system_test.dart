@@ -48,8 +48,15 @@ void main() {
         false,
       );
 
-      // Add more produced basic parts
+      // Add more produced basic parts and required raw materials
       final gameStateWithMoreProducts = gameState.copyWith(
+        materials: {
+          'cardboard': 10,
+          'basic_metals': 10,
+          'plastic': 10,
+          'glass': 10,
+          'advanced_metals': 10,
+        }, // Include all required raw materials
         products: {
           'box': 1,
           'wires': 1,
