@@ -19,6 +19,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.6
   collection: ^1.18.0
   android_intent_plus: ^5.1.0
+  logger: ^2.6.2
 
 dev_dependencies:
   flutter_test:
