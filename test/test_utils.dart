@@ -2,6 +2,7 @@
 /// 
 /// This file provides common test setup and teardown functionality
 /// to ensure consistent test environments across all test files.
+library;
 
 import 'package:game1/services/game_persistence_service.dart';
 import 'package:game1/services/production_game_service.dart';

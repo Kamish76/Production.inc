@@ -473,7 +473,7 @@ class SettingsScreen extends StatelessWidget {
                                       value:
                                           true, // Placeholder - would be from preferences
                                       onChanged: null, // Disabled for now
-                                      activeColor: Colors.green,
+                                      activeThumbColor: Colors.green,
                                     ),
                                   ],
                                 ),
@@ -507,7 +507,7 @@ class SettingsScreen extends StatelessWidget {
                                       value:
                                           false, // Placeholder - would be from preferences
                                       onChanged: null, // Disabled for now
-                                      activeColor: Colors.green,
+                                      activeThumbColor: Colors.green,
                                     ),
                                   ],
                                 ),
