@@ -57,7 +57,7 @@
    - [x] Update `go_router` from 14.8.1 to compatible latest ✅
      - [x] Test app functionality after each major update ✅ ALL TESTS PASS
      - [x] Document any breaking changes encountered ✅ See below
-     - [ ] Set up automated dependency update alerts
+  - [x] Set up automated dependency update alerts ✅ (Dependabot configured in .github/dependabot.yml)
 
 #### Breaking Changes & Test Failures (Oct 8, 2025)
 > - **DatabaseException(error database_closed)** in widget and performance tests
