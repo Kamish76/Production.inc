@@ -50,6 +50,7 @@ class ItemCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
@@ -164,48 +165,7 @@ class ItemCard extends StatelessWidget {
     }
   }
 
-  Widget _buildPerUnitMaterialsSummary() {
-    if (!_isProduct || _product.requiredMaterials.isEmpty) return const SizedBox.shrink();
-
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: _product.requiredMaterials.entries.map((e) {
-        final id = e.key;
-        final qty = e.value;
-        String name = id;
-        String emoji = '';
-        try {
-          final m = data.GameData.materials.firstWhere((m) => m.id == id);
-          name = m.name;
-          emoji = m.emoji;
-        } catch (_) {
-          try {
-            final p = data.GameData.products.firstWhere((p) => p.id == id);
-            name = p.name;
-            emoji = p.emoji;
-          } catch (_) {}
-        }
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.grey[800]?.withOpacity(0.4),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.grey[700]!),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (emoji.isNotEmpty) Text(emoji, style: const TextStyle(fontSize: 12)),
-              if (emoji.isNotEmpty) const SizedBox(width: 6),
-              Text('$name ($qty)', style: const TextStyle(fontSize: 12)),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
+  // Per-unit summary removed; scaled summary is shown instead.
 
   Widget _buildScaledMaterialsSummary() {
     if (!_isProduct || _product.requiredMaterials.isEmpty) return const SizedBox.shrink();
@@ -288,17 +248,6 @@ class ItemCard extends StatelessWidget {
             canAfford: gameService.state.canAfford(_material.buyPrice * 1),
             onPressed: () => _handleBuyQuantitySelection(1),
             label: 'Buy 1',
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: QuantitySelectorButton(
-            quantity: 5,
-            cost: _material.buyPrice * 5,
-            isSelected: currentPreference == 5,
-            canAfford: gameService.state.canAfford(_material.buyPrice * 5),
-            onPressed: () => _handleBuyQuantitySelection(5),
-            label: 'Buy 5',
           ),
         ),
         const SizedBox(width: 8),
