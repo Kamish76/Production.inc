@@ -55,13 +55,8 @@ class ItemCard extends StatelessWidget {
             children: [
               _buildHeader(),
               const SizedBox(height: 10),
-              // For build mode we show a small check/X next to the emoji in the
-              // header, so the larger status box is redundant. Only render the
-              // status indicator for buy/sell modes.
-              if (mode != ItemCardMode.build) ...[
-                _buildStatusIndicator(),
-                const SizedBox(height: 10),
-              ],
+              _buildStatusIndicator(),
+              const SizedBox(height: 10),
               // Show a compact per-unit materials summary for build items (always visible when unlocked)
               if (mode == ItemCardMode.build && _isProduct && gameService.isProductUnlocked(_product.id)) ...[
                 _buildScaledMaterialsSummary(),
@@ -82,28 +77,56 @@ class ItemCard extends StatelessWidget {
       children: [
         SizedBox(
           width: 48,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          height: 48,
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              Expanded(
-                child: Center(
-                  child: Text(
-                    _isMaterial ? _material.emoji : _product.emoji,
-                    style: const TextStyle(fontSize: 28),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+              Center(
+                child: Text(
+                  _isMaterial ? _material.emoji : _product.emoji,
+                  style: const TextStyle(fontSize: 28),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Buildable indicator: small check/X near the icon (still visible)
+              if (mode == ItemCardMode.build && _isProduct)
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Icon(
+                    _canProduce ? Icons.check_circle : Icons.cancel,
+                    size: 18,
+                    color: _canProduce ? Colors.greenAccent : Colors.redAccent,
+                  ),
+                ),
+              // Availability badge at the top-right corner
+              Positioned(
+                top: -6,
+                right: -6,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900]?.withOpacity(0.9),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24, width: 1),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black54, blurRadius: 2, offset: Offset(0, 1)),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      _isMaterial
+                          ? '${gameService.state.getMaterialCount(_material.id)}'
+                          : '${gameService.state.getProductCount(_product.id)}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ),
-              // Buildable indicator: show check or X for build-mode products
-              if (mode == ItemCardMode.build && _isProduct) ...[
-                const SizedBox(width: 6),
-                Icon(
-                  _canProduce ? Icons.check_circle : Icons.cancel,
-                  size: 18,
-                  color: _canProduce ? Colors.greenAccent : Colors.redAccent,
-                ),
-              ],
             ],
           ),
         ),
@@ -274,6 +297,17 @@ class ItemCard extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: QuantitySelectorButton(
+            quantity: 5,
+            cost: _material.buyPrice * 5,
+            isSelected: currentPreference == 5,
+            canAfford: gameService.state.canAfford(_material.buyPrice * 5),
+            onPressed: () => _handleBuyQuantitySelection(5),
+            label: 'Buy 5',
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: QuantitySelectorButton(
             quantity: 10,
             cost: _material.buyPrice * 10,
             isSelected: currentPreference == 10,
@@ -377,17 +411,7 @@ class ItemCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(
-          child: QuantitySelectorButton(
-            quantity: 5,
-            cost: 0,
-            isSelected: currentPreference == 5,
-            canAfford: availableMaterials,
-            onPressed: () => _handleBuildQuantitySelection(5),
-            label: 'Build 5',
-          ),
-        ),
-        const SizedBox(width: 8),
+        // Removed Build 5 option per request
         Expanded(
           child: QuantitySelectorButton(
             quantity: 10,
