@@ -48,7 +48,7 @@ class ProductionStatusWidget extends StatelessWidget {
       onTap: onToggleExpanded,
       child: Row(
         children: [
-          Icon(Icons.build_circle, color: AppColors.productionActive, size: 20),
+          const Icon(Icons.build_circle, color: AppColors.productionActive, size: 20),
           const SizedBox(width: UIConstants.standardSpacing),
           Expanded(
             child: Text(
@@ -187,15 +187,15 @@ class ProductionStatusWidget extends StatelessWidget {
             ),
             if (groupedProduction.isQueued) ...[
               const SizedBox(height: UIConstants.smallPadding),
-              Row(
+              const Row(
                 children: [
                   Icon(
                     Icons.schedule,
                     color: AppColors.productionQueued,
                     size: 16,
                   ),
-                  const SizedBox(width: 4),
-                  const Text(
+                  SizedBox(width: 4),
+                  Text(
                     'Queued',
                     style: TextStyle(
                       color: AppColors.productionQueued,

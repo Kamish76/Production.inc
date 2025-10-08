@@ -142,10 +142,10 @@ class ProductionGameService extends ChangeNotifier {
     // Determine timer interval based on activity using centralized constants
     final Duration interval =
         _hasActiveOperations()
-            ? Duration(
+            ? const Duration(
               milliseconds: TimerConstants.normalUpdateMs,
             ) // Active operations
-            : Duration(milliseconds: TimerConstants.idleUpdateMs); // Idle state
+            : const Duration(milliseconds: TimerConstants.idleUpdateMs); // Idle state
 
     _updateTimer = Timer.periodic(interval, (timer) {
       if (!_isAppPaused) {

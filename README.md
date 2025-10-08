@@ -254,3 +254,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **🏭 Start your production empire today! Transform raw materials into premium products and master the art of manufacturing! �💰**
 
 *Production.INC - Where every component counts and every optimization matters.*
+### Coding Standards Compliance
+
+Production.Inc enforces strict linting and code quality standards:
+- All code passes `flutter analyze` with no lint errors
+- Key rules: `avoid_print`, `prefer_single_quotes`, `prefer_const_constructors`
+- See [Development Guide](docs/DEVELOPMENT_GUIDE.md) for details

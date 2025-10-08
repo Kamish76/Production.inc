@@ -100,6 +100,16 @@ User Interaction → Screen Widget → Service Method → State Update → UI Re
 
 Follow the official [Dart Style Guide](https://dart.dev/guides/language/effective-dart/style) with these additions:
 
+### Linting & Coding Standards Compliance
+
+Production.Inc enforces strict linting and code quality standards via `analysis_options.yaml`:
+
+- `avoid_print: true` (no print statements in production code)
+- `prefer_single_quotes: true` (single quotes for strings)
+- `prefer_const_constructors: true` (const constructors for immutable widgets)
+
+All code is regularly checked with `flutter analyze` and must pass these lint rules before merging. This ensures maintainability, readability, and industry-standard best practices throughout the codebase.
+
 #### File Organization
 ```dart
 // 1. Dart/Flutter imports

@@ -33,7 +33,7 @@ void main() {
           activeShippingOrders: [
             ShippingOrder(
               id: 'test_ship_1',
-              items: [ShippingItem(productId: 'box', quantity: 1)],
+              items: const [ShippingItem(productId: 'box', quantity: 1)],
               startTime: DateTime.now().subtract(const Duration(minutes: 2)),
               totalShippingTime: 300,
               totalRevenue: 10.0,
@@ -42,7 +42,7 @@ void main() {
           shippingHistory: [
             ShippingHistory(
               id: 'test_hist_1',
-              items: [ShippingItem(productId: 'bottle', quantity: 1)],
+              items: const [ShippingItem(productId: 'bottle', quantity: 1)],
               completedTime: DateTime.now().subtract(const Duration(hours: 1)),
               totalRevenue: 5.0,
             ),
