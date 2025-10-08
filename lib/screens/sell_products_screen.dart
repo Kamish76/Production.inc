@@ -189,9 +189,8 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
           // Dynamic Grid layout with proper mobile sizing
           LayoutBuilder(
             builder: (context, constraints) {
-              // Responsive: 2 columns for <480px (720p/1080p), 3 for high-res
-              int crossAxisCount =
-                  constraints.maxWidth < 480 ? 2 : 3;
+        // Responsive: 3 columns for wide displays (>=1080px), otherwise 2
+        int crossAxisCount = constraints.maxWidth >= 1080 ? 3 : 2;
               double cardWidth =
                   (constraints.maxWidth -
                       (crossAxisCount - 1) *
@@ -206,16 +205,25 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                     availableProducts.map((product) {
                       return SizedBox(
                         width: cardWidth,
-                        child: ItemCard(
-                          item: product,
-                          gameService: gameService,
-                          mode: ItemCardMode.sell,
-                          onProductDetails: () => showDialog(
-                            context: context,
-                            builder: (context) => GameDialog.productDetails(
-                              product: product,
-                              gameService: gameService,
-                            ),
+                        child: IntrinsicHeight(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: ItemCard(
+                                  item: product,
+                                  gameService: gameService,
+                                  mode: ItemCardMode.sell,
+                                  onProductDetails: () => showDialog(
+                                    context: context,
+                                    builder: (context) => GameDialog.productDetails(
+                                      product: product,
+                                      gameService: gameService,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
