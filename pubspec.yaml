@@ -2,7 +2,7 @@ name: game1
 description: "An Android game built with Flutter."
 publish_to: 'none'
 
-version: 1.4.11+11
+version: 1.4.14+14
 
 environment:
   sdk: '^3.7.0'
@@ -31,7 +31,6 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/audio/
 
 flutter_launcher_icons:
   android: "launcher_icon"
