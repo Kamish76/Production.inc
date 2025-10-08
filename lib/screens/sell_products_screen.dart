@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
 import '../widgets/screen_header.dart';
-import '../widgets/portfolio_display.dart';
+import '../widgets/financial_status_display.dart';
 import '../widgets/empty_inventory_message.dart';
 import '../widgets/tier_expansion_panel.dart';
 import '../widgets/sell_product_card.dart';
@@ -110,7 +110,10 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                 ),
 
                 // Money and portfolio display
-                PortfolioDisplay(gameService: gameService),
+                FinancialStatusDisplay(
+                  gameService: gameService,
+                  mode: FinancialDisplayMode.portfolio,
+                ),
 
                 const SizedBox(height: 16),
 

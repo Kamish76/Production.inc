@@ -5,8 +5,7 @@ import '../models/game_models.dart' as game;
 
 import '../widgets/screen_header.dart';
 import '../widgets/empty_inventory_message.dart';
-import '../widgets/current_order_card.dart';
-import '../widgets/history_order_card.dart';
+import '../widgets/order_card.dart';
 
 class ShippingScreen extends StatelessWidget {
   const ShippingScreen({super.key});
@@ -94,7 +93,7 @@ class ShippingScreen extends StatelessWidget {
       itemCount: activeOrders.length,
       itemBuilder: (context, index) {
         final order = activeOrders[index];
-        return CurrentOrderCard(order: order);
+        return OrderCard.active(order: order);
       },
     );
   }
@@ -117,7 +116,7 @@ class ShippingScreen extends StatelessWidget {
       itemCount: history.length,
       itemBuilder: (context, index) {
         final record = history[index];
-        return HistoryOrderCard(record: record);
+        return OrderCard.completed(record: record);
       },
     );
   }

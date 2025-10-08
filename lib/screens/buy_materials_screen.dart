@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/production_game_service.dart';
 import '../widgets/screen_header.dart';
-import '../widgets/money_display.dart';
+import '../widgets/financial_status_display.dart';
 import '../widgets/buy_material_card.dart';
 
 class BuyMaterialsScreen extends StatelessWidget {
@@ -30,7 +30,10 @@ class BuyMaterialsScreen extends StatelessWidget {
                   iconColor: Colors.green[400]!,
                 ),
                 // Money display
-                MoneyDisplay(gameService: gameService),
+                FinancialStatusDisplay(
+                  gameService: gameService,
+                  mode: FinancialDisplayMode.moneyOnly,
+                ),
 
                 // Materials list with single-column layout for better readability
                 Expanded(
