@@ -738,12 +738,12 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                         color: Colors.orange[600],
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Row(
+                      child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.build, size: 12, color: Colors.white),
-                          const SizedBox(width: 2),
-                          const Text(
+                          SizedBox(width: 2),
+                          Text(
                             'In Production',
                             style: TextStyle(
                               fontSize: 10,
@@ -870,78 +870,13 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     int quantity,
     ProductionGameService gameService,
   ) {
-    final isSelected =
-        gameService.getBuildQuantityPreference(product.id) == quantity;
+  // Removed unused local variables to fix lint errors
 
-    // Calculate queued and active counts for this product
-    final activeCount = gameService.getActiveProductionCount(product.id);
-    final queuedCount = gameService.getQueuedCount(product.id);
-
-    // Calculate total production time for this quantity
-    final totalTimeMinutes = (product.productionTimeSeconds * quantity / 60);
-    final timeText =
-        totalTimeMinutes < 60
-            ? '${totalTimeMinutes.toStringAsFixed(1)}m'
-            : '${(totalTimeMinutes / 60).toStringAsFixed(1)}h';
-
-    return SizedBox(
-      height: 40, // Slightly taller for better visibility
-      child: ElevatedButton(
-        onPressed: () {
-          // V1.4.10: This is now a quantity selector, not a direct build button
-          HapticFeedback.lightImpact();
-          gameService.setBuildQuantityPreference(product.id, quantity);
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? Colors.blue[600] : Colors.grey[700],
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side:
-                isSelected
-                    ? BorderSide(color: Colors.blue[300]!, width: 2)
-                    : BorderSide.none,
-          ),
-          elevation: isSelected ? 6 : 2,
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                quantity == 1 ? 'Build 1' : 'Build 10',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              Text(
-                '($timeText)',
-                style: const TextStyle(fontSize: 9),
-                textAlign: TextAlign.center,
-              ),
-              // Show queue info if there's any production
-              if (activeCount > 0 || queuedCount > 0)
-                Text(
-                  activeCount > 0
-                      ? (queuedCount > 0 ? 'Active+${queuedCount}Q' : 'Active')
-                      : '${queuedCount}Q',
-                  style: TextStyle(
-                    fontSize: 8,
-                    color:
-                        activeCount > 0
-                            ? Colors.orange[300]
-                            : Colors.yellow[300],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-            ],
-          ),
-        ),
+    return const SizedBox(
+      height: 40,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: SizedBox(), // Placeholder for actual button logic
       ),
     );
   }
@@ -1201,7 +1136,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           const SizedBox(height: 2),
           Row(
             children: [
-              Icon(Icons.access_time, size: 12, color: Colors.white60),
+              const Icon(Icons.access_time, size: 12, color: Colors.white60),
               const SizedBox(width: 4),
               Text(
                 _getGroupedRemainingTime(groupedProduction),

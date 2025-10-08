@@ -67,7 +67,7 @@ void main() {
         activeShippingOrders: [
           ShippingOrder(
             id: 'ship1',
-            items: [ShippingItem(productId: 'box', quantity: 1)],
+            items: const [ShippingItem(productId: 'box', quantity: 1)],
             startTime: DateTime.now(),
             totalShippingTime: 300,
             totalRevenue: 10.0,

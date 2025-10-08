@@ -19,7 +19,7 @@ void main() {
     DeviceOrientation.portraitDown,
   ]);
 
-  runApp(ProductionIncApp());
+  runApp(const ProductionIncApp());
 }
 
 class ProductionIncApp extends StatefulWidget {

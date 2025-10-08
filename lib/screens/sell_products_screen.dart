@@ -570,12 +570,12 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                     color: Colors.orange[600],
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.build, size: 14, color: Colors.white),
-                      const SizedBox(width: 4),
-                      const Text(
+                      SizedBox(width: 4),
+                      Text(
                         'Producing',
                         style: TextStyle(
                           fontSize: 12,

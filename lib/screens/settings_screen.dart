@@ -447,7 +447,7 @@ class SettingsScreen extends StatelessWidget {
                                 const SizedBox(height: 16),
 
                                 // Notifications Toggle (Placeholder for future feature)
-                                Row(
+                                const Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
@@ -459,8 +459,8 @@ class SettingsScreen extends StatelessWidget {
                                             color: Colors.white70,
                                             size: 20,
                                           ),
-                                          const SizedBox(width: 8),
-                                          const Text(
+                                          SizedBox(width: 8),
+                                          Text(
                                             'Notifications',
                                             style: TextStyle(
                                               color: Colors.white70,
@@ -481,7 +481,7 @@ class SettingsScreen extends StatelessWidget {
                                 const SizedBox(height: 12),
 
                                 // Sound Effects Toggle (Placeholder for future feature)
-                                Row(
+                                const Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
@@ -493,8 +493,8 @@ class SettingsScreen extends StatelessWidget {
                                             color: Colors.white70,
                                             size: 20,
                                           ),
-                                          const SizedBox(width: 8),
-                                          const Text(
+                                          SizedBox(width: 8),
+                                          Text(
                                             'Sound Effects',
                                             style: TextStyle(
                                               color: Colors.white70,
@@ -515,7 +515,7 @@ class SettingsScreen extends StatelessWidget {
                                 const SizedBox(height: 12),
 
                                 // Performance Mode Toggle
-                                Row(
+                                const Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
@@ -527,8 +527,8 @@ class SettingsScreen extends StatelessWidget {
                                             color: Colors.white70,
                                             size: 20,
                                           ),
-                                          const SizedBox(width: 8),
-                                          const Text(
+                                          SizedBox(width: 8),
+                                          Text(
                                             'Performance Mode',
                                             style: TextStyle(
                                               color: Colors.white70,
@@ -544,8 +544,8 @@ class SettingsScreen extends StatelessWidget {
                                           color: Colors.green,
                                           size: 16,
                                         ),
-                                        const SizedBox(width: 4),
-                                        const Text(
+                                        SizedBox(width: 4),
+                                        Text(
                                           'Enabled',
                                           style: TextStyle(
                                             color: Colors.green,

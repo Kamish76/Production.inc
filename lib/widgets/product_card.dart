@@ -63,7 +63,7 @@ class ProductCard extends StatelessWidget {
             isNewlyUnlocked
                 ? AppColors.successGreen.withValues(alpha: 0.1)
                 : null,
-        child: Column(
+  child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
@@ -108,10 +108,10 @@ class ProductCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.lock, color: AppColors.textHint, size: 20),
+              const Icon(Icons.lock, color: AppColors.textHint, size: 20),
               const SizedBox(width: UIConstants.standardSpacing),
               Expanded(
-                child: Text(
+                child: const Text(
                   'Locked Product',
                   style: TextStyle(
                     color: AppColors.textHint,
@@ -123,7 +123,7 @@ class ProductCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: UIConstants.smallPadding),
-          Text(
+          const Text(
             'Gather materials to discover this product',
             style: TextStyle(
               color: AppColors.textHint,
