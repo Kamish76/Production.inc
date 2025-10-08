@@ -9,6 +9,8 @@ class TierExpansionPanel extends StatefulWidget {
   final IconData? icon;
   final String? badge;
   final String? subtitle;
+  final Color? primaryColor;
+  final Color? backgroundColor;
 
   const TierExpansionPanel({
     Key? key,
@@ -19,6 +21,8 @@ class TierExpansionPanel extends StatefulWidget {
     this.icon,
     this.badge,
     this.subtitle,
+    this.primaryColor,
+    this.backgroundColor,
   }) : super(key: key);
 
   @override
@@ -45,6 +49,9 @@ class _TierExpansionPanelState extends State<TierExpansionPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = widget.primaryColor ?? Colors.blue[400]!;
+    final backgroundColor = widget.backgroundColor ?? Colors.blue[900]!.withValues(alpha: 0.3);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -55,16 +62,16 @@ class _TierExpansionPanelState extends State<TierExpansionPanel> {
             margin: const EdgeInsets.only(bottom: 12, top: 8),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.blue[900]!.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(8),
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.blue[400]!.withValues(alpha: 0.5),
+                color: primaryColor.withValues(alpha: 0.5),
               ),
             ),
             child: Row(
               children: [
                 if (widget.icon != null) ...[
-                  Icon(widget.icon, color: Colors.blue[400], size: 20),
+                  Icon(widget.icon, color: primaryColor, size: 20),
                   const SizedBox(width: 8),
                 ],
                 Expanded(
@@ -73,7 +80,7 @@ class _TierExpansionPanelState extends State<TierExpansionPanel> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue[400],
+                      color: primaryColor,
                     ),
                   ),
                 ),
@@ -85,14 +92,14 @@ class _TierExpansionPanelState extends State<TierExpansionPanel> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue[400]!.withValues(alpha: 0.2),
+                      color: primaryColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       widget.badge!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.blue[300],
+                        color: primaryColor.withValues(alpha: 0.8),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -105,7 +112,7 @@ class _TierExpansionPanelState extends State<TierExpansionPanel> {
                   duration: const Duration(milliseconds: 200),
                   child: Icon(
                     Icons.expand_more,
-                    color: Colors.blue[400],
+                    color: primaryColor,
                     size: 20,
                   ),
                 ),
