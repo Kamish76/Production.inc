@@ -56,8 +56,13 @@ class ItemCard extends StatelessWidget {
               const SizedBox(height: 10),
               _buildStatusIndicator(),
               const SizedBox(height: 10),
-              // Description and materials are shown on long-press (details sheet)
-              const SizedBox(height: 4),
+              // Show a compact per-unit materials summary for build items (always visible when unlocked)
+              if (mode == ItemCardMode.build && _isProduct && gameService.isProductUnlocked(_product.id)) ...[
+                _buildScaledMaterialsSummary(),
+                const SizedBox(height: 8),
+              ] else ...[
+                const SizedBox(height: 4),
+              ],
               if (mode != ItemCardMode.build || _canProduce) _buildActionButtons(),
             ],
           ),
@@ -157,6 +162,118 @@ class ItemCard extends StatelessWidget {
       case ItemCardMode.build:
         return _buildBuildQuantityButtons();
     }
+  }
+
+  Widget _buildPerUnitMaterialsSummary() {
+    if (!_isProduct || _product.requiredMaterials.isEmpty) return const SizedBox.shrink();
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: _product.requiredMaterials.entries.map((e) {
+        final id = e.key;
+        final qty = e.value;
+        String name = id;
+        String emoji = '';
+        try {
+          final m = data.GameData.materials.firstWhere((m) => m.id == id);
+          name = m.name;
+          emoji = m.emoji;
+        } catch (_) {
+          try {
+            final p = data.GameData.products.firstWhere((p) => p.id == id);
+            name = p.name;
+            emoji = p.emoji;
+          } catch (_) {}
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.grey[800]?.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: Colors.grey[700]!),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (emoji.isNotEmpty) Text(emoji, style: const TextStyle(fontSize: 12)),
+              if (emoji.isNotEmpty) const SizedBox(width: 6),
+              Text('$name ($qty)', style: const TextStyle(fontSize: 12)),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildScaledMaterialsSummary() {
+    if (!_isProduct || _product.requiredMaterials.isEmpty) return const SizedBox.shrink();
+
+    final selectedQty = gameService.getBuildQuantityPreference(_product.id);
+    final scaled = <String, int>{};
+    _product.requiredMaterials.forEach((k, v) => scaled[k] = v * selectedQty);
+
+    final entries = scaled.entries.map((e) {
+      final have = gameService.state.getMaterialCount(e.key);
+      final lacking = have < e.value;
+      return {
+        'id': e.key,
+        'required': e.value,
+        'have': have,
+        'lacking': lacking,
+      };
+    }).toList();
+
+    // Sort lacking first
+    entries.sort((a, b) {
+      final la = a['lacking'] as bool;
+      final lb = b['lacking'] as bool;
+      if (la != lb) return la ? -1 : 1;
+      return (a['id'] as String).compareTo(b['id'] as String);
+    });
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: entries.map((entry) {
+        final id = entry['id'] as String;
+        final required = entry['required'] as int;
+        final have = entry['have'] as int;
+        final lacking = entry['lacking'] as bool;
+
+        String name = id;
+        String emoji = '';
+        try {
+          final m = data.GameData.materials.firstWhere((m) => m.id == id);
+          name = m.name;
+          emoji = m.emoji;
+        } catch (_) {
+          try {
+            final p = data.GameData.products.firstWhere((p) => p.id == id);
+            name = p.name;
+            emoji = p.emoji;
+          } catch (_) {}
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: lacking ? Colors.red[900] : Colors.green[900],
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: Colors.black26),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (emoji.isNotEmpty) Text(emoji, style: const TextStyle(fontSize: 12)),
+              if (emoji.isNotEmpty) const SizedBox(width: 6),
+              Text('$name: $have / $required', style: const TextStyle(fontSize: 12, color: Colors.white)),
+            ],
+          ),
+        );
+      }).toList(),
+    );
   }
 
   Widget _buildBuyButtons() {
