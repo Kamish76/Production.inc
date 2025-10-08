@@ -4,7 +4,7 @@ import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
 
 import '../widgets/screen_header.dart';
-import '../widgets/empty_inventory_message.dart';
+import '../widgets/message_display.dart';
 import '../widgets/order_card.dart';
 
 class ShippingScreen extends StatelessWidget {
@@ -81,7 +81,7 @@ class ShippingScreen extends StatelessWidget {
     final activeOrders = gameService.state.activeShippingOrders;
 
     if (activeOrders.isEmpty) {
-      return const EmptyInventoryMessage(
+      return const MessageDisplay.empty(
         icon: Icons.inventory_2_outlined,
         title: 'No Active Shipping Orders',
         subtitle: 'Sell products to create shipping orders!',
@@ -104,7 +104,7 @@ class ShippingScreen extends StatelessWidget {
     );
 
     if (history.isEmpty) {
-      return const EmptyInventoryMessage(
+      return const MessageDisplay.empty(
         icon: Icons.history,
         title: 'No Shipping History',
         subtitle: 'Complete some orders to see history here!',

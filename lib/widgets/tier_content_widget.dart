@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
-import 'build_product_card.dart';
+import 'item_card.dart';
 
 /// Content widget for a tier section showing products in a responsive grid
 class TierContentWidget extends StatelessWidget {
@@ -98,9 +98,10 @@ class TierContentWidget extends StatelessWidget {
                           if (i > 0) const SizedBox(width: spacing),
                           Expanded(
                             child: i < rowProducts.length
-                                ? BuildProductCard(
-                                    product: rowProducts[i],
+                                ? ItemCard(
+                                    item: rowProducts[i],
                                     gameService: gameService,
+                                    mode: ItemCardMode.build,
                                   )
                                 : const SizedBox(), // Empty space for incomplete rows
                           ),

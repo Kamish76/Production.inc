@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
 import '../widgets/production_status_panel.dart';
-import '../widgets/welcome_message_card.dart';
+import '../widgets/message_display.dart';
 import '../widgets/tier_expansion_panel.dart';
 import '../widgets/tier_content_widget.dart';
 
@@ -121,7 +121,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                     children: [
                       // Show welcome message for completely new players
                       if (gameService.state.unlockedProducts.isEmpty)
-                        const WelcomeMessageCard(),
+                        const MessageDisplay.welcome(),
 
                       // Build sections for each tier (always show for discovery)
                       ...gameService.productsByTier.entries

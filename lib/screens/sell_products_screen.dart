@@ -6,10 +6,10 @@ import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
 import '../widgets/screen_header.dart';
 import '../widgets/financial_status_display.dart';
-import '../widgets/empty_inventory_message.dart';
+import '../widgets/message_display.dart';
 import '../widgets/tier_expansion_panel.dart';
-import '../widgets/sell_product_card.dart';
-import '../widgets/product_details_dialog.dart';
+import '../widgets/item_card.dart';
+import '../widgets/game_dialog.dart';
 
 class SellProductsScreen extends StatefulWidget {
   const SellProductsScreen({super.key});
@@ -122,7 +122,7 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                     gameService.state.products.values.every(
                       (count) => count == 0,
                     ))
-                  const EmptyInventoryMessage(
+                  const MessageDisplay.empty(
                     icon: Icons.inventory_2_outlined,
                     title: 'No Products to Sell',
                     subtitle: 'Build some products first to sell them here!',
@@ -206,12 +206,13 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                     availableProducts.map((product) {
                       return SizedBox(
                         width: cardWidth,
-                        child: SellProductCard(
-                          product: product,
+                        child: ItemCard(
+                          item: product,
                           gameService: gameService,
+                          mode: ItemCardMode.sell,
                           onProductDetails: () => showDialog(
                             context: context,
-                            builder: (context) => ProductDetailsDialog(
+                            builder: (context) => GameDialog.productDetails(
                               product: product,
                               gameService: gameService,
                             ),

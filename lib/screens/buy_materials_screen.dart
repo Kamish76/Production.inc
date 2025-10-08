@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/production_game_service.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/financial_status_display.dart';
-import '../widgets/buy_material_card.dart';
+import '../widgets/item_card.dart';
 
 class BuyMaterialsScreen extends StatelessWidget {
   const BuyMaterialsScreen({super.key});
@@ -44,9 +44,10 @@ class BuyMaterialsScreen extends StatelessWidget {
                       final material = gameService.allMaterials[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: BuyMaterialCard(
-                          material: material,
+                        child: ItemCard(
+                          item: material,
                           gameService: gameService,
+                          mode: ItemCardMode.buy,
                         ),
                       );
                     },

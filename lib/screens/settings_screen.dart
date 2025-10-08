@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/production_game_service.dart';
-import '../widgets/confirmation_dialog.dart';
+import '../widgets/game_dialog.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -15,7 +15,7 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return ConfirmationDialog(
+        return GameDialog.confirmation(
           title: 'Reset Game?',
           content:
               'This will permanently delete all your progress including:\n\n'
