@@ -209,13 +209,13 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     _updateTimer?.cancel();
     _saveTimer?.cancel();
     if (!_isTestMode) {
-      _saveGameState(); // Save one final time before disposing (except in test mode)
+      await _saveGameState(); // Save one final time before disposing (except in test mode)
     }
-    _persistenceService.dispose();
+    await _persistenceService.dispose();
     super.dispose();
   }
 

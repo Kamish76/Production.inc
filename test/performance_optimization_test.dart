@@ -10,13 +10,14 @@ void main() {
     late ProductionGameService gameService;
 
     setUp(() {
-      // Initialize database factory for testing
-      GamePersistenceService.initializeDatabaseFactory();
-      gameService = ProductionGameService();
+  // Initialize database factory for testing with unique DB name
+  final testDbName = 'test_db_performance_opt_${DateTime.now().microsecondsSinceEpoch}.db';
+  GamePersistenceService.initializeDatabaseFactory(testDatabaseName: testDbName);
+  gameService = ProductionGameService();
     });
 
-    tearDown(() {
-      gameService.dispose();
+    tearDown(() async {
+      await gameService.dispose();
     });
 
     test('should handle app lifecycle state changes correctly', () async {
