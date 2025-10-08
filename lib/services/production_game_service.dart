@@ -1,5 +1,7 @@
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:logger/logger.dart';
 import 'dart:async';
 import '../models/game_state.dart';
 import '../models/game_data.dart';
@@ -7,6 +9,25 @@ import '../models/game_models.dart';
 import '../constants/game_constants.dart';
 import 'game_persistence_service.dart';
 import 'product_unlock_service.dart';
+
+// Logging utility for Production.INC
+class GameLogger {
+  static final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 5,
+      lineLength: 80,
+      colors: true,
+      printEmojis: true,
+      printTime: true,
+    ),
+  );
+
+  static void debug(String message) => _logger.d(message);
+  static void info(String message) => _logger.i(message);
+  static void warning(String message) => _logger.w(message);
+  static void error(String message, [Object? error, StackTrace? stackTrace]) => _logger.e(message, error: error, stackTrace: stackTrace);
+}
 
 /// Container for operation processing results
 /// Used internally by ProductionGameService for updateProductions refactoring
@@ -86,7 +107,7 @@ class ProductionGameService extends ChangeNotifier {
       });
     } catch (e) {
       if (kDebugMode) {
-        print('Error loading game state: $e');
+        GameLogger.error('Error loading game state', e);
       }
       // If loading fails, start with default state
       _state = const GameState();
@@ -188,13 +209,13 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     _updateTimer?.cancel();
     _saveTimer?.cancel();
     if (!_isTestMode) {
-      _saveGameState(); // Save one final time before disposing (except in test mode)
+      await _saveGameState(); // Save one final time before disposing (except in test mode)
     }
-    _persistenceService.dispose();
+    await _persistenceService.dispose();
     super.dispose();
   }
 
@@ -206,7 +227,7 @@ class ProductionGameService extends ChangeNotifier {
       await _persistenceService.saveGameStateOptimized(_state);
     } catch (e) {
       if (kDebugMode) {
-        print('Error saving game state (optimized): $e');
+        GameLogger.error('Error saving game state (optimized)', e);
       }
       // Fallback to original save
       await _saveGameState();
@@ -221,7 +242,7 @@ class ProductionGameService extends ChangeNotifier {
       await _persistenceService.saveGameState(_state);
     } catch (e) {
       if (kDebugMode) {
-        print('Error saving game state: $e');
+        GameLogger.error('Error saving game state', e);
       }
     }
   }
@@ -247,7 +268,7 @@ class ProductionGameService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('Error resetting game: $e');
+        GameLogger.error('Error resetting game', e);
       }
     }
   }
@@ -263,9 +284,7 @@ class ProductionGameService extends ChangeNotifier {
       // Input validation
       if (materialId.isEmpty || quantity <= 0) {
         if (kDebugMode) {
-          print(
-            'Invalid buy material parameters: materialId=$materialId, quantity=$quantity',
-          );
+          GameLogger.warning('Invalid buy material parameters: materialId=$materialId, quantity=$quantity');
         }
         return false;
       }
@@ -273,7 +292,7 @@ class ProductionGameService extends ChangeNotifier {
       final material = GameData.getMaterial(materialId);
       if (material == null) {
         if (kDebugMode) {
-          print('Material not found: $materialId');
+          GameLogger.warning('Material not found: $materialId');
         }
         return false;
       }
@@ -281,9 +300,7 @@ class ProductionGameService extends ChangeNotifier {
       final totalCost = material.buyPrice * quantity;
       if (!_state.canAfford(totalCost)) {
         if (kDebugMode) {
-          print(
-            'Insufficient funds: need \$${totalCost.toStringAsFixed(2)}, have \$${_state.money.toStringAsFixed(2)}',
-          );
+          GameLogger.warning('Insufficient funds: need \$${totalCost.toStringAsFixed(2)}, have \$${_state.money.toStringAsFixed(2)}');
         }
         return false;
       }
@@ -292,7 +309,7 @@ class ProductionGameService extends ChangeNotifier {
       const maxQuantity = 1000000;
       if (quantity > maxQuantity) {
         if (kDebugMode) {
-          print('Quantity too large: $quantity > $maxQuantity');
+          GameLogger.warning('Quantity too large: $quantity > $maxQuantity');
         }
         return false;
       }
@@ -303,9 +320,7 @@ class ProductionGameService extends ChangeNotifier {
       // Check for potential overflow
       if (currentAmount > maxQuantity - quantity) {
         if (kDebugMode) {
-          print(
-            'Would exceed maximum material amount: $currentAmount + $quantity > $maxQuantity',
-          );
+          GameLogger.warning('Would exceed maximum material amount: $currentAmount + $quantity > $maxQuantity');
         }
         return false;
       }
@@ -328,7 +343,7 @@ class ProductionGameService extends ChangeNotifier {
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error buying material $materialId (quantity: $quantity): $e');
+        GameLogger.error('Error buying material $materialId (quantity: $quantity)', e);
       }
       return false;
     }
@@ -340,9 +355,7 @@ class ProductionGameService extends ChangeNotifier {
       // Input validation
       if (productId.isEmpty || quantity <= 0) {
         if (kDebugMode) {
-          print(
-            'Invalid production parameters: productId=$productId, quantity=$quantity',
-          );
+          GameLogger.warning('Invalid production parameters: productId=$productId, quantity=$quantity');
         }
         return false;
       }
@@ -350,7 +363,7 @@ class ProductionGameService extends ChangeNotifier {
       final product = GameData.getProduct(productId);
       if (product == null) {
         if (kDebugMode) {
-          print('Product not found: $productId');
+          GameLogger.warning('Product not found: $productId');
         }
         return false;
       }
@@ -359,7 +372,7 @@ class ProductionGameService extends ChangeNotifier {
       const maxQuantity = 10000;
       if (quantity > maxQuantity) {
         if (kDebugMode) {
-          print('Production quantity too large: $quantity > $maxQuantity');
+          GameLogger.warning('Production quantity too large: $quantity > $maxQuantity');
         }
         return false;
       }
@@ -370,9 +383,7 @@ class ProductionGameService extends ChangeNotifier {
         final needed = entry.value * quantity;
         if (needed < 0) {
           if (kDebugMode) {
-            print(
-              'Invalid material requirement calculation for ${entry.key}: $needed',
-            );
+            GameLogger.error('Invalid material requirement calculation for ${entry.key}: $needed');
           }
           return false;
         }
@@ -381,16 +392,12 @@ class ProductionGameService extends ChangeNotifier {
 
       if (!_state.hasMaterialsFor(requiredMaterials)) {
         if (kDebugMode) {
-          print(
-            'Insufficient materials for production of $productId x$quantity',
-          );
+          GameLogger.warning('Insufficient materials for production of $productId x$quantity');
           for (final entry in requiredMaterials.entries) {
-            final have =
-                _state.getMaterialCount(entry.key) +
-                _state.getProductCount(entry.key);
+            final have = _state.getMaterialCount(entry.key) + _state.getProductCount(entry.key);
             final need = entry.value;
             if (have < need) {
-              print('  - ${entry.key}: have $have, need $need');
+              GameLogger.info('  - ${entry.key}: have $have, need $need');
             }
           }
         }
@@ -424,9 +431,7 @@ class ProductionGameService extends ChangeNotifier {
           final availableProducts = newProducts[itemId] ?? 0;
           if (availableProducts < remaining) {
             if (kDebugMode) {
-              print(
-                'Insufficient products for consumption: $itemId, need $remaining, have $availableProducts',
-              );
+              GameLogger.warning('Insufficient products for consumption: $itemId, need $remaining, have $availableProducts');
             }
             return false;
           }
@@ -443,7 +448,7 @@ class ProductionGameService extends ChangeNotifier {
       if (totalDuration <= 0 || totalDuration > 86400) {
         // Max 24 hours
         if (kDebugMode) {
-          print('Invalid production duration: ${totalDuration}s');
+          GameLogger.warning('Invalid production duration: ${totalDuration}s');
         }
         return false;
       }
@@ -518,9 +523,9 @@ class ProductionGameService extends ChangeNotifier {
       _startUpdateTimer(); // Restart timer with optimal frequency for new activity
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print('Error starting production $productId (quantity: $quantity): $e');
-      }
+        if (kDebugMode) {
+          GameLogger.error('Error starting production $productId (quantity: $quantity)', e);
+        }
       return false;
     }
   }
@@ -531,9 +536,7 @@ class ProductionGameService extends ChangeNotifier {
       // Input validation
       if (productId.isEmpty || quantity <= 0) {
         if (kDebugMode) {
-          print(
-            'Invalid sell parameters: productId=$productId, quantity=$quantity',
-          );
+          GameLogger.warning('Invalid sell parameters: productId=$productId, quantity=$quantity');
         }
         return false;
       }
@@ -541,7 +544,7 @@ class ProductionGameService extends ChangeNotifier {
       final product = GameData.getProduct(productId);
       if (product == null) {
         if (kDebugMode) {
-          print('Product not found: $productId');
+          GameLogger.warning('Product not found: $productId');
         }
         return false;
       }
@@ -549,9 +552,7 @@ class ProductionGameService extends ChangeNotifier {
       final available = _state.getProductCount(productId);
       if (available < quantity) {
         if (kDebugMode) {
-          print(
-            'Insufficient products to sell: $productId, need $quantity, have $available',
-          );
+          GameLogger.warning('Insufficient products to sell: $productId, need $quantity, have $available');
         }
         return false;
       }
@@ -560,7 +561,7 @@ class ProductionGameService extends ChangeNotifier {
       const maxQuantity = 10000;
       if (quantity > maxQuantity) {
         if (kDebugMode) {
-          print('Sell quantity too large: $quantity > $maxQuantity');
+          GameLogger.warning('Sell quantity too large: $quantity > $maxQuantity');
         }
         return false;
       }
@@ -572,7 +573,7 @@ class ProductionGameService extends ChangeNotifier {
       if (totalShippingTime <= 0 || totalShippingTime > 86400) {
         // Max 24 hours
         if (kDebugMode) {
-          print('Invalid shipping time: ${totalShippingTime}s');
+          GameLogger.warning('Invalid shipping time: ${totalShippingTime}s');
         }
         return false;
       }
@@ -582,7 +583,7 @@ class ProductionGameService extends ChangeNotifier {
       // Validate revenue calculation
       if (totalRevenue <= 0) {
         if (kDebugMode) {
-          print('Invalid revenue calculation: $totalRevenue');
+          GameLogger.warning('Invalid revenue calculation: $totalRevenue');
         }
         return false;
       }
@@ -591,9 +592,7 @@ class ProductionGameService extends ChangeNotifier {
       const maxActiveOrders = 100;
       if (_state.activeShippingOrders.length >= maxActiveOrders) {
         if (kDebugMode) {
-          print(
-            'Too many active shipping orders: ${_state.activeShippingOrders.length}',
-          );
+          GameLogger.warning('Too many active shipping orders: ${_state.activeShippingOrders.length}');
         }
         return false;
       }
@@ -634,7 +633,7 @@ class ProductionGameService extends ChangeNotifier {
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error selling product $productId (quantity: $quantity): $e');
+        GameLogger.error('Error selling product $productId (quantity: $quantity)', e);
       }
       return false;
     }
@@ -659,7 +658,7 @@ class ProductionGameService extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error updating productions: $e');
+        GameLogger.error('Error updating productions', e);
       }
       // In case of error, still notify listeners to update UI
       notifyListeners();
@@ -704,7 +703,7 @@ class ProductionGameService extends ChangeNotifier {
         }
       } catch (e) {
         if (kDebugMode) {
-          print('Error checking production task ${task.id}: $e');
+          GameLogger.error('Error checking production task ${task.id}', e);
         }
         // If there's an error with a task, consider it active to prevent data loss
         activeTasks.add(task);
@@ -750,7 +749,7 @@ class ProductionGameService extends ChangeNotifier {
         }
       } catch (e) {
         if (kDebugMode) {
-          print('Error checking shipping order ${order.id}: $e');
+          GameLogger.error('Error checking shipping order ${order.id}', e);
         }
         // If there's an error with an order, consider it active to prevent data loss
         activeShipping.add(order);
@@ -802,9 +801,7 @@ class ProductionGameService extends ChangeNotifier {
         // Prevent overflow
         if (currentCount > maxProducts - task.quantity) {
           if (kDebugMode) {
-            print(
-              'Product overflow prevented: ${task.productId}, current: $currentCount, adding: ${task.quantity}',
-            );
+            GameLogger.warning('Product overflow prevented: ${task.productId}, current: $currentCount, adding: ${task.quantity}');
           }
           // Add what we can without overflow
           newProducts[task.productId] = maxProducts;
@@ -813,7 +810,7 @@ class ProductionGameService extends ChangeNotifier {
         }
       } catch (e) {
         if (kDebugMode) {
-          print('Error completing production task ${task.id}: $e');
+          GameLogger.error('Error completing production task ${task.id}', e);
         }
       }
     }
@@ -846,7 +843,7 @@ class ProductionGameService extends ChangeNotifier {
         newHistory.add(historyEntry);
       } catch (e) {
         if (kDebugMode) {
-          print('Error completing shipping order ${order.id}: $e');
+          GameLogger.error('Error completing shipping order ${order.id}', e);
         }
       }
     }
@@ -863,9 +860,7 @@ class ProductionGameService extends ChangeNotifier {
 
     if (currentMoney > maxMoney - revenue) {
       if (kDebugMode) {
-        print(
-          'Money overflow prevented: current: $currentMoney, adding: $revenue',
-        );
+        GameLogger.warning('Money overflow prevented: current: $currentMoney, adding: $revenue');
       }
       return maxMoney;
     } else {
@@ -922,7 +917,7 @@ class ProductionGameService extends ChangeNotifier {
         _persistenceService.markDirty('unlocked_products');
 
         if (kDebugMode) {
-          print('Unlocked new products: ${newlyUnlocked.join(', ')}');
+          GameLogger.info('Unlocked new products: ${newlyUnlocked.join(', ')}');
         }
       }
     } catch (e) {
@@ -963,13 +958,11 @@ class ProductionGameService extends ChangeNotifier {
       );
 
       if (kDebugMode) {
-        print(
-          'Initialized unlock state: ${allUnlockedProducts.length} products unlocked',
-        );
+        GameLogger.info('Initialized unlock state: ${allUnlockedProducts.length} products unlocked');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error initializing unlock state: $e');
+        GameLogger.error('Error initializing unlock state', e);
       }
     }
   }
@@ -1038,7 +1031,7 @@ class ProductionGameService extends ChangeNotifier {
       // Check for negative values
       if (_state.money < 0) {
         if (kDebugMode) {
-          print('Invalid game state: negative money');
+          GameLogger.warning('Invalid game state: negative money');
         }
         return false;
       }
@@ -1047,9 +1040,7 @@ class ProductionGameService extends ChangeNotifier {
       for (final entry in _state.materials.entries) {
         if (entry.value < 0) {
           if (kDebugMode) {
-            print(
-              'Invalid game state: negative material count for ${entry.key}',
-            );
+            GameLogger.warning('Invalid game state: negative material count for ${entry.key}');
           }
           return false;
         }
@@ -1059,9 +1050,7 @@ class ProductionGameService extends ChangeNotifier {
       for (final entry in _state.products.entries) {
         if (entry.value < 0) {
           if (kDebugMode) {
-            print(
-              'Invalid game state: negative product count for ${entry.key}',
-            );
+            GameLogger.warning('Invalid game state: negative product count for ${entry.key}');
           }
           return false;
         }
@@ -1071,7 +1060,7 @@ class ProductionGameService extends ChangeNotifier {
       for (final task in _state.activeProductions) {
         if (task.quantity <= 0 || task.durationSeconds <= 0) {
           if (kDebugMode) {
-            print('Invalid production task: ${task.id}');
+            GameLogger.warning('Invalid production task: ${task.id}');
           }
           return false;
         }
@@ -1081,7 +1070,7 @@ class ProductionGameService extends ChangeNotifier {
       for (final order in _state.activeShippingOrders) {
         if (order.totalRevenue <= 0 || order.totalShippingTime <= 0) {
           if (kDebugMode) {
-            print('Invalid shipping order: ${order.id}');
+            GameLogger.warning('Invalid shipping order: ${order.id}');
           }
           return false;
         }
@@ -1090,7 +1079,7 @@ class ProductionGameService extends ChangeNotifier {
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error validating game state: $e');
+        GameLogger.error('Error validating game state', e);
       }
       return false;
     }

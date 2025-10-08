@@ -9,7 +9,7 @@ import '../constants/game_constants.dart';
 /// Service responsible for persisting and loading game state using SQLite
 /// v1.4.8: Enhanced with migration system, backup, and performance optimizations
 class GamePersistenceService {
-  static const String _databaseName = 'production_inc_save.db';
+    static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
       5; // Updated for v1.4.18 product unlock system
@@ -21,7 +21,13 @@ class GamePersistenceService {
   final bool _isDirtyStateEnabled = true;
 
   /// Initialize database factory for desktop platforms if needed
-  static void initializeDatabaseFactory() {
+  /// Optionally specify a unique database name for test isolation
+  static void initializeDatabaseFactory({String? testDatabaseName}) {
+    if (testDatabaseName != null) {
+      _databaseName = testDatabaseName;
+    } else {
+      _databaseName = 'production_inc_save.db';
+    }
     // Only use FFI for desktop platforms (Windows, macOS, Linux)
     // Android and iOS have native SQLite support and should NOT use FFI
     // Also use FFI for test environment
