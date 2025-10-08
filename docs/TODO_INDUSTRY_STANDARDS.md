@@ -84,7 +84,7 @@
   - [x] Enable `prefer_const_constructors: true` ✅
   - [x] Fix all linting issues that arise ✅
   - [x] Document coding standards compliance ✅
-  - [ ] Decompose components that can be decomposed, making sure reusability and readability are improved, some components in the ui can be reused, by decomposing them, it keeps the code cleaner which holds the KISS, and Clean coding habits. and if i have functions that has libraries that exists out there, use that instead if its better, since that would keep the whole code base cleaner
+  - [x] Decompose components that can be decomposed, making sure reusability and readability are improved, some components in the ui can be reused, by decomposing them, it keeps the code cleaner which holds the KISS, and Clean coding habits. and if i have functions that has libraries that exists out there, use that instead if its better, since that would keep the whole code base cleaner
 
 ### Security Enhancements
 - [ ] **Improve security configuration**
