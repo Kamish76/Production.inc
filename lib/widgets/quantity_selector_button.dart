@@ -10,14 +10,14 @@ class QuantitySelectorButton extends StatelessWidget {
   final String label;
 
   const QuantitySelectorButton({
-    Key? key,
+    super.key,
     required this.quantity,
     required this.cost,
     required this.isSelected,
     required this.canAfford,
     required this.onPressed,
     required this.label,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

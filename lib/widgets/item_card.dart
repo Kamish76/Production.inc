@@ -17,12 +17,12 @@ class ItemCard extends StatelessWidget {
   final VoidCallback? onProductDetails;
 
   const ItemCard({
-    Key? key,
+    super.key,
     required this.item,
     required this.gameService,
     required this.mode,
     this.onProductDetails,
-  }) : super(key: key);
+  });
 
   bool get _isMaterial => item is game.Material;
   bool get _isProduct => item is game.Product;
@@ -37,7 +37,7 @@ class ItemCard extends StatelessWidget {
     final Color cardColor =
         isHighlighted
             ? Color.alphaBlend(
-                AppColors.productionActive.withOpacity(0.22),
+                AppColors.productionActive.withValues(alpha: 0.22),
                 baseCardColor,
               )
             : baseCardColor;
@@ -49,9 +49,9 @@ class ItemCard extends StatelessWidget {
     final double borderWidth = isHighlighted ? 2.0 : 1.0;
     final double elevation = isHighlighted ? 12 : 8;
     final Color shadowColor =
-        isHighlighted
-            ? AppColors.productionActive.withOpacity(0.45)
-            : Colors.black.withOpacity(0.3);
+    isHighlighted
+      ? AppColors.productionActive.withValues(alpha: 0.45)
+      : Colors.black.withValues(alpha: 0.3);
 
     return Card(
       color: cardColor,
@@ -61,7 +61,7 @@ class ItemCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: borderColor.withOpacity(borderOpacity),
+          color: borderColor.withValues(alpha: borderOpacity),
           width: borderWidth,
         ),
       ),
@@ -128,11 +128,15 @@ class ItemCard extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: Colors.grey[900]?.withOpacity(0.9),
+                    color: Colors.grey[900]?.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white24, width: 1),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black54, blurRadius: 2, offset: Offset(0, 1)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black54,
+                        blurRadius: 2,
+                        offset: Offset(0, 1),
+                      ),
                     ],
                   ),
                   child: Center(
@@ -541,7 +545,7 @@ class ItemCard extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.grey[800]?.withOpacity(0.4),
+                  color: Colors.grey[800]?.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: Colors.grey[700]!),
                 ),
@@ -571,7 +575,7 @@ class ItemCard extends StatelessWidget {
           const SizedBox(height: 4),
         ],
 
-        ...entries.map((entry) {
+  ...entries.map((entry) {
         final id = entry['id'] as String;
         final required = entry['required'] as int;
         final have = entry['have'] as int;
@@ -596,7 +600,8 @@ class ItemCard extends StatelessWidget {
           padding: const EdgeInsets.only(top: 8.0),
           child: Row(
             children: [
-              if (emoji.isNotEmpty) Text(emoji, style: const TextStyle(fontSize: 14)),
+              if (emoji.isNotEmpty)
+                Text(emoji, style: const TextStyle(fontSize: 14)),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -611,7 +616,7 @@ class ItemCard extends StatelessWidget {
             ],
           ),
         );
-        }).toList(),
+      }),
       ],
     );
   }

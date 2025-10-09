@@ -26,9 +26,9 @@ class ProductionStatusPanel extends StatefulWidget {
   final ProductionGameService gameService;
 
   const ProductionStatusPanel({
-    Key? key,
+    super.key,
     required this.gameService,
-  }) : super(key: key);
+  });
 
   @override
   State<ProductionStatusPanel> createState() => _ProductionStatusPanelState();

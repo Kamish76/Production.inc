@@ -10,11 +10,11 @@ class TierContentWidget extends StatelessWidget {
   final String tierName;
 
   const TierContentWidget({
-    Key? key,
+    super.key,
     required this.products,
     required this.gameService,
     required this.tierName,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

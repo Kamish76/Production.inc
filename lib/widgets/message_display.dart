@@ -21,7 +21,7 @@ class MessageDisplay extends StatelessWidget {
   final String? extraText;
 
   const MessageDisplay.empty({
-    Key? key,
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -31,11 +31,10 @@ class MessageDisplay extends StatelessWidget {
     this.iconSize,
   }) : mode = MessageDisplayMode.empty,
        expanded = true,
-       extraText = null,
-       super(key: key);
+       extraText = null;
 
   const MessageDisplay.welcome({
-    Key? key,
+    super.key,
   }) : mode = MessageDisplayMode.welcome,
        expanded = false,
        icon = Icons.lightbulb_outline,
@@ -45,8 +44,7 @@ class MessageDisplay extends StatelessWidget {
        iconColor = null,
        titleColor = null,
        subtitleColor = null,
-       iconSize = 48,
-       super(key: key);
+       iconSize = 48;
 
   @override
   Widget build(BuildContext context) {

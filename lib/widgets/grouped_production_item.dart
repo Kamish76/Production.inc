@@ -8,10 +8,10 @@ class GroupedProductionItem extends StatelessWidget {
   final ProductionGameService gameService;
 
   const GroupedProductionItem({
-    Key? key,
+    super.key,
     required this.groupedProduction,
     required this.gameService,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

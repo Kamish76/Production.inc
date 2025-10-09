@@ -13,7 +13,7 @@ class TierExpansionPanel extends StatefulWidget {
   final Color? backgroundColor;
 
   const TierExpansionPanel({
-    Key? key,
+    super.key,
     required this.title,
     required this.child,
     this.initiallyExpanded = false,
@@ -23,7 +23,7 @@ class TierExpansionPanel extends StatefulWidget {
     this.subtitle,
     this.primaryColor,
     this.backgroundColor,
-  }) : super(key: key);
+  });
 
   @override
   State<TierExpansionPanel> createState() => _TierExpansionPanelState();

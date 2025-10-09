@@ -26,7 +26,7 @@ class GameDialog extends StatelessWidget {
   final ProductionGameService? gameService;
 
   const GameDialog.confirmation({
-    Key? key,
+    super.key,
     required this.title,
     required this.content,
     required this.icon,
@@ -37,11 +37,10 @@ class GameDialog extends StatelessWidget {
     this.onCancel,
   }) : mode = GameDialogMode.confirmation,
        product = null,
-       gameService = null,
-       super(key: key);
+    gameService = null;
 
   const GameDialog.productDetails({
-    Key? key,
+    super.key,
     required this.product,
     required this.gameService,
   }) : mode = GameDialogMode.productDetails,
@@ -52,8 +51,7 @@ class GameDialog extends StatelessWidget {
        confirmText = null,
        cancelText = null,
        onConfirm = null,
-       onCancel = null,
-       super(key: key);
+     onCancel = null;
 
   @override
   Widget build(BuildContext context) {

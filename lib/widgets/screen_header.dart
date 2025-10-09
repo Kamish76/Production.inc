@@ -9,12 +9,12 @@ class ScreenHeader extends StatelessWidget {
   final List<Widget>? actions;
 
   const ScreenHeader({
-    Key? key,
+    super.key,
     required this.icon,
     required this.title,
     required this.iconColor,
     this.actions,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
