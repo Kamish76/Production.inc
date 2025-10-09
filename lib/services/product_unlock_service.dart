@@ -101,6 +101,12 @@ class ProductUnlockService {
       orElse: () => throw Exception('Product not found: $productId'),
     );
 
+    // Honor previously unlocked products even if current requirements are not met
+    if (gameState.unlockedProducts.contains(productId)) {
+      _unlockCache[productId] = true;
+      return true;
+    }
+
     // Calculate unlock condition based on product tier
     final bool isUnlocked;
     switch (product.levelId) {

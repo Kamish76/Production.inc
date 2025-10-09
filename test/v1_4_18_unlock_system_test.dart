@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:game1/services/production_game_service.dart';
 import 'package:game1/services/product_unlock_service.dart';
 import 'package:game1/models/game_models.dart';
+import 'package:game1/models/game_state.dart';
 
 void main() {
   group('Product Unlock System Tests v1.4.18', () {
@@ -136,6 +137,15 @@ void main() {
         ProductLevel.basicParts,
       );
       expect(unlockedAfter.length, greaterThan(unlockedBasicParts.length));
+    });
+
+    test('Previously unlocked products remain visible', () {
+      const gameState = GameState(
+        materials: {},
+        unlockedProducts: {'box'},
+      );
+
+      expect(ProductUnlockService.isProductUnlocked('box', gameState), isTrue);
     });
 
     test('Database migration for unlock system works', () async {
