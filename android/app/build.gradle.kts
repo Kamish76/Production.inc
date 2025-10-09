@@ -16,24 +16,20 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.production.inc"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.production.inc"
         minSdk = 24  
-        targetSdk = 35
+    targetSdk = 36
         versionCode = 14
         versionName = "1.4.14"
         
-        // Game-specific optimizations
-        multiDexEnabled = true
-        vectorDrawables.useSupportLibrary = true
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // Enable desugaring for API features
         isCoreLibraryDesugaringEnabled = true
     }
 
@@ -43,10 +39,27 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                val storeFilePath = keystoreProperties.getProperty("storeFile")
+                if (!storeFilePath.isNullOrBlank()) {
+                    storeFile = file(storeFilePath)
+                }
+                storePassword = keystoreProperties.getProperty("storePassword")
+            } else {
+                // Fallback to environment variables to avoid lookup failures in CI
+                keyAlias = System.getenv("KEY_ALIAS") ?: ""
+                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+                val storeFilePath = System.getenv("STORE_FILE")
+                if (!storeFilePath.isNullOrBlank()) {
+                    val potentialStoreFile = file(storeFilePath)
+                    if (potentialStoreFile.exists()) {
+                        storeFile = potentialStoreFile
+                    }
+                }
+                storePassword = System.getenv("STORE_PASSWORD") ?: ""
+            }
         }
     }
 
@@ -90,13 +103,3 @@ flutter {
     source = "../.."
 }
 
-dependencies {
-    // Core library desugaring
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-    
-    // AndroidX Core for better compatibility
-    implementation("androidx.core:core-ktx:1.12.0")
-    
-    // Security library for better encryption
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
-}
