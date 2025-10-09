@@ -66,15 +66,11 @@ class TierContentWidget extends StatelessWidget {
             ),
           )
         else
-          // Responsive column grid: 2 columns for smaller screens, 3 for larger
+          // Responsive column grid using screen-width breakpoints
           LayoutBuilder(
             builder: (context, constraints) {
-              // Get actual screen width for more accurate responsive behavior
               final screenWidth = MediaQuery.of(context).size.width;
-
-              // Use screen width to determine optimal column count
-              // Use 3 columns for wide displays (>= 1080 logical pixels), otherwise 2
-              final columnsCount = screenWidth >= 1080 ? 3 : 2;
+              final columnsCount = _resolveColumnCount(screenWidth);
 
               const spacing = 8.0;
 
@@ -133,5 +129,13 @@ class TierContentWidget extends StatelessWidget {
       default:
         return 'Complete previous tiers to unlock these products';
     }
+  }
+
+  int _resolveColumnCount(double screenWidth) {
+    if (screenWidth > 400) {
+      return 3;
+    }
+
+    return 2;
   }
 }
