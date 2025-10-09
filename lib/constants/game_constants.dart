@@ -246,10 +246,11 @@ class AutoBuyConstants {
   /// Resource order for auto-buy processing (priority order)
   /// Earlier resources in the list are filled first
   static const List<String> resourceOrder = [
-    'basic_metals', // Basic Metals (displayed as "metal")
-    'plastic', // Plastic
-    'glass', // Glass
-    'cardboard', // Cardboard
+    'cardboard', // Cardboard ($1) - cheapest first
+    'plastic', // Plastic ($2)
+    'basic_metals', // Basic Metals ($3)
+    'glass', // Glass ($5)
+    'advanced_metals', // Advanced Metals ($8) - most expensive last
   ];
 }
 

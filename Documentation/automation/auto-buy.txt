@@ -17,7 +17,12 @@ Configurable parameters (default values)
 - buysPerMachinePerTick: 5 — the number of items one machine attempts to buy per tick (default 5).
 - baseLimitPerItem: 5 — the per-item cap contributed by a single machine (default 5).
 - tickIntervalSeconds: 5 — global tick frequency in seconds (DEV MODE: reduced to 5s for testing, production will be 10s).
-- resourceOrder: deterministic list/order of resources to service each tick (see selection rules).
+- resourceOrder: deterministic list/order of resources to service each tick (ordered by price, cheapest first):
+  - Cardboard ($1)
+  - Plastic ($2)
+  - Basic Metals ($3)
+  - Glass ($5)
+  - Advanced Metals ($8)
 
 Algorithm (pooled-capacity buying rules)
 -----------------------------------------
@@ -61,29 +66,21 @@ Setup / assumptions
 - buysPerMachinePerTick = 5
 - Total pooled buys per tick = 2 × 5 = 10
 - resourceCap = 10 (per resource)
-- resourceOrder = [metal, wood, plastic]
-- starting inventory: metal = 3, wood = 10, plastic = 5
+- resourceOrder = [cardboard, plastic, basic_metals, glass, advanced_metals] (ordered by price)
+- starting inventory: cardboard = 8, plastic = 5, basic_metals = 3
 - starting money: $100 (sufficient for all purchases)
-- material prices: metal = $3, wood = $2, plastic = $2 (example prices)
+- material prices: cardboard = $1, plastic = $2, basic_metals = $3, glass = $5, advanced_metals = $8
 
 Tick-by-tick trace (pooled buying, single batch per tick, with money)
-- Tick 1 start: metal = 3, wood = 10, plastic = 5; pooled buys = 10; money = $100
-  - Process metal: deficit = 10 - 3 = 7. Can afford 33 units (100/3). Buy min(10, 7, 33) = 7 → metal = 10. Cost $21. Pooled buys remaining = 3. Money = $79.
-  - Process wood: deficit = 10 - 10 = 0 → skip (already at cap).
-  - Process plastic: deficit = 10 - 5 = 5. Can afford 39 units (79/2). Buy min(3, 5, 39) = 3 → plastic = 8. Cost $6. Pooled buys remaining = 0. Money = $73.
+- Tick 1 start: cardboard = 8, plastic = 5, basic_metals = 3, glass = 0, advanced_metals = 0; pooled buys = 10; money = $100
+  - Process cardboard: deficit = 10 - 8 = 2. Can afford 100 units. Buy min(10, 2, 100) = 2 → cardboard = 10. Cost $2. Pooled = 8. Money = $98.
+  - Process plastic: deficit = 10 - 5 = 5. Can afford 49 units. Buy min(8, 5, 49) = 5 → plastic = 10. Cost $10. Pooled = 3. Money = $88.
+  - Process basic_metals: deficit = 10 - 3 = 7. Can afford 29 units. Buy min(3, 7, 29) = 3 → basic_metals = 6. Cost $9. Pooled = 0. Money = $79.
   - Pooled buys exhausted. Tick 1 ends.
 
-Result after Tick 1: metal = 10, wood = 10, plastic = 8; money = $73
+Result after Tick 1: cardboard = 10, plastic = 10, basic_metals = 6, glass = 0, advanced_metals = 0; money = $79
 
-- Tick 2 start: metal = 10, wood = 10, plastic = 8; pooled buys = 10; money = $73
-  - Process metal: deficit = 0 → skip.
-  - Process wood: deficit = 0 → skip.
-  - Process plastic: deficit = 10 - 8 = 2. Can afford 36 units (73/2). Buy min(10, 2, 36) = 2 → plastic = 10. Cost $4. Pooled buys remaining = 8. Money = $69.
-  - All resources at cap. Remaining 8 pooled buys unused. Tick 2 ends.
-
-Result after Tick 2: metal = 10, wood = 10, plastic = 10 (all capped); money = $69
-
-This trace uses the pooled-capacity model with money constraints: all machines' buys are pooled into a single batch per tick, applied in resourceOrder, limited by available money. It's simple to reason about and prevents free purchases.
+This trace demonstrates the pooled-capacity model with money constraints and price-based ordering. Cheaper materials are filled first, maximizing the number of items bought per dollar.
 
 Scaling examples (pooled capacity with different machine counts)
 - 2 machines: 2 × 5 = 10 buys per tick
