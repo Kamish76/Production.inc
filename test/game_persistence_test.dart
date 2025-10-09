@@ -1,12 +1,30 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game1/services/game_persistence_service.dart';
 import 'package:game1/models/game_state.dart';
 import 'package:game1/models/game_models.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 
 void main() {
-  // Setup for SQLite testing
-  setUpAll(() {
-    GamePersistenceService.initializeDatabaseFactory();
+  late String testDbName;
+
+  setUp(() async {
+    testDbName =
+        'test_db_game_persistence_${DateTime.now().microsecondsSinceEpoch}.db';
+    GamePersistenceService.initializeDatabaseFactory(
+      testDatabaseName: testDbName,
+    );
+
+    final dbPath = await sqflite.getDatabasesPath();
+    final fullPath = [dbPath, testDbName].join(Platform.pathSeparator);
+    await sqflite.databaseFactory.deleteDatabase(fullPath);
+  });
+
+  tearDown(() async {
+    final dbPath = await sqflite.getDatabasesPath();
+    final fullPath = [dbPath, testDbName].join(Platform.pathSeparator);
+    await sqflite.databaseFactory.deleteDatabase(fullPath);
   });
 
   group('GamePersistenceService Tests', () {

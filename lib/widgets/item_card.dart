@@ -182,7 +182,8 @@ class ItemCard extends StatelessWidget {
     _product.requiredMaterials.forEach((k, v) => scaled[k] = v * selectedQty);
 
     final entries = scaled.entries.map((e) {
-      final have = gameService.state.getMaterialCount(e.key);
+      final have = gameService.state.getMaterialCount(e.key) +
+          gameService.state.getProductCount(e.key);
       final lacking = have < e.value;
       return {
         'id': e.key,
@@ -464,7 +465,8 @@ class ItemCard extends StatelessWidget {
 
     // Build a list of material entries with available counts
     final entries = scaled.entries.map((e) {
-      final have = gameService.state.getMaterialCount(e.key);
+      final have = gameService.state.getMaterialCount(e.key) +
+          gameService.state.getProductCount(e.key);
       final lacking = have < e.value;
       return {
         'id': e.key,

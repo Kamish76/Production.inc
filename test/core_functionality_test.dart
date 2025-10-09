@@ -1,15 +1,30 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game1/services/production_game_service.dart';
 import 'package:game1/services/game_persistence_service.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 
 void main() {
   group('Core Functionality Tests', () {
     late ProductionGameService gameService;
+    late String testDbName;
 
     setUp(() {
       // Initialize database factory before creating the game service
-      GamePersistenceService.initializeDatabaseFactory();
+      testDbName =
+          'test_db_core_functionality_${DateTime.now().microsecondsSinceEpoch}.db';
+      GamePersistenceService.initializeDatabaseFactory(
+        testDatabaseName: testDbName,
+      );
       gameService = ProductionGameService();
+    });
+
+    tearDown(() async {
+      await gameService.dispose();
+      final dbPath = await sqflite.getDatabasesPath();
+      final fullPath = [dbPath, testDbName].join(Platform.pathSeparator);
+      await sqflite.databaseFactory.deleteDatabase(fullPath);
     });
 
     test('Game service initializes with correct starting money', () {
