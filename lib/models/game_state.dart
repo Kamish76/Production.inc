@@ -76,6 +76,7 @@ class GameState {
   final int autoBuyMachinesOwned; // Number of auto-buy machines owned
   final bool autoBuyEnabled; // Master on/off toggle for auto-buy machines
   final DateTime? lastAutoBuyTick; // Last time auto-buy tick was processed
+  final int autoBuyResourceCapacity; // Player-configurable capacity per resource (increments of 10)
 
   const GameState({
     this.money = 100.0, // Starting money
@@ -93,6 +94,7 @@ class GameState {
     this.autoBuyMachinesOwned = 0,
     this.autoBuyEnabled = false,
     this.lastAutoBuyTick,
+    this.autoBuyResourceCapacity = 10, // Default starting capacity
   });
 
   GameState copyWith({
@@ -111,6 +113,7 @@ class GameState {
     int? autoBuyMachinesOwned,
     bool? autoBuyEnabled,
     DateTime? lastAutoBuyTick,
+    int? autoBuyResourceCapacity,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -131,6 +134,7 @@ class GameState {
       autoBuyMachinesOwned: autoBuyMachinesOwned ?? this.autoBuyMachinesOwned,
       autoBuyEnabled: autoBuyEnabled ?? this.autoBuyEnabled,
       lastAutoBuyTick: lastAutoBuyTick ?? this.lastAutoBuyTick,
+      autoBuyResourceCapacity: autoBuyResourceCapacity ?? this.autoBuyResourceCapacity,
     );
   }
 

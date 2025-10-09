@@ -237,9 +237,11 @@ class AutoBuyConstants {
   /// Number of items one machine buys per tick
   static const int buysPerMachinePerTick = 5;
   
-  /// Per-resource cap (machines aim to fill to this level per resource)
-  /// DEV MODE: Increased to 20 for testing (production will be 10)
-  static const int resourceCapPerMachine = 20;
+  /// Default resource capacity (player-configurable in increments of 10)
+  static const int defaultResourceCapacity = 10;
+  
+  /// Capacity increment step (capacity can only be changed in multiples of this)
+  static const int capacityIncrement = 10;
   
   /// Interval between auto-buy ticks (seconds) - DEV MODE: reduced to 5s for testing
   static const int tickIntervalSeconds = 5;

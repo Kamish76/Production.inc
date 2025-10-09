@@ -223,11 +223,74 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
             ],
           ),
           
+          const SizedBox(height: 12),
+
+          // Capacity controls
+          Row(
+            children: [
+              const Text(
+                'Capacity:',
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+              const SizedBox(width: 12),
+              
+              // Decrement button
+              IconButton(
+                onPressed: gameService.state.autoBuyResourceCapacity > 10
+                    ? gameService.decreaseAutoBuyCapacity
+                    : null,
+                icon: const Icon(Icons.remove_circle_outline),
+                color: Colors.red[400],
+                disabledColor: Colors.grey,
+                iconSize: 28,
+              ),
+              
+              // Capacity display
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A2E),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${gameService.state.autoBuyResourceCapacity}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              
+              // Increment button
+              IconButton(
+                onPressed: gameService.increaseAutoBuyCapacity,
+                icon: const Icon(Icons.add_circle_outline),
+                color: Colors.green[400],
+                iconSize: 28,
+              ),
+              
+              const SizedBox(width: 8),
+              
+              // Info text
+              Expanded(
+                child: Text(
+                  'per resource',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
           // Info text
           if (gameService.state.autoBuyMachinesOwned > 0) ...[
             const SizedBox(height: 8),
             Text(
-              'Buying ${gameService.state.autoBuyMachinesOwned * 5} materials every 10s${gameService.state.autoBuyEnabled ? " (active)" : " (paused)"}',
+              'Buying ${gameService.state.autoBuyMachinesOwned * 5} materials every 5s${gameService.state.autoBuyEnabled ? " (active)" : " (paused)"}',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.6),
                 fontSize: 11,
@@ -292,6 +355,16 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
                   label: 'Machines',
                   value: '${gameService.state.autoBuyMachinesOwned}',
                   valueColor: Colors.white,
+                ),
+              ),
+              
+              // Capacity
+              Expanded(
+                child: _buildStatusItem(
+                  icon: Icons.inventory_2_outlined,
+                  label: 'Capacity',
+                  value: '${gameService.state.autoBuyResourceCapacity}',
+                  valueColor: Colors.cyan[300]!,
                 ),
               ),
               

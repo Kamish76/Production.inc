@@ -802,7 +802,7 @@ class ProductionGameService extends ChangeNotifier {
       machinesEnabled: _state.autoBuyMachinesOwned,
       buysPerMachinePerTick: AutoBuyConstants.buysPerMachinePerTick,
       resourceOrder: AutoBuyConstants.resourceOrder,
-      resourceCap: AutoBuyConstants.resourceCapPerMachine,
+      resourceCap: _state.autoBuyResourceCapacity, // Use player's configurable capacity
     );
 
     // Update state if any purchases were made
@@ -1277,6 +1277,32 @@ class ProductionGameService extends ChangeNotifier {
     }
   }
 
+  /// Increase auto-buy resource capacity by 10
+  void increaseAutoBuyCapacity() {
+    final newCapacity = _state.autoBuyResourceCapacity + AutoBuyConstants.capacityIncrement;
+    _state = _state.copyWith(autoBuyResourceCapacity: newCapacity);
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info('Auto-buy capacity increased to: $newCapacity');
+    }
+  }
+
+  /// Decrease auto-buy resource capacity by 10 (minimum 10)
+  void decreaseAutoBuyCapacity() {
+    if (_state.autoBuyResourceCapacity > AutoBuyConstants.defaultResourceCapacity) {
+      final newCapacity = _state.autoBuyResourceCapacity - AutoBuyConstants.capacityIncrement;
+      _state = _state.copyWith(autoBuyResourceCapacity: newCapacity);
+      notifyListeners();
+      _saveGameStateOptimized();
+
+      if (kDebugMode) {
+        GameLogger.info('Auto-buy capacity decreased to: $newCapacity');
+      }
+    }
+  }
+
   // Auto-Buy Machine Status Getters (v1.5.0)
   
   /// Get seconds remaining until next auto-buy tick (returns null if not active)
@@ -1305,7 +1331,7 @@ class ProductionGameService extends ChangeNotifier {
     // Check each resource in order to find the first one below cap
     for (final resourceId in AutoBuyConstants.resourceOrder) {
       final currentAmount = _state.materials[resourceId] ?? 0;
-      if (currentAmount < AutoBuyConstants.resourceCapPerMachine) {
+      if (currentAmount < _state.autoBuyResourceCapacity) {
         // Find the material name from game data
         final material = GameData.materials.firstWhere(
           (m) => m.id == resourceId,
