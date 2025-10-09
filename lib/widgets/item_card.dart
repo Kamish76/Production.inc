@@ -237,46 +237,71 @@ class ItemCard extends StatelessWidget {
       return (a['id'] as String).compareTo(b['id'] as String);
     });
 
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: entries.map((entry) {
-        final id = entry['id'] as String;
-        final required = entry['required'] as int;
-        final have = entry['have'] as int;
-        final lacking = entry['lacking'] as bool;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Materials:',
+          style: TextStyle(
+            color: Colors.grey[300],
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        ...entries.map((entry) {
+          final id = entry['id'] as String;
+          final required = entry['required'] as int;
+          final have = entry['have'] as int;
+          final lacking = entry['lacking'] as bool;
 
-        String name = id;
-        String emoji = '';
-        try {
-          final m = data.GameData.materials.firstWhere((m) => m.id == id);
-          name = m.name;
-          emoji = m.emoji;
-        } catch (_) {
+          String name = id;
+          String emoji = '';
           try {
-            final p = data.GameData.products.firstWhere((p) => p.id == id);
-            name = p.name;
-            emoji = p.emoji;
-          } catch (_) {}
-        }
+            final m = data.GameData.materials.firstWhere((m) => m.id == id);
+            name = m.name;
+            emoji = m.emoji;
+          } catch (_) {
+            try {
+              final p = data.GameData.products.firstWhere((p) => p.id == id);
+              name = p.name;
+              emoji = p.emoji;
+            } catch (_) {}
+          }
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: lacking ? Colors.red[900] : Colors.green[900],
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.black26),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (emoji.isNotEmpty) Text(emoji, style: const TextStyle(fontSize: 12)),
-              if (emoji.isNotEmpty) const SizedBox(width: 6),
-              Text('$name: $have / $required', style: const TextStyle(fontSize: 12, color: Colors.white)),
-            ],
-          ),
-        );
-      }).toList(),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: lacking ? Colors.red[900] : Colors.green[900],
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.black26),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (emoji.isNotEmpty)
+                    Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  if (emoji.isNotEmpty) const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '$name: $have / $required',
+                      style: const TextStyle(fontSize: 12, color: Colors.white),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 
