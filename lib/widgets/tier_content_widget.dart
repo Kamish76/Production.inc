@@ -73,8 +73,8 @@ class TierContentWidget extends StatelessWidget {
               final screenWidth = MediaQuery.of(context).size.width;
 
               // Use screen width to determine optimal column count
-              // 480px breakpoint optimized for 720p/1080p vs high-res phones
-              final columnsCount = screenWidth < 480 ? 2 : 3;
+              // Use 3 columns for wide displays (>= 1080 logical pixels), otherwise 2
+              final columnsCount = screenWidth >= 1080 ? 3 : 2;
 
               const spacing = 8.0;
 
@@ -91,22 +91,24 @@ class TierContentWidget extends StatelessWidget {
                 children: rows.map((rowProducts) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (int i = 0; i < columnsCount; i++) ...[
-                          if (i > 0) const SizedBox(width: spacing),
-                          Expanded(
-                            child: i < rowProducts.length
-                                ? ItemCard(
-                                    item: rowProducts[i],
-                                    gameService: gameService,
-                                    mode: ItemCardMode.build,
-                                  )
-                                : const SizedBox(), // Empty space for incomplete rows
-                          ),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (int i = 0; i < columnsCount; i++) ...[
+                            if (i > 0) const SizedBox(width: spacing),
+                            Expanded(
+                              child: i < rowProducts.length
+                                  ? ItemCard(
+                                      item: rowProducts[i],
+                                      gameService: gameService,
+                                      mode: ItemCardMode.build,
+                                    )
+                                  : const SizedBox(), // Empty space for incomplete rows
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   );
                 }).toList(),

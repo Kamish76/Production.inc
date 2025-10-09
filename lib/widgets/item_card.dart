@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
+import '../models/game_data.dart' as data;
 import 'quantity_selector_button.dart';
 
 /// Consolidated card widget for materials and products across buy/sell/build modes
@@ -45,17 +46,24 @@ class ItemCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: _handleCardTap,
+        onLongPress: () => _showDetailsSheet(context),
         child: Container(
           padding: const EdgeInsets.all(12),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
               const SizedBox(height: 10),
               _buildStatusIndicator(),
               const SizedBox(height: 10),
-              _buildDescription(),
-              const SizedBox(height: 12),
+              // Show a compact per-unit materials summary for build items (always visible when unlocked)
+              if (mode == ItemCardMode.build && _isProduct && gameService.isProductUnlocked(_product.id)) ...[
+                _buildScaledMaterialsSummary(),
+                const SizedBox(height: 8),
+              ] else ...[
+                const SizedBox(height: 4),
+              ],
               if (mode != ItemCardMode.build || _canProduce) _buildActionButtons(),
             ],
           ),
@@ -67,12 +75,64 @@ class ItemCard extends StatelessWidget {
   Widget _buildHeader() {
     return Row(
       children: [
-        Text(
-          _isMaterial ? _material.emoji : _product.emoji,
-          style: const TextStyle(fontSize: 36),
+        SizedBox(
+          width: 48,
+          height: 48,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Center(
+                child: Text(
+                  _isMaterial ? _material.emoji : _product.emoji,
+                  style: const TextStyle(fontSize: 28),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Buildable indicator: small check/X near the icon (still visible)
+              if (mode == ItemCardMode.build && _isProduct)
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Icon(
+                    _canProduce ? Icons.check_circle : Icons.cancel,
+                    size: 18,
+                    color: _canProduce ? Colors.greenAccent : Colors.redAccent,
+                  ),
+                ),
+              // Availability badge at the top-right corner
+              Positioned(
+                top: -6,
+                right: -6,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900]?.withOpacity(0.9),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24, width: 1),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black54, blurRadius: 2, offset: Offset(0, 1)),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      _isMaterial
+                          ? '${gameService.state.getMaterialCount(_material.id)}'
+                          : '${gameService.state.getProductCount(_product.id)}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
+        const SizedBox(width: 8),
+        Flexible(
+          fit: FlexFit.loose,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -136,15 +196,7 @@ class ItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDescription() {
-    return Text(
-      _isMaterial ? _material.description : _product.description,
-      style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-      maxLines: 3,
-      overflow: TextOverflow.ellipsis,
-      textAlign: TextAlign.center,
-    );
-  }
+  // Description moved to long-press details sheet.
 
   Widget _buildActionButtons() {
     switch (mode) {
@@ -153,8 +205,79 @@ class ItemCard extends StatelessWidget {
       case ItemCardMode.sell:
         return _buildSellButtons();
       case ItemCardMode.build:
-        return _buildBuildButton();
+        return _buildBuildQuantityButtons();
     }
+  }
+
+  // Per-unit summary removed; scaled summary is shown instead.
+
+  Widget _buildScaledMaterialsSummary() {
+    if (!_isProduct || _product.requiredMaterials.isEmpty) return const SizedBox.shrink();
+
+    final selectedQty = gameService.getBuildQuantityPreference(_product.id);
+    final scaled = <String, int>{};
+    _product.requiredMaterials.forEach((k, v) => scaled[k] = v * selectedQty);
+
+    final entries = scaled.entries.map((e) {
+      final have = gameService.state.getMaterialCount(e.key);
+      final lacking = have < e.value;
+      return {
+        'id': e.key,
+        'required': e.value,
+        'have': have,
+        'lacking': lacking,
+      };
+    }).toList();
+
+    // Sort lacking first
+    entries.sort((a, b) {
+      final la = a['lacking'] as bool;
+      final lb = b['lacking'] as bool;
+      if (la != lb) return la ? -1 : 1;
+      return (a['id'] as String).compareTo(b['id'] as String);
+    });
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: entries.map((entry) {
+        final id = entry['id'] as String;
+        final required = entry['required'] as int;
+        final have = entry['have'] as int;
+        final lacking = entry['lacking'] as bool;
+
+        String name = id;
+        String emoji = '';
+        try {
+          final m = data.GameData.materials.firstWhere((m) => m.id == id);
+          name = m.name;
+          emoji = m.emoji;
+        } catch (_) {
+          try {
+            final p = data.GameData.products.firstWhere((p) => p.id == id);
+            name = p.name;
+            emoji = p.emoji;
+          } catch (_) {}
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: lacking ? Colors.red[900] : Colors.green[900],
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: Colors.black26),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (emoji.isNotEmpty) Text(emoji, style: const TextStyle(fontSize: 12)),
+              if (emoji.isNotEmpty) const SizedBox(width: 6),
+              Text('$name: $have / $required', style: const TextStyle(fontSize: 12, color: Colors.white)),
+            ],
+          ),
+        );
+      }).toList(),
+    );
   }
 
   Widget _buildBuyButtons() {
@@ -261,25 +384,223 @@ class ItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBuildButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: _canProduce ? () => _handleBuildAction() : null,
-        icon: const Icon(Icons.build, size: 18),
-        label: Text(
-          _isInProduction ? 'Building...' : 'Build Product',
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _canProduce ? Colors.green[700] : Colors.grey[700],
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+  // Note: build action now uses quantity buttons (see _buildBuildQuantityButtons)
+
+  Widget _buildBuildQuantityButtons() {
+    // Mirror sell UI but for building: offer Build 1/5/10 options that use
+    // the build quantity preference and start production for the selected amount.
+    if (!_isProduct) return const SizedBox.shrink();
+
+    final currentPreference = gameService.getBuildQuantityPreference(_product.id);
+    final availableMaterials = gameService.state.hasMaterialsFor(_product.requiredMaterials);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Materials are shown in the long-press details sheet; keep buttons compact here.
+        Row(
+      children: [
+        Expanded(
+          child: QuantitySelectorButton(
+            quantity: 1,
+            cost: 0, // building consumes materials, not money shown here
+            isSelected: currentPreference == 1,
+            canAfford: availableMaterials,
+            onPressed: () => _handleBuildQuantitySelection(1),
+            label: 'Build 1',
           ),
         ),
-      ),
+        const SizedBox(width: 8),
+        // Removed Build 5 option per request
+        Expanded(
+          child: QuantitySelectorButton(
+            quantity: 10,
+            cost: 0,
+            isSelected: currentPreference == 10,
+            canAfford: availableMaterials,
+            onPressed: () => _handleBuildQuantitySelection(10),
+            label: 'Build 10',
+          ),
+        ),
+      ],
+        ),
+      ],
+    );
+  }
+
+  void _showDetailsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _isMaterial ? _material.name : _product.name,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _isMaterial ? _material.description : _product.description,
+                    style: TextStyle(color: Colors.grey[300], fontSize: 14),
+                  ),
+                  const SizedBox(height: 12),
+                  if (mode == ItemCardMode.build) ...[
+                    const Text('Materials', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    _buildBuildMaterialsSection(),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBuildMaterialsSection() {
+    if (!_isProduct) return const SizedBox.shrink();
+
+    // Only show materials section when the product is unlocked
+    if (!gameService.isProductUnlocked(_product.id)) return const SizedBox.shrink();
+
+    final selectedQty = gameService.getBuildQuantityPreference(_product.id);
+    // Scale required materials by selected quantity
+    final scaled = <String, int>{};
+    _product.requiredMaterials.forEach((k, v) => scaled[k] = v * selectedQty);
+
+    // Build a list of material entries with available counts
+    final entries = scaled.entries.map((e) {
+      final have = gameService.state.getMaterialCount(e.key);
+      final lacking = have < e.value;
+      return {
+        'id': e.key,
+        'required': e.value,
+        'have': have,
+        'lacking': lacking,
+      };
+    }).toList();
+
+    // Sort: lacking materials first, then by name
+    entries.sort((a, b) {
+      final la = a['lacking'] as bool;
+      final lb = b['lacking'] as bool;
+      if (la != lb) return la ? -1 : 1;
+      final ida = a['id'] as String;
+      final idb = b['id'] as String;
+      return ida.compareTo(idb);
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Show per-unit requirements header
+        if (_product.requiredMaterials.isNotEmpty) ...[
+          Text(
+            'Per unit:',
+            style: TextStyle(color: Colors.grey[300], fontSize: 11, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: _product.requiredMaterials.entries.map((e) {
+              final id = e.key;
+              final qty = e.value;
+              String name = id;
+              String emoji = '';
+              try {
+                final m = data.GameData.materials.firstWhere((m) => m.id == id);
+                name = m.name;
+                emoji = m.emoji;
+              } catch (_) {
+                try {
+                  final p = data.GameData.products.firstWhere((p) => p.id == id);
+                  name = p.name;
+                  emoji = p.emoji;
+                } catch (_) {}
+              }
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.grey[800]?.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.grey[700]!),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (emoji.isNotEmpty) Text(emoji, style: const TextStyle(fontSize: 12)),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        '$name ($qty)',
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Required for $selectedQty:',
+            style: TextStyle(color: Colors.grey[300], fontSize: 11, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+        ],
+
+        ...entries.map((entry) {
+        final id = entry['id'] as String;
+        final required = entry['required'] as int;
+        final have = entry['have'] as int;
+        final lacking = entry['lacking'] as bool;
+
+        // Try to resolve a display name and emoji (fallback to id)
+        String displayName = id;
+        String emoji = '';
+        try {
+          final m = data.GameData.materials.firstWhere((m) => m.id == id);
+          displayName = m.name;
+          emoji = m.emoji;
+        } catch (_) {
+          try {
+            final p = data.GameData.products.firstWhere((p) => p.id == id);
+            displayName = p.name;
+            emoji = p.emoji;
+          } catch (_) {}
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: Row(
+            children: [
+              if (emoji.isNotEmpty) Text(emoji, style: const TextStyle(fontSize: 14)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$displayName: $have / $required',
+                  style: TextStyle(
+                    color: lacking ? Colors.red[300] : Colors.green[300],
+                    fontSize: 12,
+                    fontWeight: lacking ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        }).toList(),
+      ],
     );
   }
 
@@ -329,7 +650,7 @@ class ItemCard extends StatelessWidget {
         return _canProduce ? Icons.check_circle : Icons.cancel;
     }
   }
-
+  
   String _getStatusText() {
     switch (mode) {
       case ItemCardMode.buy:
@@ -343,7 +664,6 @@ class ItemCard extends StatelessWidget {
         return _canProduce ? 'Ready to Build' : 'Need Materials';
     }
   }
-
   // Stock level helpers for sell mode
   String _getStockLevel() {
     final available = gameService.state.getProductCount(_product.id);
@@ -372,7 +692,7 @@ class ItemCard extends StatelessWidget {
 
   // Production helpers for build mode
   bool get _canProduce => _isProduct && gameService.state.hasMaterialsFor(_product.requiredMaterials);
-  bool get _isInProduction => _isProduct && gameService.state.activeProductions.any((task) => task.productId == _product.id);
+  // Note: production queuing now handled by service; removed _isInProduction guard.
 
   // Action handlers
   void _handleCardTap() {
@@ -398,7 +718,9 @@ class ItemCard extends StatelessWidget {
         }
         break;
       case ItemCardMode.build:
-        if (_canProduce && !_isInProduction) {
+        if (_canProduce) {
+          // Allow queuing even if there's already production in progress;
+          // startProduction will handle queuing logic.
           _handleBuildAction();
         } else if (onProductDetails != null) {
           onProductDetails!();
@@ -433,10 +755,31 @@ class ItemCard extends StatelessWidget {
     gameService.setSellQuantityPreference(_product.id, quantity);
   }
 
-  void _handleBuildAction() {
-    if (_canProduce && !_isInProduction) {
+  void _handleBuildQuantitySelection(int quantity) {
+    // Build a scaled requirements map for the requested quantity and check materials
+    final scaledRequired = <String, int>{};
+    _product.requiredMaterials.forEach((key, value) {
+      scaledRequired[key] = value * quantity;
+    });
+
+    final canBuild = gameService.state.hasMaterialsFor(scaledRequired);
+
+    if (canBuild) {
       HapticFeedback.mediumImpact();
-      gameService.startProduction(_product.id, 1);
+      gameService.startProduction(_product.id, quantity);
+    } else {
+      HapticFeedback.lightImpact();
+    }
+
+    // Remember preference regardless so the UI reflects the latest selection
+    gameService.setBuildQuantityPreference(_product.id, quantity);
+  }
+
+  void _handleBuildAction() {
+    if (_canProduce) {
+      HapticFeedback.mediumImpact();
+      final qty = gameService.getBuildQuantityPreference(_product.id);
+      gameService.startProduction(_product.id, qty);
     }
   }
 }

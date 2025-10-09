@@ -53,11 +53,13 @@ class QuantitySelectorButton extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              Text(
-                '\$${cost.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 9),
-                textAlign: TextAlign.center,
-              ),
+              if (cost > 0) ...[
+                Text(
+                  '\$${cost.toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 9),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ],
           ),
         ),
