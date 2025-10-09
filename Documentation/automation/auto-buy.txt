@@ -33,17 +33,24 @@ High-level rules
   - Example: 2 machines × 5 buys/machine/tick = 10 total buys per tick
   - Example: 3 machines × 5 buys/machine/tick = 15 total buys per tick
 - On each tick, the system processes resources in the configured `resourceOrder` sequentially, using the pooled buying capacity.
+- **Money constraint**: Each purchase costs money (based on material buy price). The machine can only buy what the player can afford. If money runs out mid-tick, remaining pooled buys are unused.
 - For each resource in order:
   - Calculate deficit = max(0, resourceCap - currentInventory)
   - If deficit > 0 and pooled buys remain:
-    - buyAmount = min(pooledBuysRemaining, deficit)
-    - Add buyAmount to inventory
-    - Subtract buyAmount from pooledBuysRemaining
+    - Calculate maxAffordable = floor(currentMoney / pricePerUnit)
+    - buyAmount = min(pooledBuysRemaining, deficit, maxAffordable)
+    - If buyAmount > 0:
+      - Add buyAmount to inventory
+      - Subtract (buyAmount × pricePerUnit) from money
+      - Subtract buyAmount from pooledBuysRemaining
+    - If buyAmount = 0 (can't afford this resource), skip to next resource
   - If deficit = 0 (resource at or above cap), skip to next resource
-- After processing all resources in resourceOrder once, if pooled buys remain, wrap back to the top and repeat until pooledBuysRemaining = 0 or all resources are at-or-above resourceCap.
+- After processing all resources in resourceOrder once, if pooled buys remain and money is sufficient, wrap back to the top and repeat until pooledBuysRemaining = 0 or all resources are at-or-above resourceCap or no money remains.
 
 Edge cases and notes
 - If pooled buys remain after a full pass through resourceOrder but all resources are at-or-above resourceCap, the remaining buys are unused for that tick.
+- **Money constraint**: If the player cannot afford any more materials (even the cheapest one in resourceOrder), the remaining pooled buys are unused for that tick.
+- If an expensive resource is unaffordable, the machine skips it and continues to cheaper resources later in the order.
 - The `resourceCap` is a soft per-resource target. The system checks it each time before buying.
 - This algorithm favors earlier resources in `resourceOrder` (they are filled first). Resources later in the order only receive buys if earlier ones are at cap or the pooled capacity exceeds their deficits.
 
@@ -56,25 +63,27 @@ Setup / assumptions
 - resourceCap = 10 (per resource)
 - resourceOrder = [metal, wood, plastic]
 - starting inventory: metal = 3, wood = 10, plastic = 5
+- starting money: $100 (sufficient for all purchases)
+- material prices: metal = $3, wood = $2, plastic = $2 (example prices)
 
-Tick-by-tick trace (pooled buying, single batch per tick)
-- Tick 1 start: metal = 3, wood = 10, plastic = 5; pooled buys = 10
-  - Process metal: deficit = 10 - 3 = 7. Buy min(10, 7) = 7 → metal = 10. Pooled buys remaining = 3.
+Tick-by-tick trace (pooled buying, single batch per tick, with money)
+- Tick 1 start: metal = 3, wood = 10, plastic = 5; pooled buys = 10; money = $100
+  - Process metal: deficit = 10 - 3 = 7. Can afford 33 units (100/3). Buy min(10, 7, 33) = 7 → metal = 10. Cost $21. Pooled buys remaining = 3. Money = $79.
   - Process wood: deficit = 10 - 10 = 0 → skip (already at cap).
-  - Process plastic: deficit = 10 - 5 = 5. Buy min(3, 5) = 3 → plastic = 8. Pooled buys remaining = 0.
+  - Process plastic: deficit = 10 - 5 = 5. Can afford 39 units (79/2). Buy min(3, 5, 39) = 3 → plastic = 8. Cost $6. Pooled buys remaining = 0. Money = $73.
   - Pooled buys exhausted. Tick 1 ends.
 
-Result after Tick 1: metal = 10, wood = 10, plastic = 8
+Result after Tick 1: metal = 10, wood = 10, plastic = 8; money = $73
 
-- Tick 2 start: metal = 10, wood = 10, plastic = 8; pooled buys = 10
+- Tick 2 start: metal = 10, wood = 10, plastic = 8; pooled buys = 10; money = $73
   - Process metal: deficit = 0 → skip.
   - Process wood: deficit = 0 → skip.
-  - Process plastic: deficit = 10 - 8 = 2. Buy min(10, 2) = 2 → plastic = 10. Pooled buys remaining = 8.
+  - Process plastic: deficit = 10 - 8 = 2. Can afford 36 units (73/2). Buy min(10, 2, 36) = 2 → plastic = 10. Cost $4. Pooled buys remaining = 8. Money = $69.
   - All resources at cap. Remaining 8 pooled buys unused. Tick 2 ends.
 
-Result after Tick 2: metal = 10, wood = 10, plastic = 10 (all capped)
+Result after Tick 2: metal = 10, wood = 10, plastic = 10 (all capped); money = $69
 
-This trace uses the pooled-capacity model: all machines' buys are pooled into a single batch per tick and applied in resourceOrder. It's simpler to reason about and implement than the per-machine sequential model.
+This trace uses the pooled-capacity model with money constraints: all machines' buys are pooled into a single batch per tick, applied in resourceOrder, limited by available money. It's simple to reason about and prevents free purchases.
 
 Scaling examples (pooled capacity with different machine counts)
 - 2 machines: 2 × 5 = 10 buys per tick

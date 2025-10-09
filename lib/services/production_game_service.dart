@@ -787,10 +787,18 @@ class ProductionGameService extends ChangeNotifier {
       }
     }
 
-    // Perform auto-buy tick using pooled-capacity model
+    // Build material prices map from game data
+    final materialPrices = <String, double>{};
+    for (final material in GameData.materials) {
+      materialPrices[material.id] = material.buyPrice;
+    }
+
+    // Perform auto-buy tick using pooled-capacity model with money constraints
     final materialsCopy = Map<String, int>.from(_state.materials);
-    final itemsPurchased = machine_buyer.performAutoBuyTick(
+    final result = machine_buyer.performAutoBuyTick(
       inventory: materialsCopy,
+      currentMoney: _state.money,
+      materialPrices: materialPrices,
       machinesEnabled: _state.autoBuyMachinesOwned,
       buysPerMachinePerTick: AutoBuyConstants.buysPerMachinePerTick,
       resourceOrder: AutoBuyConstants.resourceOrder,
@@ -798,21 +806,30 @@ class ProductionGameService extends ChangeNotifier {
     );
 
     // Update state if any purchases were made
-    if (itemsPurchased > 0) {
+    if (result.itemsPurchased > 0) {
+      final newMoney = _state.money - result.moneySpent;
       _state = _state.copyWith(
         materials: materialsCopy,
+        money: newMoney,
         lastAutoBuyTick: now,
       );
       notifyListeners();
 
       if (kDebugMode) {
         GameLogger.info(
-          'Auto-buy tick: purchased $itemsPurchased items with ${_state.autoBuyMachinesOwned} machines',
+          'Auto-buy tick: purchased ${result.itemsPurchased} items for \$${result.moneySpent.toStringAsFixed(2)} with ${_state.autoBuyMachinesOwned} machines',
         );
       }
     } else {
-      // Update tick time even if no purchases (all resources at cap)
+      // Update tick time even if no purchases (all resources at cap or out of money)
       _state = _state.copyWith(lastAutoBuyTick: now);
+      
+      if (kDebugMode) {
+        final cheapestMaterial = materialPrices.values.isEmpty ? 0.0 : materialPrices.values.reduce((a, b) => a < b ? a : b);
+        if (_state.money < cheapestMaterial) {
+          GameLogger.warning('Auto-buy tick: insufficient money to buy any materials');
+        }
+      }
     }
   }
 
