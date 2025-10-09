@@ -87,3 +87,10 @@ Next steps
 - Add unit tests in `test/machine_buyer_test.dart` that include the scenario above and edge cases (all resources at cap, partial buys, wrapping).
 - Run tests and report results.
 
+Development Mode (Temporary)
+----------------------------
+This feature is currently in development. To facilitate testing and tuning:
+- The buy screen will include temporary controls to add/subtract the number of machines owned.
+- These controls allow developers to modify the buyer automation behavior dynamically during testing.
+- Once the feature is finalized and released, these temporary controls will be removed and machine ownership will follow the normal game progression (purchase, unlock, etc.).
+

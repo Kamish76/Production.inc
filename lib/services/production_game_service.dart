@@ -9,6 +9,7 @@ import '../models/game_models.dart';
 import '../constants/game_constants.dart';
 import 'game_persistence_service.dart';
 import 'product_unlock_service.dart';
+import 'machine_buyer.dart' as machine_buyer;
 
 // Logging utility for Production.INC
 class GameLogger {
@@ -643,6 +644,9 @@ class ProductionGameService extends ChangeNotifier {
   /// This is the central orchestrator for all game progress updates
   void updateProductions() {
     try {
+      // Check and process auto-buy tick (v1.5.0)
+      _processAutoBuyTick();
+      
       // Early return if no active operations (battery optimization)
       if (!_hasActiveOperations()) {
         return;
@@ -763,6 +767,53 @@ class ProductionGameService extends ChangeNotifier {
         results.completedShipping.isNotEmpty ||
         _state.activeProductions.isNotEmpty ||
         _state.activeShippingOrders.isNotEmpty;
+  }
+
+  /// Process auto-buy tick if enabled and interval has elapsed (v1.5.0)
+  void _processAutoBuyTick() {
+    // Skip if not enabled or no machines owned
+    if (!_state.autoBuyEnabled || _state.autoBuyMachinesOwned <= 0) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final lastTick = _state.lastAutoBuyTick;
+
+    // Check if it's time for a tick
+    if (lastTick != null) {
+      final elapsed = now.difference(lastTick).inSeconds;
+      if (elapsed < AutoBuyConstants.tickIntervalSeconds) {
+        return; // Not time yet
+      }
+    }
+
+    // Perform auto-buy tick using pooled-capacity model
+    final materialsCopy = Map<String, int>.from(_state.materials);
+    final itemsPurchased = machine_buyer.performAutoBuyTick(
+      inventory: materialsCopy,
+      machinesEnabled: _state.autoBuyMachinesOwned,
+      buysPerMachinePerTick: AutoBuyConstants.buysPerMachinePerTick,
+      resourceOrder: AutoBuyConstants.resourceOrder,
+      resourceCap: AutoBuyConstants.resourceCapPerMachine,
+    );
+
+    // Update state if any purchases were made
+    if (itemsPurchased > 0) {
+      _state = _state.copyWith(
+        materials: materialsCopy,
+        lastAutoBuyTick: now,
+      );
+      notifyListeners();
+
+      if (kDebugMode) {
+        GameLogger.info(
+          'Auto-buy tick: purchased $itemsPurchased items with ${_state.autoBuyMachinesOwned} machines',
+        );
+      }
+    } else {
+      // Update tick time even if no purchases (all resources at cap)
+      _state = _state.copyWith(lastAutoBuyTick: now);
+    }
   }
 
   /// Apply completed operations to game state
@@ -1168,4 +1219,45 @@ class ProductionGameService extends ChangeNotifier {
     notifyListeners();
     _saveGameStateOptimized();
   }
+
+  // V1.5.0 Auto-Buy Machine Management (Development Mode)
+  /// Toggle auto-buy machines on/off
+  void toggleAutoBuy() {
+    _state = _state.copyWith(autoBuyEnabled: !_state.autoBuyEnabled);
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Auto-buy toggled: ${_state.autoBuyEnabled ? "ON" : "OFF"}',
+      );
+    }
+  }
+
+  /// Set the number of auto-buy machines owned (DEV MODE ONLY)
+  /// This is a temporary control for development/testing
+  void setAutoBuyMachineCount(int count) {
+    if (count < 0) return; // Clamp to non-negative
+
+    _state = _state.copyWith(autoBuyMachinesOwned: count);
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info('Auto-buy machine count set to: $count');
+    }
+  }
+
+  /// Increment auto-buy machine count (DEV MODE ONLY)
+  void incrementAutoBuyMachines() {
+    setAutoBuyMachineCount(_state.autoBuyMachinesOwned + 1);
+  }
+
+  /// Decrement auto-buy machine count (DEV MODE ONLY)
+  void decrementAutoBuyMachines() {
+    if (_state.autoBuyMachinesOwned > 0) {
+      setAutoBuyMachineCount(_state.autoBuyMachinesOwned - 1);
+    }
+  }
 }
+

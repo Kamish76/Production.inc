@@ -71,6 +71,11 @@ class GameState {
   final Set<String> unlockedProducts; // productId -> unlocked status
   final Map<String, bool>
   productUnlockStatus; // productId -> unlock status cache for performance
+  
+  // Auto-Buy Machine state (v1.5.0 - in development)
+  final int autoBuyMachinesOwned; // Number of auto-buy machines owned
+  final bool autoBuyEnabled; // Master on/off toggle for auto-buy machines
+  final DateTime? lastAutoBuyTick; // Last time auto-buy tick was processed
 
   const GameState({
     this.money = 100.0, // Starting money
@@ -85,6 +90,9 @@ class GameState {
     this.sellQuantityPreferences = const {},
     this.unlockedProducts = const {},
     this.productUnlockStatus = const {},
+    this.autoBuyMachinesOwned = 0,
+    this.autoBuyEnabled = false,
+    this.lastAutoBuyTick,
   });
 
   GameState copyWith({
@@ -100,6 +108,9 @@ class GameState {
     Map<String, int>? sellQuantityPreferences,
     Set<String>? unlockedProducts,
     Map<String, bool>? productUnlockStatus,
+    int? autoBuyMachinesOwned,
+    bool? autoBuyEnabled,
+    DateTime? lastAutoBuyTick,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -117,6 +128,9 @@ class GameState {
           sellQuantityPreferences ?? this.sellQuantityPreferences,
       unlockedProducts: unlockedProducts ?? this.unlockedProducts,
       productUnlockStatus: productUnlockStatus ?? this.productUnlockStatus,
+      autoBuyMachinesOwned: autoBuyMachinesOwned ?? this.autoBuyMachinesOwned,
+      autoBuyEnabled: autoBuyEnabled ?? this.autoBuyEnabled,
+      lastAutoBuyTick: lastAutoBuyTick ?? this.lastAutoBuyTick,
     );
   }
 

@@ -229,6 +229,32 @@ class ValidationConstants {
 }
 
 // ==================================================
+// AUTO-BUY MACHINE CONSTANTS (v1.5.0 - in development)
+// ==================================================
+
+/// Auto-Buy Machine configuration and behavior constants
+class AutoBuyConstants {
+  /// Number of items one machine buys per tick
+  static const int buysPerMachinePerTick = 5;
+  
+  /// Per-resource cap (machines aim to fill to this level per resource)
+  static const int resourceCapPerMachine = 10;
+  
+  /// Interval between auto-buy ticks (seconds)
+  static const int tickIntervalSeconds = 10;
+  
+  /// Resource order for auto-buy processing (priority order)
+  /// Earlier resources in the list are filled first
+  static const List<String> resourceOrder = [
+    'metal', // Basic Metals
+    'wood', // Wood
+    'plastic', // Plastic
+    'glass', // Glass
+    'cardboard', // Cardboard
+  ];
+}
+
+// ==================================================
 // COLOR CONSTANTS
 // ==================================================
 
