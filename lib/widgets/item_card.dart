@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../constants/game_constants.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
 import '../models/game_data.dart' as data;
@@ -31,16 +32,37 @@ class ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isHighlighted = _isInProduction;
+    final Color baseCardColor = Colors.grey[850]!;
+    final Color cardColor =
+        isHighlighted
+            ? Color.alphaBlend(
+                AppColors.productionActive.withOpacity(0.22),
+                baseCardColor,
+              )
+            : baseCardColor;
+    final Color borderColor =
+        isHighlighted
+            ? AppColors.productionActive
+            : _getBorderColor();
+    final double borderOpacity = isHighlighted ? 0.85 : 0.3;
+    final double borderWidth = isHighlighted ? 2.0 : 1.0;
+    final double elevation = isHighlighted ? 12 : 8;
+    final Color shadowColor =
+        isHighlighted
+            ? AppColors.productionActive.withOpacity(0.45)
+            : Colors.black.withOpacity(0.3);
+
     return Card(
-      color: Colors.grey[850],
+      color: cardColor,
       margin: const EdgeInsets.all(4),
-      elevation: 8,
-      shadowColor: Colors.black.withValues(alpha: 0.3),
+      elevation: elevation,
+      shadowColor: shadowColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: _getBorderColor().withValues(alpha: 0.3),
-          width: 1,
+          color: borderColor.withOpacity(borderOpacity),
+          width: borderWidth,
         ),
       ),
       child: InkWell(
@@ -638,6 +660,10 @@ class ItemCard extends StatelessWidget {
 
   // Production helpers for build mode
   bool get _canProduce => _isProduct && gameService.state.hasMaterialsFor(_product.requiredMaterials);
+  bool get _isInProduction =>
+      mode == ItemCardMode.build &&
+      _isProduct &&
+      gameService.hasAnyProduction(_product.id);
   // Note: production queuing now handled by service; removed _isInProduction guard.
 
   // Action handlers
