@@ -240,14 +240,13 @@ class AutoBuyConstants {
   /// Per-resource cap (machines aim to fill to this level per resource)
   static const int resourceCapPerMachine = 10;
   
-  /// Interval between auto-buy ticks (seconds)
-  static const int tickIntervalSeconds = 10;
+  /// Interval between auto-buy ticks (seconds) - DEV MODE: reduced to 5s for testing
+  static const int tickIntervalSeconds = 5;
   
   /// Resource order for auto-buy processing (priority order)
   /// Earlier resources in the list are filled first
   static const List<String> resourceOrder = [
-    'metal', // Basic Metals
-    'wood', // Wood
+    'basic_metals', // Basic Metals (displayed as "metal")
     'plastic', // Plastic
     'glass', // Glass
     'cardboard', // Cardboard

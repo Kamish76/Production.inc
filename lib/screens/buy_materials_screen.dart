@@ -1,12 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../services/production_game_service.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/financial_status_display.dart';
 import '../widgets/item_card.dart';
 
-class BuyMaterialsScreen extends StatelessWidget {
+class BuyMaterialsScreen extends StatefulWidget {
   const BuyMaterialsScreen({super.key});
+
+  @override
+  State<BuyMaterialsScreen> createState() => _BuyMaterialsScreenState();
+}
+
+class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
+  Timer? _countdownTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start a timer to update countdown every second
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {}); // Trigger rebuild for countdown
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +62,10 @@ class BuyMaterialsScreen extends StatelessWidget {
 
                 // DEV MODE: Auto-Buy Machine Controls (v1.5.0)
                 _buildAutoBuyDevControls(gameService),
+
+                // Auto-Buy Machine Status Info (v1.5.0)
+                if (gameService.state.autoBuyMachinesOwned > 0)
+                  _buildAutoBuyStatusInfo(gameService),
 
                 // Materials list with single-column layout for better readability
                 Expanded(
@@ -208,6 +237,125 @@ class BuyMaterialsScreen extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  /// Build auto-buy machine status info display (v1.5.0)
+  Widget _buildAutoBuyStatusInfo(ProductionGameService gameService) {
+    final secondsRemaining = gameService.getSecondsUntilNextAutoBuyTick();
+    final nextMaterial = gameService.getNextMaterialToBuy();
+    final isActive = gameService.state.autoBuyEnabled;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isActive ? Colors.green.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: isActive ? Colors.green[300] : Colors.grey,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'AUTO-BUY STATUS',
+                style: TextStyle(
+                  color: isActive ? Colors.green[300] : Colors.grey,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Status info grid
+          Row(
+            children: [
+              // Machines count
+              Expanded(
+                child: _buildStatusItem(
+                  icon: Icons.precision_manufacturing,
+                  label: 'Machines',
+                  value: '${gameService.state.autoBuyMachinesOwned}',
+                  valueColor: Colors.white,
+                ),
+              ),
+              
+              // Next tick countdown
+              Expanded(
+                child: _buildStatusItem(
+                  icon: Icons.timer_outlined,
+                  label: 'Next Tick',
+                  value: isActive
+                      ? (secondsRemaining != null ? '${secondsRemaining}s' : '--')
+                      : 'Paused',
+                  valueColor: isActive
+                      ? (secondsRemaining != null && secondsRemaining <= 2
+                          ? Colors.orange
+                          : Colors.green[300]!)
+                      : Colors.grey,
+                ),
+              ),
+              
+              // Current/next material
+              Expanded(
+                child: _buildStatusItem(
+                  icon: Icons.shopping_basket_outlined,
+                  label: 'Buying',
+                  value: isActive ? (nextMaterial ?? '--') : 'Paused',
+                  valueColor: isActive ? Colors.blue[300]! : Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build a single status item
+  Widget _buildStatusItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white54, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white54,
+            fontSize: 10,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

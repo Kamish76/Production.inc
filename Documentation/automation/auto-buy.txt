@@ -16,7 +16,7 @@ Configurable parameters (default values)
 ----------------------------------------
 - buysPerMachinePerTick: 5 — the number of items one machine attempts to buy per tick (default 5).
 - baseLimitPerItem: 5 — the per-item cap contributed by a single machine (default 5).
-- tickIntervalSeconds: 10 — global tick frequency in seconds (default 10).
+- tickIntervalSeconds: 5 — global tick frequency in seconds (DEV MODE: reduced to 5s for testing, production will be 10s).
 - resourceOrder: deterministic list/order of resources to service each tick (see selection rules).
 
 Algorithm (pooled-capacity buying rules)
@@ -101,5 +101,10 @@ Development Mode (Temporary)
 This feature is currently in development. To facilitate testing and tuning:
 - The buy screen will include temporary controls to add/subtract the number of machines owned.
 - These controls allow developers to modify the buyer automation behavior dynamically during testing.
+- **DEV MODE**: Tick rate reduced to 5 seconds (production will be 10 seconds) for faster testing.
+- The buy screen displays live status information:
+  - Machine count
+  - Countdown to next tick (updates every second)
+  - Next material to be purchased
 - Once the feature is finalized and released, these temporary controls will be removed and machine ownership will follow the normal game progression (purchase, unlock, etc.).
 

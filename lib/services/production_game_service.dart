@@ -1276,5 +1276,52 @@ class ProductionGameService extends ChangeNotifier {
       setAutoBuyMachineCount(_state.autoBuyMachinesOwned - 1);
     }
   }
+
+  // Auto-Buy Machine Status Getters (v1.5.0)
+  
+  /// Get seconds remaining until next auto-buy tick (returns null if not active)
+  int? getSecondsUntilNextAutoBuyTick() {
+    if (!_state.autoBuyEnabled || _state.autoBuyMachinesOwned <= 0) {
+      return null;
+    }
+    
+    final lastTick = _state.lastAutoBuyTick;
+    if (lastTick == null) {
+      return 0; // Never ticked yet, will tick immediately
+    }
+    
+    final now = DateTime.now();
+    final elapsed = now.difference(lastTick).inSeconds;
+    final remaining = AutoBuyConstants.tickIntervalSeconds - elapsed;
+    return remaining > 0 ? remaining : 0;
+  }
+  
+  /// Get the name of the next material that will be bought (based on current inventory)
+  String? getNextMaterialToBuy() {
+    if (!_state.autoBuyEnabled || _state.autoBuyMachinesOwned <= 0) {
+      return null;
+    }
+    
+    // Check each resource in order to find the first one below cap
+    for (final resourceId in AutoBuyConstants.resourceOrder) {
+      final currentAmount = _state.materials[resourceId] ?? 0;
+      if (currentAmount < AutoBuyConstants.resourceCapPerMachine) {
+        // Find the material name from game data
+        final material = GameData.materials.firstWhere(
+          (m) => m.id == resourceId,
+          orElse: () => Material(
+            id: resourceId,
+            name: resourceId,
+            description: '',
+            buyPrice: 0,
+            emoji: '❓',
+          ),
+        );
+        return material.name;
+      }
+    }
+    
+    return 'All at cap'; // All resources at cap
+  }
 }
 
