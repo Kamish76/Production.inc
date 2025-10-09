@@ -54,9 +54,7 @@ class ItemCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
-              const SizedBox(height: 10),
-              _buildStatusIndicator(),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               // Show a compact per-unit materials summary for build items (always visible when unlocked)
               if (mode == ItemCardMode.build && _isProduct && gameService.isProductUnlocked(_product.id)) ...[
                 _buildScaledMaterialsSummary(),
@@ -158,41 +156,6 @@ class ItemCard extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildStatusIndicator() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: _getStatusColor(),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _getStatusIcon(),
-            size: 14,
-            color: Colors.white,
-          ),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              _getStatusText(),
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -654,41 +617,6 @@ class ItemCard extends StatelessWidget {
     }
   }
 
-  Color _getStatusColor() {
-    switch (mode) {
-      case ItemCardMode.buy:
-        return Colors.blue[700]!;
-      case ItemCardMode.sell:
-        return _getStockLevelColor(_getStockLevel());
-      case ItemCardMode.build:
-        return _canProduce ? Colors.green[700]! : Colors.red[700]!;
-    }
-  }
-
-  IconData _getStatusIcon() {
-    switch (mode) {
-      case ItemCardMode.buy:
-        return Icons.inventory;
-      case ItemCardMode.sell:
-        return _getStockLevelIcon(_getStockLevel());
-      case ItemCardMode.build:
-        return _canProduce ? Icons.check_circle : Icons.cancel;
-    }
-  }
-  
-  String _getStatusText() {
-    switch (mode) {
-      case ItemCardMode.buy:
-        final owned = gameService.state.getMaterialCount(_material.id);
-        return 'Owned: $owned';
-      case ItemCardMode.sell:
-        final available = gameService.state.getProductCount(_product.id);
-        final stockLevel = _getStockLevel();
-        return 'Stock: $available (${stockLevel.toUpperCase()})';
-      case ItemCardMode.build:
-        return _canProduce ? 'Ready to Build' : 'Need Materials';
-    }
-  }
   // Stock level helpers for sell mode
   String _getStockLevel() {
     final available = gameService.state.getProductCount(_product.id);
@@ -703,15 +631,6 @@ class ItemCard extends StatelessWidget {
       case 'medium': return Colors.orange[700]!;
       case 'low': return Colors.red[700]!;
       default: return Colors.grey[700]!;
-    }
-  }
-
-  IconData _getStockLevelIcon(String stockLevel) {
-    switch (stockLevel) {
-      case 'high': return Icons.trending_up;
-      case 'medium': return Icons.trending_flat;
-      case 'low': return Icons.trending_down;
-      default: return Icons.inventory;
     }
   }
 
