@@ -48,6 +48,17 @@ class _TierExpansionPanelState extends State<TierExpansionPanel> {
   }
 
   @override
+  void didUpdateWidget(TierExpansionPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initiallyExpanded != oldWidget.initiallyExpanded &&
+        widget.initiallyExpanded != _expanded) {
+      setState(() {
+        _expanded = widget.initiallyExpanded;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final primaryColor = widget.primaryColor ?? Colors.blue[400]!;
     final backgroundColor = widget.backgroundColor ?? Colors.blue[900]!.withValues(alpha: 0.3);
