@@ -55,34 +55,34 @@ class ItemCard extends StatelessWidget {
 
     return Card(
       color: cardColor,
-      margin: const EdgeInsets.all(4),
+      margin: const EdgeInsets.all(2),
       elevation: elevation,
       shadowColor: shadowColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(
           color: borderColor.withValues(alpha: borderOpacity),
           width: borderWidth,
         ),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         onTap: _handleCardTap,
         onLongPress: () => _showDetailsSheet(context),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               // Show a compact per-unit materials summary for build items (always visible when unlocked)
               if (mode == ItemCardMode.build && _isProduct && gameService.isProductUnlocked(_product.id)) ...[
                 _buildScaledMaterialsSummary(),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
               ] else ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
               ],
               if (mode != ItemCardMode.build || _canProduce) _buildActionButtons(),
             ],
@@ -96,15 +96,15 @@ class ItemCard extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: 48,
-          height: 48,
+          width: 40,
+          height: 40,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
               Center(
                 child: Text(
                   _isMaterial ? _material.emoji : _product.emoji,
-                  style: const TextStyle(fontSize: 28),
+                  style: const TextStyle(fontSize: 24),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -116,17 +116,17 @@ class ItemCard extends StatelessWidget {
                   bottom: -2,
                   child: Icon(
                     _canProduce ? Icons.check_circle : Icons.cancel,
-                    size: 18,
+                    size: 16,
                     color: _canProduce ? Colors.greenAccent : Colors.redAccent,
                   ),
                 ),
               // Availability badge at the top-right corner
               Positioned(
-                top: -6,
-                right: -6,
+                top: -4,
+                right: -4,
                 child: Container(
-                  width: 28,
-                  height: 28,
+                  width: 24,
+                  height: 24,
                   decoration: BoxDecoration(
                     color: Colors.grey[900]?.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
@@ -144,7 +144,7 @@ class ItemCard extends StatelessWidget {
                       _isMaterial
                           ? '${gameService.state.getMaterialCount(_material.id)}'
                           : '${gameService.state.getProductCount(_product.id)}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -154,7 +154,7 @@ class ItemCard extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Flexible(
           fit: FlexFit.loose,
           child: Column(
@@ -163,18 +163,18 @@ class ItemCard extends StatelessWidget {
               Text(
                 _isMaterial ? _material.name : _product.name,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
                 _getSubtitleText(),
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 10,
                   color: Colors.grey[400],
                 ),
               ),
@@ -227,6 +227,14 @@ class ItemCard extends StatelessWidget {
       return (a['id'] as String).compareTo(b['id'] as String);
     });
 
+    // Calculate height: each item is ~23px (4px padding + 3px bottom margin + ~16px content)
+    // Show max 4 items, but if there are fewer, adjust height accordingly
+    final itemHeight = 23.0;
+    final maxVisibleItems = 4;
+    final actualItems = entries.length;
+    final visibleItems = actualItems < maxVisibleItems ? actualItems : maxVisibleItems;
+    final containerHeight = itemHeight * visibleItems;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -234,63 +242,72 @@ class ItemCard extends StatelessWidget {
           'Materials:',
           style: TextStyle(
             color: Colors.grey[300],
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 6),
-        ...entries.map((entry) {
-          final id = entry['id'] as String;
-          final required = entry['required'] as int;
-          final have = entry['have'] as int;
-          final lacking = entry['lacking'] as bool;
+        const SizedBox(height: 4),
+        SizedBox(
+          height: containerHeight,
+          child: ListView.builder(
+            padding: EdgeInsets.zero,
+            physics: const ClampingScrollPhysics(),
+            itemCount: entries.length,
+            itemBuilder: (context, index) {
+              final entry = entries[index];
+              final id = entry['id'] as String;
+              final required = entry['required'] as int;
+              final have = entry['have'] as int;
+              final lacking = entry['lacking'] as bool;
 
-          String name = id;
-          String emoji = '';
-          try {
-            final m = data.GameData.materials.firstWhere((m) => m.id == id);
-            name = m.name;
-            emoji = m.emoji;
-          } catch (_) {
-            try {
-              final p = data.GameData.products.firstWhere((p) => p.id == id);
-              name = p.name;
-              emoji = p.emoji;
-            } catch (_) {}
-          }
+              String name = id;
+              String emoji = '';
+              try {
+                final m = data.GameData.materials.firstWhere((m) => m.id == id);
+                name = m.name;
+                emoji = m.emoji;
+              } catch (_) {
+                try {
+                  final p = data.GameData.products.firstWhere((p) => p.id == id);
+                  name = p.name;
+                  emoji = p.emoji;
+                } catch (_) {}
+              }
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: lacking ? Colors.red[900] : Colors.green[900],
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.black26),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (emoji.isNotEmpty)
-                    Text(
-                      emoji,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  if (emoji.isNotEmpty) const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      '$name: $have / $required',
-                      style: const TextStyle(fontSize: 12, color: Colors.white),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: lacking ? Colors.red[900] : Colors.green[900],
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.black26),
                   ),
-                ],
-              ),
-            ),
-          );
-        }),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (emoji.isNotEmpty)
+                        Text(
+                          emoji,
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      if (emoji.isNotEmpty) const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '$name: $have / $required',
+                          style: const TextStyle(fontSize: 10, color: Colors.white),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ],
     );
   }
@@ -364,12 +381,12 @@ class ItemCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => _handleSellQuantitySelection(quantity),
       child: Container(
-        height: 48,
+        height: 36,
         decoration: BoxDecoration(
           color: isSelected
               ? (canSell ? Colors.green[700] : Colors.orange[700])
               : (canSell ? Colors.blue[800] : Colors.grey[700]),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: isSelected
                 ? Colors.white.withValues(alpha: 0.8)
@@ -383,14 +400,14 @@ class ItemCard extends StatelessWidget {
             Text(
               'Sell $quantity',
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),
               textAlign: TextAlign.center,
             ),
             Text(
               '\$${revenue.toStringAsFixed(2)}',
-              style: const TextStyle(fontSize: 9),
+              style: const TextStyle(fontSize: 8),
               textAlign: TextAlign.center,
             ),
           ],

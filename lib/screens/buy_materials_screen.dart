@@ -70,12 +70,12 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
                 // Materials list with single-column layout for better readability
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(8),
                     itemCount: gameService.allMaterials.length,
                     itemBuilder: (context, index) {
                       final material = gameService.allMaterials[index];
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.only(bottom: 6),
                         child: ItemCard(
                           item: material,
                           gameService: gameService,

@@ -22,7 +22,7 @@ class QuantitySelectorButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 40,
+      height: 36,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -32,12 +32,12 @@ class QuantitySelectorButton extends StatelessWidget {
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
             side: isSelected
                 ? BorderSide(color: Colors.blue[300]!, width: 2)
                 : BorderSide.none,
           ),
-          elevation: isSelected ? 6 : 2,
+          elevation: isSelected ? 4 : 2,
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
@@ -48,7 +48,7 @@ class QuantitySelectorButton extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
@@ -56,7 +56,7 @@ class QuantitySelectorButton extends StatelessWidget {
               if (cost > 0) ...[
                 Text(
                   '\$${cost.toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 9),
+                  style: const TextStyle(fontSize: 8),
                   textAlign: TextAlign.center,
                 ),
               ],
