@@ -15,7 +15,7 @@ Summary of behavior
 Configurable parameters (default values)
 ----------------------------------------
 - buysPerMachinePerTick: 5 — the number of items one machine attempts to buy per tick (default 5).
-- baseLimitPerItem: 5 — the per-item cap contributed by a single machine (default 5).
+- baseLimitPerItem: 20 — the per-item cap contributed by a single machine (DEV MODE: raised to 20 for testing, production will be 10).
 - tickIntervalSeconds: 5 — global tick frequency in seconds (DEV MODE: reduced to 5s for testing, production will be 10s).
 - resourceOrder: deterministic list/order of resources to service each tick (ordered by price, cheapest first):
   - Cardboard ($1)
@@ -65,7 +65,7 @@ Setup / assumptions
 - machinesEnabled = 2 (both machines active)
 - buysPerMachinePerTick = 5
 - Total pooled buys per tick = 2 × 5 = 10
-- resourceCap = 10 (per resource)
+- resourceCap = 20 (per resource, DEV MODE)
 - resourceOrder = [cardboard, plastic, basic_metals, glass, advanced_metals] (ordered by price)
 - starting inventory: cardboard = 8, plastic = 5, basic_metals = 3
 - starting money: $100 (sufficient for all purchases)
@@ -73,14 +73,19 @@ Setup / assumptions
 
 Tick-by-tick trace (pooled buying, single batch per tick, with money)
 - Tick 1 start: cardboard = 8, plastic = 5, basic_metals = 3, glass = 0, advanced_metals = 0; pooled buys = 10; money = $100
-  - Process cardboard: deficit = 10 - 8 = 2. Can afford 100 units. Buy min(10, 2, 100) = 2 → cardboard = 10. Cost $2. Pooled = 8. Money = $98.
-  - Process plastic: deficit = 10 - 5 = 5. Can afford 49 units. Buy min(8, 5, 49) = 5 → plastic = 10. Cost $10. Pooled = 3. Money = $88.
-  - Process basic_metals: deficit = 10 - 3 = 7. Can afford 29 units. Buy min(3, 7, 29) = 3 → basic_metals = 6. Cost $9. Pooled = 0. Money = $79.
+  - Process cardboard: deficit = 20 - 8 = 12. Can afford 100 units. Buy min(10, 12, 100) = 10 → cardboard = 18. Cost $10. Pooled = 0. Money = $90.
   - Pooled buys exhausted. Tick 1 ends.
 
-Result after Tick 1: cardboard = 10, plastic = 10, basic_metals = 6, glass = 0, advanced_metals = 0; money = $79
+Result after Tick 1: cardboard = 18, plastic = 5, basic_metals = 3, glass = 0, advanced_metals = 0; money = $90
 
-This trace demonstrates the pooled-capacity model with money constraints and price-based ordering. Cheaper materials are filled first, maximizing the number of items bought per dollar.
+- Tick 2 start: pooled buys = 10; money = $90
+  - Process cardboard: deficit = 20 - 18 = 2. Buy 2 → cardboard = 20. Cost $2. Pooled = 8. Money = $88.
+  - Process plastic: deficit = 20 - 5 = 15. Buy min(8, 15) = 8 → plastic = 13. Cost $16. Pooled = 0. Money = $72.
+  - Pooled buys exhausted. Tick 2 ends.
+
+Result after Tick 2: cardboard = 20 (capped), plastic = 13, basic_metals = 3, glass = 0, advanced_metals = 0; money = $72
+
+This trace demonstrates the pooled-capacity model with money constraints and price-based ordering. With a cap of 20, machines buy more per tick and reach the cap in fewer ticks.
 
 Scaling examples (pooled capacity with different machine counts)
 - 2 machines: 2 × 5 = 10 buys per tick
@@ -98,7 +103,9 @@ Development Mode (Temporary)
 This feature is currently in development. To facilitate testing and tuning:
 - The buy screen will include temporary controls to add/subtract the number of machines owned.
 - These controls allow developers to modify the buyer automation behavior dynamically during testing.
-- **DEV MODE**: Tick rate reduced to 5 seconds (production will be 10 seconds) for faster testing.
+- **DEV MODE Settings**:
+  - Tick rate reduced to **5 seconds** (production will be 10 seconds) for faster testing.
+  - Resource cap raised to **20 per resource** (production will be 10) to see more buying activity.
 - The buy screen displays live status information:
   - Machine count
   - Countdown to next tick (updates every second)
