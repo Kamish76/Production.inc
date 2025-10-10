@@ -55,11 +55,6 @@ class ControlScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
-                          // Settings Access Section
-                          _buildSettingsAccessSection(context),
-                          
-                          const SizedBox(height: 20),
-                          
                           // Machine Controls Section
                           _buildMachineControlsSection(context, gameService),
                           
@@ -67,6 +62,11 @@ class ControlScreen extends StatelessWidget {
                           
                           // Dev Controls Section
                           _buildDevControlsSection(context, gameService),
+                          
+                          const SizedBox(height: 20),
+                          
+                          // Settings Access Section
+                          _buildSettingsAccessSection(context),
                         ],
                       ),
                     );
