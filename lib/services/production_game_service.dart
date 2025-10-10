@@ -2035,6 +2035,57 @@ class ProductionGameService extends ChangeNotifier {
       GameLogger.info('Dev: Unlocked all products (added \$1,000,000)');
     }
   }
+
+  /// Dev method: Force a manual unlock check (for debugging)
+  void forceUnlockCheck() {
+    // Re-initialize unlock state from scratch
+    _initializeUnlockState();
+    
+    // Then check for any newly unlocked products
+    _checkAndUpdateUnlocks();
+    
+    notifyListeners();
+    _saveGameStateOptimized();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Forced unlock check - ${_state.unlockedProducts.length} products unlocked');
+    }
+  }
+
+  /// Dev method: Repair database structure (for fixing migration issues)
+  Future<void> repairDatabase() async {
+    try {
+      if (kDebugMode) {
+        GameLogger.info('Dev: Starting database repair...');
+      }
+      
+      // Close current database connection
+      await _persistenceService.dispose();
+      
+      // Reinitialize database (this will run migrations)
+      await _persistenceService.database;
+      
+      // Reload the game state
+      _state = await _persistenceService.loadGameState();
+      
+      // Reinitialize unlock state
+      _initializeUnlockState();
+      _checkAndUpdateUnlocks();
+      
+      notifyListeners();
+      
+      if (kDebugMode) {
+        GameLogger.info('Dev: Database repair completed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        GameLogger.error('Dev: Database repair failed: $e');
+      }
+      rethrow;
+    }
+  }
 }
+
+
 
 

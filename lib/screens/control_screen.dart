@@ -172,40 +172,367 @@ class ControlScreen extends StatelessWidget {
           const Divider(color: Colors.white24),
           const SizedBox(height: 16),
           
-          // Auto Buy Control
-          _buildMachineControl(
-            icon: Icons.shopping_cart_outlined,
-            title: 'Auto Buy',
-            subtitle: 'Automatically purchase materials',
-            isEnabled: gameService.state.autoBuyEnabled,
-            onToggle: () => gameService.toggleAutoBuy(),
-            additionalInfo: gameService.state.autoBuyEnabled
-                ? 'Machines: ${gameService.state.autoBuyMachinesOwned}'
-                : null,
+          // Auto Buy Machine Section
+          _buildAutoBuyMachineControls(context, gameService),
+          
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white24),
+          const SizedBox(height: 16),
+          
+          // Auto Build Machines Section
+          _buildAutoBuildMachinesControls(context, gameService),
+        ],
+      ),
+    );
+  }
+
+  /// Auto Buy Machine Controls
+  Widget _buildAutoBuyMachineControls(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Icon(Icons.shopping_cart, color: Colors.green[400], size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Auto-Buy Machines',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // Machine Count Controls
+        Row(
+          children: [
+            const Text(
+              'Machines:',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(width: 12),
+            
+            IconButton(
+              onPressed: gameService.state.autoBuyMachinesOwned > 0
+                  ? gameService.decrementAutoBuyMachines
+                  : null,
+              icon: const Icon(Icons.remove_circle_outline),
+              color: Colors.red[400],
+              disabledColor: Colors.grey,
+              iconSize: 24,
+            ),
+            
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '${gameService.state.autoBuyMachinesOwned}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            
+            IconButton(
+              onPressed: gameService.incrementAutoBuyMachines,
+              icon: const Icon(Icons.add_circle_outline),
+              color: Colors.green[400],
+              iconSize: 24,
+            ),
+            
+            const Spacer(),
+            
+            // Enable/Disable Toggle
+            Switch(
+              value: gameService.state.autoBuyEnabled,
+              onChanged: gameService.state.autoBuyMachinesOwned > 0
+                  ? (_) => gameService.toggleAutoBuy()
+                  : null,
+              activeColor: Colors.green[400],
+              activeTrackColor: Colors.green[200],
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // Capacity Controls
+        Row(
+          children: [
+            const Text(
+              'Capacity:',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(width: 12),
+            
+            IconButton(
+              onPressed: gameService.state.autoBuyResourceCapacity > 10
+                  ? gameService.decreaseAutoBuyCapacity
+                  : null,
+              icon: const Icon(Icons.remove_circle_outline),
+              color: Colors.red[400],
+              disabledColor: Colors.grey,
+              iconSize: 24,
+            ),
+            
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '${gameService.state.autoBuyResourceCapacity}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            
+            IconButton(
+              onPressed: gameService.increaseAutoBuyCapacity,
+              icon: const Icon(Icons.add_circle_outline),
+              color: Colors.green[400],
+              iconSize: 24,
+            ),
+            
+            const SizedBox(width: 8),
+            
+            Expanded(
+              child: Text(
+                'per resource',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+        
+        // Status info
+        if (gameService.state.autoBuyMachinesOwned > 0) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: gameService.state.autoBuyEnabled
+                  ? Colors.green.withValues(alpha: 0.1)
+                  : Colors.grey.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              'Buying ${gameService.state.autoBuyMachinesOwned * 5} materials every 5s${gameService.state.autoBuyEnabled ? " (active)" : " (paused)"}',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Auto Build Machines Controls
+  Widget _buildAutoBuildMachinesControls(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Icon(Icons.build, color: Colors.blue[400], size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Auto-Build Machines',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // Tier controls
+        _buildAutoBuildTierControl(context, gameService, 'basicParts', 'Basic Parts'),
+        const SizedBox(height: 12),
+        _buildAutoBuildTierControl(context, gameService, 'intermediate', 'Intermediate'),
+        const SizedBox(height: 12),
+        _buildAutoBuildTierControl(context, gameService, 'complex', 'Complex'),
+      ],
+    );
+  }
+
+  /// Auto Build Tier Control
+  Widget _buildAutoBuildTierControl(
+    BuildContext context,
+    ProductionGameService gameService,
+    String tier,
+    String tierName,
+  ) {
+    final machineCount = gameService.state.autoBuildMachinesOwned[tier] ?? 0;
+    final enabled = gameService.state.autoBuildEnabled[tier] ?? false;
+    final capacity = gameService.state.autoBuildProductCapacity[tier] ?? 10;
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: enabled
+              ? Colors.blue.withValues(alpha: 0.3)
+              : Colors.grey.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tier name and toggle
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  tierName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Switch(
+                value: enabled,
+                onChanged: machineCount > 0
+                    ? (_) => gameService.toggleAutoBuild(tier)
+                    : null,
+                activeColor: Colors.blue[400],
+                activeTrackColor: Colors.blue[200],
+              ),
+            ],
           ),
           
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           
-          // Auto Build Control (placeholder for future)
-          _buildMachineControl(
-            icon: Icons.build_circle_outlined,
-            title: 'Auto Build',
-            subtitle: 'Automatically produce products',
-            isEnabled: false,
-            onToggle: null, // Disabled - not implemented yet
-            additionalInfo: 'Coming soon',
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Auto Sell Control (placeholder for future)
-          _buildMachineControl(
-            icon: Icons.sell_outlined,
-            title: 'Auto Sell',
-            subtitle: 'Automatically sell products',
-            isEnabled: false,
-            onToggle: null, // Disabled - not implemented yet
-            additionalInfo: 'Coming soon',
+          // Machine count
+          Row(
+            children: [
+              const Text(
+                'Machines:',
+                style: TextStyle(color: Colors.white60, fontSize: 12),
+              ),
+              const SizedBox(width: 8),
+              
+              IconButton(
+                onPressed: machineCount > 0
+                    ? () => gameService.decrementAutoBuildMachines(tier)
+                    : null,
+                icon: const Icon(Icons.remove_circle_outline, size: 20),
+                color: Colors.red[400],
+                disabledColor: Colors.grey,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              
+              const SizedBox(width: 8),
+              
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '$machineCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(width: 8),
+              
+              IconButton(
+                onPressed: () => gameService.incrementAutoBuildMachines(tier),
+                icon: const Icon(Icons.add_circle_outline, size: 20),
+                color: Colors.green[400],
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              
+              const SizedBox(width: 16),
+              
+              // Capacity
+              const Text(
+                'Cap:',
+                style: TextStyle(color: Colors.white60, fontSize: 12),
+              ),
+              const SizedBox(width: 8),
+              
+              IconButton(
+                onPressed: capacity > 10
+                    ? () => gameService.decreaseAutoBuildCapacity(tier)
+                    : null,
+                icon: const Icon(Icons.remove_circle_outline, size: 20),
+                color: Colors.red[400],
+                disabledColor: Colors.grey,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              
+              const SizedBox(width: 8),
+              
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.cyan.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '$capacity',
+                  style: const TextStyle(
+                    color: Colors.cyan,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(width: 8),
+              
+              IconButton(
+                onPressed: () => gameService.increaseAutoBuildCapacity(tier),
+                icon: const Icon(Icons.add_circle_outline, size: 20),
+                color: Colors.green[400],
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
           ),
         ],
       ),
@@ -298,6 +625,28 @@ class ControlScreen extends StatelessWidget {
             onPressed: () => _unlockAllProducts(context, gameService),
           ),
           
+          const SizedBox(height: 12),
+          
+          // Force Unlock Check (Dev Tool)
+          _buildDevControl(
+            icon: Icons.refresh,
+            title: 'Force Unlock Check',
+            subtitle: 'Re-check unlock conditions for all products',
+            color: Colors.purple,
+            onPressed: () => _forceUnlockCheck(context, gameService),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Database Repair Tool
+          _buildDevControl(
+            icon: Icons.build_circle,
+            title: 'Repair Database',
+            subtitle: 'Fix database structure issues (recreates tables)',
+            color: Colors.amber,
+            onPressed: () => _repairDatabase(context, gameService),
+          ),
+          
           const SizedBox(height: 16),
           
           // Warning notice
@@ -325,70 +674,6 @@ class ControlScreen extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Build a machine control widget
-  Widget _buildMachineControl({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool isEnabled,
-    required VoidCallback? onToggle,
-    String? additionalInfo,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: isEnabled ? Colors.blue[300] : Colors.grey, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 12,
-                  ),
-                ),
-                if (additionalInfo != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    additionalInfo,
-                    style: TextStyle(
-                      color: isEnabled ? Colors.blue[300] : Colors.grey,
-                      fontSize: 11,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Switch(
-            value: isEnabled,
-            onChanged: onToggle != null ? (_) => onToggle() : null,
-            activeColor: Colors.blue[400],
-            activeTrackColor: Colors.blue[200],
           ),
         ],
       ),
@@ -538,5 +823,64 @@ class ControlScreen extends StatelessWidget {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  /// Dev tool: Force unlock check
+  void _forceUnlockCheck(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    gameService.forceUnlockCheck();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🔄 Unlock check completed'),
+        backgroundColor: Colors.purple,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Dev tool: Repair database structure
+  void _repairDatabase(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Repair Database?'),
+        content: const Text(
+          'This will recreate missing database tables.\n\n'
+          'Your current game data will be preserved.\n\n'
+          'The app will restart after repair.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Repair'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed == true) {
+      await gameService.repairDatabase();
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🔧 Database repaired! Restart the app.'),
+            backgroundColor: Colors.amber,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 }
