@@ -15,7 +15,7 @@ Summary of behavior
 Configurable parameters (default values)
 ----------------------------------------
 - buysPerMachinePerTick: 5 — the number of items one machine attempts to buy per tick (default 5).
-- baseLimitPerItem: 20 — the per-item cap contributed by a single machine (DEV MODE: raised to 20 for testing, production will be 10).
+- baseLimitPerItem: player determined starting at 10 - adjustable increments by 10;
 - tickIntervalSeconds: 5 — global tick frequency in seconds (DEV MODE: reduced to 5s for testing, production will be 10s).
 - resourceOrder: deterministic list/order of resources to service each tick (ordered by price, cheapest first):
   - Cardboard ($1)
