@@ -229,6 +229,35 @@ class ValidationConstants {
 }
 
 // ==================================================
+// AUTO-BUY MACHINE CONSTANTS (v1.5.0 - in development)
+// ==================================================
+
+/// Auto-Buy Machine configuration and behavior constants
+class AutoBuyConstants {
+  /// Number of items one machine buys per tick
+  static const int buysPerMachinePerTick = 5;
+  
+  /// Default resource capacity (player-configurable in increments of 10)
+  static const int defaultResourceCapacity = 10;
+  
+  /// Capacity increment step (capacity can only be changed in multiples of this)
+  static const int capacityIncrement = 10;
+  
+  /// Interval between auto-buy ticks (seconds) - DEV MODE: reduced to 5s for testing
+  static const int tickIntervalSeconds = 5;
+  
+  /// Resource order for auto-buy processing (priority order)
+  /// Earlier resources in the list are filled first
+  static const List<String> resourceOrder = [
+    'cardboard', // Cardboard ($1) - cheapest first
+    'plastic', // Plastic ($2)
+    'basic_metals', // Basic Metals ($3)
+    'glass', // Glass ($5)
+    'advanced_metals', // Advanced Metals ($8) - most expensive last
+  ];
+}
+
+// ==================================================
 // COLOR CONSTANTS
 // ==================================================
 

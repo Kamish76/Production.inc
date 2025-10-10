@@ -1,0 +1,114 @@
+
+Auto-Buy Machine — Specification
+=================================
+
+Purpose
+-------
+Provide a simple, predictable automation that periodically purchases raw materials for the player. NOTE: the configured "cap" described below is not a hard inventory maximum — the player's inventory is effectively unlimited. The cap describes the machines' per-item target/capability (how much the machines will aim to regulate per item), and it multiplies with additional machines. Machines should use their full per-tick purchase capacity so ticks are not wasted.
+
+Summary of behavior
+-------------------
+- Players may own one or more Auto-Buy Machines. Machines are stackable and identical in base behavior.
+- Machines can be toggled On/Off as a group by the player in the Buy screen. When toggled Off, all auto-buy machines stop purchasing completely until re-enabled.
+- Machines operate on a global tick that runs every 10 seconds (configurable). On each tick, enabled machines purchase materials up to the configured caps and throughput.
+
+Configurable parameters (default values)
+----------------------------------------
+- buysPerMachinePerTick: 5 — the number of items one machine attempts to buy per tick (default 5).
+- baseLimitPerItem: 20 — the per-item cap contributed by a single machine (DEV MODE: raised to 20 for testing, production will be 10).
+- tickIntervalSeconds: 5 — global tick frequency in seconds (DEV MODE: reduced to 5s for testing, production will be 10s).
+- resourceOrder: deterministic list/order of resources to service each tick (ordered by price, cheapest first):
+  - Cardboard ($1)
+  - Plastic ($2)
+  - Basic Metals ($3)
+  - Glass ($5)
+  - Advanced Metals ($8)
+
+Algorithm (pooled-capacity buying rules)
+-----------------------------------------
+This section explains the deterministic algorithm used by all enabled Auto-Buy Machines on every global tick. All enabled machines pool their buying capacity and apply it as a single batch per tick.
+
+Contract (inputs/outputs)
+- Inputs: current inventory map (resource -> amount), machinesEnabled (int), buysPerMachinePerTick (int), resourceOrder (ordered list), resourceCap (per-resource cap for machines to aim for)
+- Outputs: updated inventory map after consuming all pooled buys
+- Error modes: negative inputs are clamped to zero; purchases cannot reduce inventory below zero; any fractional buys are rounded down to integer counts.
+
+High-level rules
+- Total pooled buying capacity per tick = machinesEnabled × buysPerMachinePerTick
+  - Example: 2 machines × 5 buys/machine/tick = 10 total buys per tick
+  - Example: 3 machines × 5 buys/machine/tick = 15 total buys per tick
+- On each tick, the system processes resources in the configured `resourceOrder` sequentially, using the pooled buying capacity.
+- **Money constraint**: Each purchase costs money (based on material buy price). The machine can only buy what the player can afford. If money runs out mid-tick, remaining pooled buys are unused.
+- For each resource in order:
+  - Calculate deficit = max(0, resourceCap - currentInventory)
+  - If deficit > 0 and pooled buys remain:
+    - Calculate maxAffordable = floor(currentMoney / pricePerUnit)
+    - buyAmount = min(pooledBuysRemaining, deficit, maxAffordable)
+    - If buyAmount > 0:
+      - Add buyAmount to inventory
+      - Subtract (buyAmount × pricePerUnit) from money
+      - Subtract buyAmount from pooledBuysRemaining
+    - If buyAmount = 0 (can't afford this resource), skip to next resource
+  - If deficit = 0 (resource at or above cap), skip to next resource
+- After processing all resources in resourceOrder once, if pooled buys remain and money is sufficient, wrap back to the top and repeat until pooledBuysRemaining = 0 or all resources are at-or-above resourceCap or no money remains.
+
+Edge cases and notes
+- If pooled buys remain after a full pass through resourceOrder but all resources are at-or-above resourceCap, the remaining buys are unused for that tick.
+- **Money constraint**: If the player cannot afford any more materials (even the cheapest one in resourceOrder), the remaining pooled buys are unused for that tick.
+- If an expensive resource is unaffordable, the machine skips it and continues to cheaper resources later in the order.
+- The `resourceCap` is a soft per-resource target. The system checks it each time before buying.
+- This algorithm favors earlier resources in `resourceOrder` (they are filled first). Resources later in the order only receive buys if earlier ones are at cap or the pooled capacity exceeds their deficits.
+
+Example scenario (pooled-capacity model)
+-----------------------------------------
+Setup / assumptions
+- machinesEnabled = 2 (both machines active)
+- buysPerMachinePerTick = 5
+- Total pooled buys per tick = 2 × 5 = 10
+- resourceCap = 20 (per resource, DEV MODE)
+- resourceOrder = [cardboard, plastic, basic_metals, glass, advanced_metals] (ordered by price)
+- starting inventory: cardboard = 8, plastic = 5, basic_metals = 3
+- starting money: $100 (sufficient for all purchases)
+- material prices: cardboard = $1, plastic = $2, basic_metals = $3, glass = $5, advanced_metals = $8
+
+Tick-by-tick trace (pooled buying, single batch per tick, with money)
+- Tick 1 start: cardboard = 8, plastic = 5, basic_metals = 3, glass = 0, advanced_metals = 0; pooled buys = 10; money = $100
+  - Process cardboard: deficit = 20 - 8 = 12. Can afford 100 units. Buy min(10, 12, 100) = 10 → cardboard = 18. Cost $10. Pooled = 0. Money = $90.
+  - Pooled buys exhausted. Tick 1 ends.
+
+Result after Tick 1: cardboard = 18, plastic = 5, basic_metals = 3, glass = 0, advanced_metals = 0; money = $90
+
+- Tick 2 start: pooled buys = 10; money = $90
+  - Process cardboard: deficit = 20 - 18 = 2. Buy 2 → cardboard = 20. Cost $2. Pooled = 8. Money = $88.
+  - Process plastic: deficit = 20 - 5 = 15. Buy min(8, 15) = 8 → plastic = 13. Cost $16. Pooled = 0. Money = $72.
+  - Pooled buys exhausted. Tick 2 ends.
+
+Result after Tick 2: cardboard = 20 (capped), plastic = 13, basic_metals = 3, glass = 0, advanced_metals = 0; money = $72
+
+This trace demonstrates the pooled-capacity model with money constraints and price-based ordering. With a cap of 20, machines buy more per tick and reach the cap in fewer ticks.
+
+Scaling examples (pooled capacity with different machine counts)
+- 2 machines: 2 × 5 = 10 buys per tick
+- 3 machines: 3 × 5 = 15 buys per tick
+- 4 machines: 4 × 5 = 20 buys per tick
+- N machines: N × 5 = (5N) buys per tick
+
+Next steps
+- Implement the pooled-capacity algorithm in `lib/services/machine_buyer.dart`.
+- Add unit tests in `test/machine_buyer_test.dart` that include the scenario above and edge cases (all resources at cap, partial buys, wrapping).
+- Run tests and report results.
+
+Development Mode (Temporary)
+----------------------------
+This feature is currently in development. To facilitate testing and tuning:
+- The buy screen will include temporary controls to add/subtract the number of machines owned.
+- These controls allow developers to modify the buyer automation behavior dynamically during testing.
+- **DEV MODE Settings**:
+  - Tick rate reduced to **5 seconds** (production will be 10 seconds) for faster testing.
+  - Resource cap raised to **20 per resource** (production will be 10) to see more buying activity.
+- The buy screen displays live status information:
+  - Machine count
+  - Countdown to next tick (updates every second)
+  - Next material to be purchased
+- Once the feature is finalized and released, these temporary controls will be removed and machine ownership will follow the normal game progression (purchase, unlock, etc.).
+
