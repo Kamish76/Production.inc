@@ -1,0 +1,11 @@
+new control screen from ideas to be implemented.
+
+contents of screen.
+
+settings button to access settings screen.
+
+tier upgrading.
+machine buying.
+machine controls - capacity controls.
+
+dev controls.
