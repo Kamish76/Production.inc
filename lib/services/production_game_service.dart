@@ -530,8 +530,9 @@ class ProductionGameService extends ChangeNotifier {
           product.productionTimeSeconds,
         );
         
+        // Use microseconds to ensure unique IDs even when multiple items are produced in same millisecond
         final task = ProductionTask(
-          id: '${DateTime.now().millisecondsSinceEpoch}_$i',
+          id: '${DateTime.now().microsecondsSinceEpoch}_manual_$i',
           productId: productId,
           startTime: startTime,
           durationSeconds: adjustedTime, // Adjusted for machine speed bonus
@@ -650,9 +651,9 @@ class ProductionGameService extends ChangeNotifier {
         newProducts.remove(productId);
       }
 
-      // Create shipping order
+      // Create shipping order (use microseconds for unique ID)
       final shippingOrder = ShippingOrder(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
         items: [ShippingItem(productId: productId, quantity: quantity)],
         startTime: DateTime.now(),
         totalShippingTime: totalShippingTime,
@@ -1064,8 +1065,9 @@ class ProductionGameService extends ChangeNotifier {
                 product.productionTimeSeconds,
               );
               
+              // Use microseconds to ensure unique IDs even when multiple items are built in same millisecond
               final task = ProductionTask(
-                id: '${DateTime.now().millisecondsSinceEpoch}_autobuild_$i',
+                id: '${DateTime.now().microsecondsSinceEpoch}_autobuild_${tier}_$i',
                 productId: productId,
                 startTime: startTime,
                 durationSeconds: adjustedTime, // Adjusted for machine speed bonus
@@ -1700,7 +1702,7 @@ class ProductionGameService extends ChangeNotifier {
 
   /// Buy one auto-buy machine for $1000
   /// Returns true if purchase was successful, false if not enough money
-  bool buyAutoBuyMachine() {
+  Future<bool> buyAutoBuyMachine() async {
     if (_state.money < AutoBuyConstants.machineCost) {
       return false; // Not enough money
     }
@@ -1714,7 +1716,10 @@ class ProductionGameService extends ChangeNotifier {
       autoBuyMachinesOwned: newCount,
     );
     notifyListeners();
-    _saveGameStateOptimized();
+    
+    // Mark automation data as dirty for incremental save
+    _persistenceService.markDirty('automation');
+    await _saveGameStateOptimized(); // Await to ensure save completes
 
     if (kDebugMode) {
       GameLogger.info('Auto-buy machine purchased! Count: $newCount, Money remaining: \$${newMoney.toStringAsFixed(2)}');
@@ -1816,7 +1821,7 @@ class ProductionGameService extends ChangeNotifier {
 
   /// Buy one auto-build machine for a specific tier for $1000
   /// Returns true if purchase was successful, false if not enough money
-  bool buyAutoBuildMachine(String tier) {
+  Future<bool> buyAutoBuildMachine(String tier) async {
     if (_state.money < AutoBuildConstants.machineCost) {
       return false; // Not enough money
     }
@@ -1831,7 +1836,10 @@ class ProductionGameService extends ChangeNotifier {
       autoBuildMachinesOwned: newMachines,
     );
     notifyListeners();
-    _saveGameStateOptimized();
+    
+    // Mark automation data as dirty for incremental save
+    _persistenceService.markDirty('automation');
+    await _saveGameStateOptimized(); // Await to ensure save completes
 
     if (kDebugMode) {
       GameLogger.info('Auto-build machine for $tier purchased! Count: ${newMachines[tier]}, Money remaining: \$${newMoney.toStringAsFixed(2)}');

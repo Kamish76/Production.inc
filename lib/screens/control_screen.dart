@@ -242,9 +242,9 @@ class ControlScreen extends StatelessWidget {
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: gameService.state.money >= 1000
-                    ? () {
-                        final success = gameService.buyAutoBuyMachine();
-                        if (!success) {
+                    ? () async {
+                        final success = await gameService.buyAutoBuyMachine();
+                        if (!success && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Not enough money to buy machine!'),
@@ -483,9 +483,9 @@ class ControlScreen extends StatelessWidget {
               // Buy Machine button
               ElevatedButton.icon(
                 onPressed: gameService.state.money >= 1000
-                    ? () {
-                        final success = gameService.buyAutoBuildMachine(tier);
-                        if (!success) {
+                    ? () async {
+                        final success = await gameService.buyAutoBuildMachine(tier);
+                        if (!success && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Not enough money to buy machine!'),
