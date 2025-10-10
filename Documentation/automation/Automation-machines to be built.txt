@@ -1,6 +1,6 @@
 Automation machines to be made this update v15
 
 auto-buy(implemented)
-auto-build
+auto-build(implemented)
 auto-sell
 
