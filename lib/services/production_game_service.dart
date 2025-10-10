@@ -2088,6 +2088,60 @@ class ProductionGameService extends ChangeNotifier {
       rethrow;
     }
   }
+
+  /// Dev method: Verify and fix database schema (for "no such column" errors)
+  Future<void> verifyAndFixDatabaseSchema() async {
+    try {
+      if (kDebugMode) {
+        GameLogger.info('Dev: Verifying and fixing database schema...');
+      }
+      
+      await _persistenceService.verifyAndFixSchema();
+      
+      // Reload the game state to ensure everything is in sync
+      _state = await _persistenceService.loadGameState();
+      
+      notifyListeners();
+      
+      if (kDebugMode) {
+        GameLogger.info('Dev: Schema verification completed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        GameLogger.error('Dev: Schema verification failed: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Dev method: Reset database completely (WARNING: Deletes all data!)
+  Future<void> resetDatabase() async {
+    try {
+      if (kDebugMode) {
+        GameLogger.warning('Dev: RESETTING DATABASE - ALL DATA WILL BE LOST!');
+      }
+      
+      await _persistenceService.resetDatabase();
+      
+      // Reload the game state (will be fresh/default state)
+      _state = await _persistenceService.loadGameState();
+      
+      // Reinitialize unlock state
+      _initializeUnlockState();
+      _checkAndUpdateUnlocks();
+      
+      notifyListeners();
+      
+      if (kDebugMode) {
+        GameLogger.warning('Dev: Database reset complete - game state restored to default');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        GameLogger.error('Dev: Database reset failed: $e');
+      }
+      rethrow;
+    }
+  }
 }
 
 

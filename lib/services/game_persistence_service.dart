@@ -273,48 +273,80 @@ class GamePersistenceService {
 
   /// Migration to version 6 (v1.5.0 Phase 2)
   Future<void> _migrateToVersion6(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 6 (auto-buy system)');
+    }
+
+    // Check if columns already exist by querying table info
+    final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+    final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+    
+    if (kDebugMode) {
+      print('Existing game_state columns: ${existingColumns.join(", ")}');
+    }
+
     // Add auto-buy fields to game_state table if they don't exist
-    try {
-      await db.execute('''
-        ALTER TABLE game_state ADD COLUMN 
-        auto_buy_machines_owned INTEGER DEFAULT 0
-      ''');
-    } catch (e) {
-      if (kDebugMode) {
-        print('Migration warning (auto_buy_machines_owned): $e');
+    if (!existingColumns.contains('auto_buy_machines_owned')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_buy_machines_owned INTEGER DEFAULT 0
+        ''');
+        if (kDebugMode) {
+          print('Added column: auto_buy_machines_owned');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (auto_buy_machines_owned): $e');
+        }
       }
     }
 
-    try {
-      await db.execute('''
-        ALTER TABLE game_state ADD COLUMN 
-        auto_buy_enabled INTEGER DEFAULT 0
-      ''');
-    } catch (e) {
-      if (kDebugMode) {
-        print('Migration warning (auto_buy_enabled): $e');
+    if (!existingColumns.contains('auto_buy_enabled')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_buy_enabled INTEGER DEFAULT 0
+        ''');
+        if (kDebugMode) {
+          print('Added column: auto_buy_enabled');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (auto_buy_enabled): $e');
+        }
       }
     }
 
-    try {
-      await db.execute('''
-        ALTER TABLE game_state ADD COLUMN 
-        auto_buy_last_tick INTEGER
-      ''');
-    } catch (e) {
-      if (kDebugMode) {
-        print('Migration warning (auto_buy_last_tick): $e');
+    if (!existingColumns.contains('auto_buy_last_tick')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_buy_last_tick INTEGER
+        ''');
+        if (kDebugMode) {
+          print('Added column: auto_buy_last_tick');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (auto_buy_last_tick): $e');
+        }
       }
     }
 
-    try {
-      await db.execute('''
-        ALTER TABLE game_state ADD COLUMN 
-        auto_buy_resource_capacity INTEGER DEFAULT 10
-      ''');
-    } catch (e) {
-      if (kDebugMode) {
-        print('Migration warning (auto_buy_resource_capacity): $e');
+    if (!existingColumns.contains('auto_buy_resource_capacity')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_buy_resource_capacity INTEGER DEFAULT 10
+        ''');
+        if (kDebugMode) {
+          print('Added column: auto_buy_resource_capacity');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (auto_buy_resource_capacity): $e');
+        }
       }
     }
 
@@ -479,6 +511,35 @@ class GamePersistenceService {
         if (!existingTables.contains(table)) {
           throw Exception('Missing required table: $table');
         }
+      }
+
+      // Verify game_state has required columns for auto-buy (v1.5.0)
+      final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+      final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+      
+      final requiredAutoColumns = {
+        'auto_buy_machines_owned',
+        'auto_buy_enabled',
+        'auto_buy_last_tick',
+        'auto_buy_resource_capacity',
+      };
+      
+      bool missingColumns = false;
+      for (final column in requiredAutoColumns) {
+        if (!existingColumns.contains(column)) {
+          missingColumns = true;
+          if (kDebugMode) {
+            print('Database verification: Missing column $column, will attempt fix');
+          }
+        }
+      }
+      
+      // If columns are missing, run migration 6 to add them
+      if (missingColumns) {
+        if (kDebugMode) {
+          print('Applying schema fix for auto-buy columns...');
+        }
+        await _migrateToVersion6(db);
       }
     } catch (e) {
       if (kDebugMode) {
@@ -1470,6 +1531,125 @@ class GamePersistenceService {
         'product_id': entry.key,
         'quantity': entry.value,
       });
+    }
+  }
+
+  /// Manually verify and fix database schema (for debugging)
+  /// Call this if you encounter "no such column" errors
+  Future<void> verifyAndFixSchema() async {
+    try {
+      final db = await database;
+      
+      if (kDebugMode) {
+        print('=== Starting manual schema verification ===');
+      }
+      
+      // Check game_state table columns
+      final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+      final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+      
+      if (kDebugMode) {
+        print('Existing game_state columns: ${existingColumns.join(", ")}');
+      }
+      
+      // Required columns for auto-buy
+      final requiredColumns = {
+        'auto_buy_machines_owned',
+        'auto_buy_enabled',
+        'auto_buy_last_tick',
+        'auto_buy_resource_capacity',
+      };
+      
+      bool needsFix = false;
+      for (final column in requiredColumns) {
+        if (!existingColumns.contains(column)) {
+          needsFix = true;
+          if (kDebugMode) {
+            print('Missing column: $column');
+          }
+        }
+      }
+      
+      if (needsFix) {
+        if (kDebugMode) {
+          print('Schema incomplete, running migration to version 6...');
+        }
+        await _migrateToVersion6(db);
+        if (kDebugMode) {
+          print('Schema fix completed');
+        }
+      } else {
+        if (kDebugMode) {
+          print('Schema is complete, no fixes needed');
+        }
+      }
+      
+      // Verify auto-build tables exist
+      final tables = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table'",
+      );
+      final existingTables = tables.map((t) => t['name'] as String).toSet();
+      
+      final requiredTables = [
+        'auto_build_machines',
+        'auto_build_enabled',
+        'auto_build_last_tick',
+        'auto_build_capacity',
+      ];
+      
+      for (final table in requiredTables) {
+        if (!existingTables.contains(table)) {
+          if (kDebugMode) {
+            print('Missing table: $table, will be created by migration');
+          }
+        }
+      }
+      
+      if (kDebugMode) {
+        print('=== Schema verification complete ===');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Schema verification error: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Force a complete database reset (WARNING: Deletes all data!)
+  /// Use only for development or when database is corrupted beyond repair
+  Future<void> resetDatabase() async {
+    try {
+      if (kDebugMode) {
+        print('=== RESETTING DATABASE (ALL DATA WILL BE LOST) ===');
+      }
+      
+      // Close current database
+      if (_database != null) {
+        await _database!.close();
+        _database = null;
+      }
+      
+      // Delete database file
+      final dbPath = await getDatabasesPath();
+      final path = '$dbPath/$_databaseName';
+      await deleteDatabase(path);
+      
+      if (kDebugMode) {
+        print('Database deleted, will be recreated on next access');
+      }
+      
+      // Reinitialize
+      _database = await _initDatabase();
+      
+      if (kDebugMode) {
+        print('Database reset complete');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Database reset error: $e');
+      }
+      rethrow;
     }
   }
 }
