@@ -10,6 +10,7 @@ import '../constants/game_constants.dart';
 import 'game_persistence_service.dart';
 import 'product_unlock_service.dart';
 import 'machine_buyer.dart' as machine_buyer;
+import 'machine_builder.dart' as machine_builder;
 
 // Logging utility for Production.INC
 class GameLogger {
@@ -57,7 +58,12 @@ class _MoneyAndHistory {
 
 // Production.INC Game Service - handles all game logic
 class ProductionGameService extends ChangeNotifier {
-  GameState _state = const GameState();
+  GameState _state = const GameState(
+    autoBuildMachinesOwned: {},
+    autoBuildEnabled: {},
+    lastAutoBuildTick: {},
+    autoBuildProductCapacity: {},
+  );
   Timer? _updateTimer;
   Timer? _saveTimer;
   final GamePersistenceService _persistenceService = GamePersistenceService();
@@ -80,7 +86,12 @@ class ProductionGameService extends ChangeNotifier {
     try {
       if (_isTestMode) {
         // In test mode, use default state and don't start timers
-        _state = const GameState();
+        _state = const GameState(
+          autoBuildMachinesOwned: {},
+          autoBuildEnabled: {},
+          lastAutoBuildTick: {},
+          autoBuildProductCapacity: {},
+        );
 
         // Initialize unlock state for test mode (v1.4.18)
         _initializeUnlockState();
@@ -111,7 +122,12 @@ class ProductionGameService extends ChangeNotifier {
         GameLogger.error('Error loading game state', e);
       }
       // If loading fails, start with default state
-      _state = const GameState();
+      _state = const GameState(
+        autoBuildMachinesOwned: {},
+        autoBuildEnabled: {},
+        lastAutoBuildTick: {},
+        autoBuildProductCapacity: {},
+      );
 
       // Initialize unlock state for error fallback (v1.4.18)
       _initializeUnlockState();
@@ -258,14 +274,24 @@ class ProductionGameService extends ChangeNotifier {
   Future<void> resetGame() async {
     if (_isTestMode) {
       // In test mode, just reset state without database operations
-      _state = const GameState();
+      _state = const GameState(
+        autoBuildMachinesOwned: {},
+        autoBuildEnabled: {},
+        lastAutoBuildTick: {},
+        autoBuildProductCapacity: {},
+      );
       notifyListeners();
       return;
     }
 
     try {
       await _persistenceService.resetGameData();
-      _state = const GameState();
+      _state = const GameState(
+        autoBuildMachinesOwned: {},
+        autoBuildEnabled: {},
+        lastAutoBuildTick: {},
+        autoBuildProductCapacity: {},
+      );
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
@@ -647,6 +673,9 @@ class ProductionGameService extends ChangeNotifier {
       // Check and process auto-buy tick (v1.5.0)
       _processAutoBuyTick();
       
+      // Check and process auto-build ticks for all tiers (v1.5.0 Phase 2)
+      _processAutoBuildTicks();
+      
       // Early return if no active operations (battery optimization)
       if (!_hasActiveOperations()) {
         return;
@@ -828,6 +857,188 @@ class ProductionGameService extends ChangeNotifier {
         final cheapestMaterial = materialPrices.values.isEmpty ? 0.0 : materialPrices.values.reduce((a, b) => a < b ? a : b);
         if (_state.money < cheapestMaterial) {
           GameLogger.warning('Auto-buy tick: insufficient money to buy any materials');
+        }
+      }
+    }
+  }
+
+  /// Process auto-build ticks for all tiers (v1.5.0 Phase 2)
+  void _processAutoBuildTicks() {
+    // Process each tier independently
+    for (final tierEntry in AutoBuildConstants.productOrderByTier.entries) {
+      final tier = tierEntry.key;
+      final productOrder = tierEntry.value;
+      
+      if (productOrder.isEmpty) continue; // Skip tiers with no products defined
+      
+      final machineCount = _state.autoBuildMachinesOwned[tier] ?? 0;
+      final enabled = _state.autoBuildEnabled[tier] ?? false;
+      
+      // Skip if disabled or no machines
+      if (!enabled || machineCount <= 0) continue;
+      
+      // Check if it's time for a tick
+      final now = DateTime.now();
+      final lastTick = _state.lastAutoBuildTick[tier];
+      
+      if (lastTick != null) {
+        final elapsed = now.difference(lastTick).inSeconds;
+        if (elapsed < AutoBuildConstants.tickIntervalSeconds) {
+          continue; // Not time yet for this tier
+        }
+      }
+      
+      // Build product recipes map
+      final productRecipes = <String, Map<String, int>>{};
+      for (final productId in productOrder) {
+        final product = GameData.products.firstWhere(
+          (p) => p.id == productId,
+          orElse: () => Product(
+            id: productId,
+            name: productId,
+            description: '',
+            sellPrice: 0,
+            emoji: '❓',
+            requiredMaterials: {},
+            productionTimeSeconds: 0,
+            baseShippingTimeSeconds: 0,
+            levelId: ProductLevel.basicParts,
+          ),
+        );
+        productRecipes[productId] = product.requiredMaterials;
+      }
+      
+      // Get unlocked products for this tier
+      final unlockedProducts = <String>{};
+      for (final productId in productOrder) {
+        if (isProductUnlocked(productId)) {
+          unlockedProducts.add(productId);
+        }
+      }
+      
+      // Perform auto-build tick using pooled-capacity model
+      final materialsCopy = Map<String, int>.from(_state.materials);
+      final productsCopy = Map<String, int>.from(_state.products);
+      final capacity = _state.autoBuildProductCapacity[tier] ?? AutoBuildConstants.defaultProductCapacity;
+      
+      // Calculate queued product counts (items currently in production or queued)
+      final queuedProductCounts = <String, int>{};
+      for (final task in _state.activeProductions) {
+        queuedProductCounts[task.productId] = (queuedProductCounts[task.productId] ?? 0) + task.quantity;
+      }
+      
+      final result = machine_builder.performAutoBuildTick(
+        productInventory: productsCopy,
+        materialInventory: materialsCopy,
+        productRecipes: productRecipes,
+        unlockedProducts: unlockedProducts,
+        queuedProductCounts: queuedProductCounts,
+        machinesEnabled: machineCount,
+        buildsPerMachinePerTick: AutoBuildConstants.buildsPerMachinePerTick,
+        productOrder: productOrder,
+        productCap: capacity,
+      );
+      
+      // Update state and enqueue production tasks if any items were built
+      if (result.itemsBuilt > 0) {
+        // Update tick time
+        final newLastTicks = Map<String, DateTime?>.from(_state.lastAutoBuildTick);
+        newLastTicks[tier] = now;
+        
+        // Enqueue production tasks for built items (following v1.4.10 queue system)
+        final newProductions = List<ProductionTask>.from(_state.activeProductions);
+        
+        for (final entry in productsCopy.entries) {
+          final productId = entry.key;
+          final newAmount = entry.value;
+          final oldAmount = _state.products[productId] ?? 0;
+          final builtCount = newAmount - oldAmount;
+          
+          if (builtCount > 0) {
+            // Find product info for production time
+            final product = GameData.products.firstWhere(
+              (p) => p.id == productId,
+              orElse: () => Product(
+                id: productId,
+                name: productId,
+                description: '',
+                sellPrice: 0,
+                emoji: '❓',
+                requiredMaterials: {},
+                productionTimeSeconds: 1,
+                baseShippingTimeSeconds: 0,
+                levelId: ProductLevel.basicParts,
+              ),
+            );
+            
+            // Check if there's already an active production of this product
+            final hasActiveProduction = newProductions.any(
+              (task) => task.productId == productId && !task.isQueued,
+            );
+            
+            // Enqueue production tasks (one per unit, following v1.4.10 pattern)
+            for (int i = 0; i < builtCount; i++) {
+              final shouldQueue = hasActiveProduction || i > 0;
+              
+              DateTime startTime = DateTime.now();
+              if (shouldQueue) {
+                // Find the latest task for this product type to chain after it
+                final lastTaskForProduct = newProductions
+                    .where((task) => task.productId == productId)
+                    .fold<ProductionTask?>(null, (latest, current) {
+                  if (latest == null) return current;
+                  final latestEnd = latest.startTime.add(
+                    Duration(seconds: latest.durationSeconds.round()),
+                  );
+                  final currentEnd = current.startTime.add(
+                    Duration(seconds: current.durationSeconds.round()),
+                  );
+                  return latestEnd.isAfter(currentEnd) ? latest : current;
+                });
+                
+                if (lastTaskForProduct != null) {
+                  startTime = lastTaskForProduct.startTime.add(
+                    Duration(seconds: lastTaskForProduct.durationSeconds.round()),
+                  );
+                }
+              }
+              
+              final task = ProductionTask(
+                id: '${DateTime.now().millisecondsSinceEpoch}_autobuild_$i',
+                productId: productId,
+                startTime: startTime,
+                durationSeconds: product.productionTimeSeconds,
+                quantity: 1, // Always 1 for proper queue behavior
+                isQueued: shouldQueue,
+              );
+              
+              newProductions.add(task);
+            }
+          }
+        }
+        
+        // Update state with consumed materials and enqueued productions
+        _state = _state.copyWith(
+          materials: materialsCopy,
+          activeProductions: newProductions,
+          lastAutoBuildTick: newLastTicks,
+        );
+        notifyListeners();
+        
+        if (kDebugMode) {
+          GameLogger.info(
+            'Auto-build tick ($tier): built ${result.itemsBuilt} items with $machineCount machines',
+          );
+        }
+      } else {
+        // Update tick time even if nothing built (all at cap or insufficient materials)
+        final newLastTicks = Map<String, DateTime?>.from(_state.lastAutoBuildTick);
+        newLastTicks[tier] = now;
+        
+        _state = _state.copyWith(lastAutoBuildTick: newLastTicks);
+        
+        if (kDebugMode) {
+          GameLogger.info('Auto-build tick ($tier): no items built (at cap or insufficient materials)');
         }
       }
     }
@@ -1348,6 +1559,148 @@ class ProductionGameService extends ChangeNotifier {
     }
     
     return 'All at cap'; // All resources at cap
+  }
+
+  // V1.5.0 Phase 2: Auto-Build Machine Management (Development Mode)
+  
+  /// Toggle auto-build machines on/off for a specific tier
+  void toggleAutoBuild(String tier) {
+    final newEnabled = Map<String, bool>.from(_state.autoBuildEnabled);
+    newEnabled[tier] = !(newEnabled[tier] ?? false);
+    
+    _state = _state.copyWith(autoBuildEnabled: newEnabled);
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Auto-build toggled for $tier: ${newEnabled[tier]! ? "ON" : "OFF"}',
+      );
+    }
+  }
+
+  /// Increment auto-build machine count for a tier (DEV MODE ONLY)
+  void incrementAutoBuildMachines(String tier) {
+    final newMachines = Map<String, int>.from(_state.autoBuildMachinesOwned);
+    newMachines[tier] = (newMachines[tier] ?? 0) + 1;
+    
+    _state = _state.copyWith(autoBuildMachinesOwned: newMachines);
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info('Auto-build machine count for $tier set to: ${newMachines[tier]}');
+    }
+  }
+
+  /// Decrement auto-build machine count for a tier (DEV MODE ONLY)
+  void decrementAutoBuildMachines(String tier) {
+    final currentCount = _state.autoBuildMachinesOwned[tier] ?? 0;
+    if (currentCount > 0) {
+      final newMachines = Map<String, int>.from(_state.autoBuildMachinesOwned);
+      newMachines[tier] = currentCount - 1;
+      
+      _state = _state.copyWith(autoBuildMachinesOwned: newMachines);
+      notifyListeners();
+      _saveGameStateOptimized();
+
+      if (kDebugMode) {
+        GameLogger.info('Auto-build machine count for $tier set to: ${newMachines[tier]}');
+      }
+    }
+  }
+
+  /// Increase auto-build product capacity by 10 for a tier
+  void increaseAutoBuildCapacity(String tier) {
+    final newCapacities = Map<String, int>.from(_state.autoBuildProductCapacity);
+    final currentCapacity = newCapacities[tier] ?? AutoBuildConstants.defaultProductCapacity;
+    newCapacities[tier] = currentCapacity + AutoBuildConstants.capacityIncrement;
+    
+    _state = _state.copyWith(autoBuildProductCapacity: newCapacities);
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info('Auto-build capacity for $tier increased to: ${newCapacities[tier]}');
+    }
+  }
+
+  /// Decrease auto-build product capacity by 10 for a tier (minimum 10)
+  void decreaseAutoBuildCapacity(String tier) {
+    final currentCapacity = _state.autoBuildProductCapacity[tier] ?? AutoBuildConstants.defaultProductCapacity;
+    if (currentCapacity > AutoBuildConstants.defaultProductCapacity) {
+      final newCapacities = Map<String, int>.from(_state.autoBuildProductCapacity);
+      newCapacities[tier] = currentCapacity - AutoBuildConstants.capacityIncrement;
+      
+      _state = _state.copyWith(autoBuildProductCapacity: newCapacities);
+      notifyListeners();
+      _saveGameStateOptimized();
+
+      if (kDebugMode) {
+        GameLogger.info('Auto-build capacity for $tier decreased to: ${newCapacities[tier]}');
+      }
+    }
+  }
+
+  /// Get seconds remaining until next auto-build tick for a tier (returns null if not active)
+  int? getSecondsUntilNextAutoBuildTick(String tier) {
+    final machineCount = _state.autoBuildMachinesOwned[tier] ?? 0;
+    final enabled = _state.autoBuildEnabled[tier] ?? false;
+    
+    if (!enabled || machineCount <= 0) {
+      return null;
+    }
+    
+    final lastTick = _state.lastAutoBuildTick[tier];
+    if (lastTick == null) {
+      return 0; // Never ticked yet, will tick immediately
+    }
+    
+    final now = DateTime.now();
+    final elapsed = now.difference(lastTick).inSeconds;
+    final remaining = AutoBuildConstants.tickIntervalSeconds - elapsed;
+    return remaining > 0 ? remaining : 0;
+  }
+  
+  /// Get the name of the next product that will be built for a tier (based on current inventory)
+  String? getNextProductToBuild(String tier) {
+    final machineCount = _state.autoBuildMachinesOwned[tier] ?? 0;
+    final enabled = _state.autoBuildEnabled[tier] ?? false;
+    
+    if (!enabled || machineCount <= 0) {
+      return null;
+    }
+    
+    // Get product order for this tier
+    final productOrder = AutoBuildConstants.productOrderByTier[tier] ?? [];
+    final capacity = _state.autoBuildProductCapacity[tier] ?? AutoBuildConstants.defaultProductCapacity;
+    
+    // Check each product in order to find the first one below cap and unlocked
+    for (final productId in productOrder) {
+      if (!isProductUnlocked(productId)) continue;
+      
+      final currentAmount = _state.products[productId] ?? 0;
+      if (currentAmount < capacity) {
+        // Find the product name from game data
+        final product = GameData.products.firstWhere(
+          (p) => p.id == productId,
+          orElse: () => Product(
+            id: productId,
+            name: productId,
+            description: '',
+            sellPrice: 0,
+            emoji: '❓',
+            requiredMaterials: {},
+            productionTimeSeconds: 0,
+            baseShippingTimeSeconds: 0,
+            levelId: ProductLevel.basicParts,
+          ),
+        );
+        return product.name;
+      }
+    }
+    
+    return 'All at cap'; // All products at cap
   }
 }
 

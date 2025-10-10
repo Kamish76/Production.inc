@@ -1,0 +1,134 @@
+Auto-Build Machine — Specification
+===================================
+
+Purpose
+-------
+Provide a simple, predictable automation that periodically builds products for the player, per tier. 
+NOTE: the configured "cap" described below is not a hard inventory maximum — the player's inventory 
+is effectively unlimited. The cap describes the machines' per-item target/capability 
+(how much the machines will aim to regulate per item), and it is player controlled. 
+Machines should use their full per-tick building capacity so ticks are not wasted.
+
+Summary of behavior
+-------------------
+- Players may own one or more Auto-Build Machines PER TIER. Each tier has independent machine counts.
+- Machines can be toggled On/Off per tier by the player in the build screen. When toggled Off, all auto-build machines for that tier stop building completely until re-enabled.
+- Machines operate on a global tick that runs every 5 seconds (configurable). On each tick, enabled machines build products up to the configured caps and throughput.
+- Building requires sufficient materials. If materials are insufficient, the machine skips that product and moves to the next.
+- Products are added to the production queue (following existing queue system from v1.4.10).
+
+Configurable parameters (default values)
+----------------------------------------
+- buildsPerMachinePerTick: 2 — the number of products one machine attempts to build per tick (default 2).
+- baseLimitPerItem: player determined starting at 10 - adjustable in increments of 10.
+- tickIntervalSeconds: 5 — global tick frequency in seconds (DEV MODE: 5s for testing, production will be 10s).
+- productOrder: deterministic list/order of products to build each tick (per tier, ordered by complexity/production time):
+  - Basic Parts tier: box, wires, basic_circuit
+  - Intermediate tier: (products ordered by production time, simplest first)
+  - Complex tier: (products ordered by production time, simplest first)
+
+Algorithm (pooled-capacity building rules)
+-------------------------------------------
+This section explains the deterministic algorithm used by all enabled Auto-Build Machines on 
+every global tick. All enabled machines pool their building capacity and apply it as a single 
+batch per tick, PER TIER.
+
+Contract (inputs/outputs)
+- Inputs: current inventory map (materials & products), unlocked products for tier, machinesEnabled (int), buildsPerMachinePerTick (int), productOrder (ordered list), productCap (per-product cap for machines to aim for)
+- Outputs: updated production queue with new tasks, updated materials inventory after consumption
+- Error modes: negative inputs are clamped to zero; builds cannot happen without sufficient materials; any fractional builds are rounded down to integer counts.
+
+High-level rules
+- Total pooled building capacity per tick (per tier) = machinesEnabled × buildsPerMachinePerTick
+  - Example: 2 machines × 2 builds/machine/tick = 4 total builds per tick
+  - Example: 3 machines × 2 builds/machine/tick = 6 total builds per tick
+- On each tick, the system processes products in the configured `productOrder` sequentially, using the pooled building capacity.
+- **Material constraint**: Each build consumes materials (based on product recipe). The machine can only build what materials are available. If materials run out mid-tick, remaining pooled builds are unused.
+- **Unlock constraint**: Only unlocked products can be built. Locked products are skipped.
+- For each product in order:
+  - Check if product is unlocked; if not, skip to next product
+  - Calculate deficit = max(0, productCap - currentProductInventory)
+  - If deficit > 0 and pooled builds remain:
+    - Calculate maxAffordable = floor(min materials / required materials) for all recipe components
+    - buildAmount = min(pooledBuildsRemaining, deficit, maxAffordable)
+    - If buildAmount > 0:
+      - Consume materials from inventory
+      - Enqueue buildAmount production tasks to queue (following v1.4.10 queue system)
+      - Subtract buildAmount from pooledBuildsRemaining
+    - If buildAmount = 0 (can't afford materials for this product), skip to next product
+  - If deficit = 0 (product at or above cap), skip to next product
+- After processing all products in productOrder once, if pooled builds remain and materials are sufficient, wrap back to the top and repeat until pooledBuildsRemaining = 0 or all products are at-or-above productCap or no materials remain.
+
+Edge cases and notes
+- If pooled builds remain after a full pass through productOrder but all products are at-or-above productCap, the remaining builds are unused for that tick.
+- **Material constraint**: If the player cannot afford materials for any more products (even the simplest one in productOrder), the remaining pooled builds are unused for that tick.
+- Products are enqueued following the existing v1.4.10 queue system (one task per unit, proper queue chaining).
+
+Example scenario (Basic Parts tier)
+------------------------------------
+Setup:
+- machines: 2
+- buildsPerMachinePerTick: 2
+- productCap: 10
+- productOrder: ['box', 'wires']
+
+Current state:
+- box inventory = 3 (requires 2 cardboard each)
+- wires inventory = 10 (at cap)
+- cardboard = 50 (plenty available)
+
+Tick-by-tick trace:
+- Tick 1 start: box = 3, wires = 10; pooled builds = 4; cardboard = 50
+  - Process box: deficit = 10 - 3 = 7. Can afford 25 boxes (50/2). Build min(4, 7, 25) = 4 → box = 7. Consume 8 cardboard → cardboard = 42. Pooled = 0.
+  - Pooled builds exhausted. Tick 1 ends.
+
+Result after Tick 1: box = 7, wires = 10; cardboard = 42
+
+- Tick 2 start: pooled builds = 4; cardboard = 42
+  - Process box: deficit = 10 - 7 = 3. Can afford 21 boxes. Build min(4, 3, 21) = 3 → box = 10. Consume 6 cardboard → cardboard = 36. Pooled = 1.
+  - Process wires: deficit = 0 (at cap), skip.
+  - Wrap back to box: deficit = 0 (at cap), skip.
+  - Remaining 1 build unused (all products at cap).
+
+Result after Tick 2: box = 10, wires = 10; cardboard = 36
+
+Scaling examples
+- 1 machine: 1 × 2 = 2 builds per tick
+- 2 machines: 2 × 2 = 4 builds per tick
+- 4 machines: 4 × 2 = 8 builds per tick
+- N machines: N × 2 = (2N) builds per tick
+
+Development Mode (Temporary)
+----------------------------
+This feature is currently in development (v1.5.0 Phase 2). To facilitate testing and tuning:
+- The build screen will include temporary controls PER TIER to add/subtract the number of machines owned for that tier.
+- These controls allow developers to modify the builder automation behavior dynamically during testing.
+- **DEV MODE Settings**:
+  - Tick rate: **5 seconds** (production may be adjusted to 10 seconds)
+  - Product cap starting at **10 per product** (adjustable in increments of 10)
+- The build screen displays live status information per tier:
+  - Machine count for this tier
+  - On/Off toggle for this tier
+  - Capacity setting for this tier
+  - Countdown to next tick (if enabled)
+  - Next product to be built (if enabled)
+- Once the feature is finalized and released, these temporary controls will be removed and machine ownership will follow the normal game progression (purchase, unlock, etc.).
+
+Per-Tier Operation
+------------------
+- Each tier (Basic Parts, Intermediate, Complex) has independent auto-build machines
+- Each tier has its own: machine count, enabled status, capacity setting, last tick time
+- This allows players to automate different tiers at different rates
+- Example: Player might have 3 machines for Basic Parts, 1 for Intermediate, 0 for Complex
+
+Integration with Existing Systems
+----------------------------------
+- Auto-build integrates with the v1.4.10 production queue system
+- Built products are enqueued as production tasks (quantity = 1 per task)
+- Queue chaining rules apply: if product already building, new tasks are queued
+- This ensures auto-build respects production timing and doesn't bypass the queue system
+
+the same rules to all machines per tick.
+
+machines can be purchased on the tier unlock screen (to be implemented).
+
