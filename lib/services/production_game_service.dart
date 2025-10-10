@@ -861,6 +861,11 @@ class ProductionGameService extends ChangeNotifier {
         money: newMoney,
         lastAutoBuyTick: now,
       );
+      
+      // Check for newly unlocked products after material purchase (v1.5.0 bug fix)
+      // This ensures that auto-buy machines trigger unlocks just like manual purchases
+      _checkAndUpdateUnlocks();
+      
       notifyListeners();
 
       if (kDebugMode) {
@@ -1166,6 +1171,11 @@ class ProductionGameService extends ChangeNotifier {
           activeProductions: newProductions,
           lastAutoBuildTick: newLastTicks,
         );
+        
+        // Check for newly unlocked products after auto-build (v1.5.0 bug fix)
+        // This ensures that auto-build machines trigger unlocks when products are built
+        _checkAndUpdateUnlocks();
+        
         notifyListeners();
         
         if (kDebugMode) {
@@ -1674,7 +1684,7 @@ class ProductionGameService extends ChangeNotifier {
     _saveGameStateOptimized();
   }
 
-  // V1.5.0 Auto-Buy Machine Management (Development Mode)
+  // V1.5.0 Auto-Buy Machine Management
   /// Toggle auto-buy machines on/off
   void toggleAutoBuy() {
     _state = _state.copyWith(autoBuyEnabled: !_state.autoBuyEnabled);
@@ -1688,30 +1698,29 @@ class ProductionGameService extends ChangeNotifier {
     }
   }
 
-  /// Set the number of auto-buy machines owned (DEV MODE ONLY)
-  /// This is a temporary control for development/testing
-  void setAutoBuyMachineCount(int count) {
-    if (count < 0) return; // Clamp to non-negative
+  /// Buy one auto-buy machine for $1000
+  /// Returns true if purchase was successful, false if not enough money
+  bool buyAutoBuyMachine() {
+    if (_state.money < AutoBuyConstants.machineCost) {
+      return false; // Not enough money
+    }
 
-    _state = _state.copyWith(autoBuyMachinesOwned: count);
+    // Deduct cost
+    final newMoney = _state.money - AutoBuyConstants.machineCost;
+    final newCount = _state.autoBuyMachinesOwned + 1;
+
+    _state = _state.copyWith(
+      money: newMoney,
+      autoBuyMachinesOwned: newCount,
+    );
     notifyListeners();
     _saveGameStateOptimized();
 
     if (kDebugMode) {
-      GameLogger.info('Auto-buy machine count set to: $count');
+      GameLogger.info('Auto-buy machine purchased! Count: $newCount, Money remaining: \$${newMoney.toStringAsFixed(2)}');
     }
-  }
 
-  /// Increment auto-buy machine count (DEV MODE ONLY)
-  void incrementAutoBuyMachines() {
-    setAutoBuyMachineCount(_state.autoBuyMachinesOwned + 1);
-  }
-
-  /// Decrement auto-buy machine count (DEV MODE ONLY)
-  void decrementAutoBuyMachines() {
-    if (_state.autoBuyMachinesOwned > 0) {
-      setAutoBuyMachineCount(_state.autoBuyMachinesOwned - 1);
-    }
+    return true;
   }
 
   /// Increase auto-buy resource capacity by 10
@@ -1787,7 +1796,7 @@ class ProductionGameService extends ChangeNotifier {
     return 'All at cap'; // All resources at cap
   }
 
-  // V1.5.0 Phase 2: Auto-Build Machine Management (Development Mode)
+  // V1.5.0 Phase 2: Auto-Build Machine Management
   
   /// Toggle auto-build machines on/off for a specific tier
   void toggleAutoBuild(String tier) {
@@ -1805,35 +1814,30 @@ class ProductionGameService extends ChangeNotifier {
     }
   }
 
-  /// Increment auto-build machine count for a tier (DEV MODE ONLY)
-  void incrementAutoBuildMachines(String tier) {
+  /// Buy one auto-build machine for a specific tier for $1000
+  /// Returns true if purchase was successful, false if not enough money
+  bool buyAutoBuildMachine(String tier) {
+    if (_state.money < AutoBuildConstants.machineCost) {
+      return false; // Not enough money
+    }
+
+    // Deduct cost
+    final newMoney = _state.money - AutoBuildConstants.machineCost;
     final newMachines = Map<String, int>.from(_state.autoBuildMachinesOwned);
     newMachines[tier] = (newMachines[tier] ?? 0) + 1;
     
-    _state = _state.copyWith(autoBuildMachinesOwned: newMachines);
+    _state = _state.copyWith(
+      money: newMoney,
+      autoBuildMachinesOwned: newMachines,
+    );
     notifyListeners();
     _saveGameStateOptimized();
 
     if (kDebugMode) {
-      GameLogger.info('Auto-build machine count for $tier set to: ${newMachines[tier]}');
+      GameLogger.info('Auto-build machine for $tier purchased! Count: ${newMachines[tier]}, Money remaining: \$${newMoney.toStringAsFixed(2)}');
     }
-  }
 
-  /// Decrement auto-build machine count for a tier (DEV MODE ONLY)
-  void decrementAutoBuildMachines(String tier) {
-    final currentCount = _state.autoBuildMachinesOwned[tier] ?? 0;
-    if (currentCount > 0) {
-      final newMachines = Map<String, int>.from(_state.autoBuildMachinesOwned);
-      newMachines[tier] = currentCount - 1;
-      
-      _state = _state.copyWith(autoBuildMachinesOwned: newMachines);
-      notifyListeners();
-      _saveGameStateOptimized();
-
-      if (kDebugMode) {
-        GameLogger.info('Auto-build machine count for $tier set to: ${newMachines[tier]}');
-      }
-    }
+    return true;
   }
 
   /// Increase auto-build product capacity by 10 for a tier
