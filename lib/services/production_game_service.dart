@@ -1277,7 +1277,7 @@ class ProductionGameService extends ChangeNotifier {
         _persistenceService.markDirty('unlocked_products');
 
         if (kDebugMode) {
-          GameLogger.info('Unlocked new products: ${newlyUnlocked.join(', ')}');
+          GameLogger.info('🔓 Unlocked new products: ${newlyUnlocked.join(', ')} (Total unlocked: ${updatedUnlockedProducts.length})');
         }
       }
     } catch (e) {
@@ -1794,7 +1794,12 @@ class ProductionGameService extends ChangeNotifier {
     newProducts[productId] = currentCount + quantity;
     
     _state = _state.copyWith(products: newProducts);
+    
+    // Check for newly unlocked products after adding to inventory
+    _checkAndUpdateUnlocks();
+    
     notifyListeners();
+    _saveGameStateOptimized();
     
     if (kDebugMode) {
       GameLogger.info('Dev: Added $quantity $productId to inventory (total: ${newProducts[productId]})');
