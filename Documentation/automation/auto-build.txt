@@ -30,6 +30,24 @@ This section explains the deterministic algorithm used by all enabled Auto-Build
 every global tick. All enabled machines pool their buying capacity and apply it as a single 
 batch per tick.
 
+Build Time Reduction (v1.5.0+)
+------------------------------
+Each auto-build machine provides a 1.1x speed multiplier for ALL production tasks in its tier.
+The multipliers stack multiplicatively:
+- 1 machine: 1.1x speed (production time / 1.1)
+- 2 machines: 1.21x speed (production time / 1.21)
+- 3 machines: 1.331x speed (production time / 1.331)
+- 5 machines: 1.61x speed (production time / 1.61)
+- 10 machines: 2.59x speed (production time / 2.59)
+- Formula: finalTime = baseTime / (1.1 ^ machineCount)
+
+This applies to:
+- Manual production of items in the tier
+- Auto-build queued production tasks
+- Any production task for products matching the tier's level
+
+Example: With 2 basicParts machines, building "wires" (base 5s) takes 5 / 1.21 ≈ 4.13 seconds
+
 example;
 
 Basic tier:

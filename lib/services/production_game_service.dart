@@ -524,17 +524,33 @@ class ProductionGameService extends ChangeNotifier {
         }
 
         // Create individual production task (quantity = 1 for proper queueing)
+        // Apply auto-build machine speed bonus (1.2x per machine)
+        final adjustedTime = getAdjustedProductionTime(
+          productId,
+          product.productionTimeSeconds,
+        );
+        
         final task = ProductionTask(
           id: '${DateTime.now().millisecondsSinceEpoch}_$i',
           productId: productId,
           startTime: startTime,
-          durationSeconds:
-              product.productionTimeSeconds, // Single item duration
+          durationSeconds: adjustedTime, // Adjusted for machine speed bonus
           quantity: 1, // Always 1 for proper queue behavior
           isQueued: shouldQueue,
         );
 
         newProductions.add(task);
+      }
+
+      // Log speed bonus if machines are present (v1.5.0)
+      if (kDebugMode) {
+        final product = GameData.products.firstWhere((p) => p.id == productId);
+        final baseTime = product.productionTimeSeconds;
+        final adjustedTime = getAdjustedProductionTime(productId, baseTime);
+        if ((baseTime - adjustedTime).abs() > 0.01) {
+          final speedMultiplier = baseTime / adjustedTime;
+          GameLogger.info('⚡ Build speed bonus: $productId - ${baseTime}s → ${adjustedTime.toStringAsFixed(1)}s (${speedMultiplier.toStringAsFixed(2)}x faster)');
+        }
       }
 
       _state = _state.copyWith(
@@ -1037,16 +1053,28 @@ class ProductionGameService extends ChangeNotifier {
                 }
               }
               
+              // Apply auto-build machine speed bonus (1.2x per machine)
+              final adjustedTime = getAdjustedProductionTime(
+                productId,
+                product.productionTimeSeconds,
+              );
+              
               final task = ProductionTask(
                 id: '${DateTime.now().millisecondsSinceEpoch}_autobuild_$i',
                 productId: productId,
                 startTime: startTime,
-                durationSeconds: product.productionTimeSeconds,
+                durationSeconds: adjustedTime, // Adjusted for machine speed bonus
                 quantity: 1, // Always 1 for proper queue behavior
                 isQueued: shouldQueue,
               );
               
               newProductions.add(task);
+              
+              // Log speed bonus for auto-build (v1.5.0)
+              if (kDebugMode && (product.productionTimeSeconds - adjustedTime).abs() > 0.01) {
+                final speedMultiplier = product.productionTimeSeconds / adjustedTime;
+                GameLogger.info('⚡ Auto-build speed bonus: $productId - ${product.productionTimeSeconds}s → ${adjustedTime.toStringAsFixed(1)}s (${speedMultiplier.toStringAsFixed(2)}x faster)');
+              }
             }
           }
         }
@@ -1337,6 +1365,62 @@ class ProductionGameService extends ChangeNotifier {
     // Use cached status for performance, fallback to service check
     return _state.productUnlockStatus[productId] ??
         ProductUnlockService.isProductUnlocked(productId, _state);
+  }
+
+  /// Calculate adjusted production time with auto-build machine speed bonus
+  /// Each machine provides a 1.2x speed multiplier (stacks multiplicatively)
+  /// Formula: adjustedTime = baseTime / (1.2 ^ machineCount)
+  double getAdjustedProductionTime(String productId, double baseTime) {
+    // Find which tier this product belongs to
+    final product = GameData.products.firstWhere(
+      (p) => p.id == productId,
+      orElse: () => Product(
+        id: productId,
+        name: productId,
+        description: '',
+        sellPrice: 0,
+        emoji: '❓',
+        requiredMaterials: {},
+        productionTimeSeconds: baseTime,
+        baseShippingTimeSeconds: 0,
+        levelId: ProductLevel.basicParts,
+      ),
+    );
+
+    // Determine the tier key based on product level
+    String? tierKey;
+    switch (product.levelId) {
+      case ProductLevel.basicParts:
+        tierKey = 'basicParts';
+        break;
+      case ProductLevel.intermediate:
+        tierKey = 'intermediate';
+        break;
+      case ProductLevel.complex:
+        tierKey = 'complex';
+        break;
+      default:
+        // Materials and retail products don't get speed bonus
+        return baseTime;
+    }
+
+    // Get machine count for this tier
+    final machineCount = _state.autoBuildMachinesOwned[tierKey] ?? 0;
+    
+    if (machineCount <= 0) {
+      return baseTime;
+    }
+
+    // Calculate speed multiplier: 1.2 ^ machineCount
+    final speedMultiplier = math.pow(
+      AutoBuildConstants.buildSpeedMultiplierPerMachine,
+      machineCount,
+    ).toDouble();
+
+    // Apply speed bonus: time / multiplier
+    final adjustedTime = baseTime / speedMultiplier;
+
+    return adjustedTime;
   }
 
   /// Get filtered products by tier (only unlocked)
