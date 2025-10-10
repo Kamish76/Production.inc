@@ -564,6 +564,28 @@ class ControlScreen extends StatelessWidget {
               ),
             ],
           ),
+          
+          // Status info with tick tracker
+          if (machineCount > 0) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: enabled
+                    ? Colors.blue.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Building ${machineCount * 5} products every 5s${enabled ? " (active)" : " (paused)"}',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
