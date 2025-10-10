@@ -275,6 +275,10 @@ class AutoBuildConstants {
   /// Interval between auto-build ticks (seconds) - DEV MODE: 5s for testing
   static const int tickIntervalSeconds = 5;
   
+  /// Build time reduction multiplier per machine (1.1x speed per machine)
+  /// Stacks multiplicatively: finalTime = baseTime / (speedMultiplier ^ machineCount)
+  static const double buildSpeedMultiplierPerMachine = 1.1;
+  
   /// Product order for auto-build processing per tier (ordered by production time, simplest first)
   /// Earlier products in each tier list are built first
   static const Map<String, List<String>> productOrderByTier = {

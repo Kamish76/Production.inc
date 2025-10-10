@@ -524,17 +524,33 @@ class ProductionGameService extends ChangeNotifier {
         }
 
         // Create individual production task (quantity = 1 for proper queueing)
+        // Apply auto-build machine speed bonus (1.2x per machine)
+        final adjustedTime = getAdjustedProductionTime(
+          productId,
+          product.productionTimeSeconds,
+        );
+        
         final task = ProductionTask(
           id: '${DateTime.now().millisecondsSinceEpoch}_$i',
           productId: productId,
           startTime: startTime,
-          durationSeconds:
-              product.productionTimeSeconds, // Single item duration
+          durationSeconds: adjustedTime, // Adjusted for machine speed bonus
           quantity: 1, // Always 1 for proper queue behavior
           isQueued: shouldQueue,
         );
 
         newProductions.add(task);
+      }
+
+      // Log speed bonus if machines are present (v1.5.0)
+      if (kDebugMode) {
+        final product = GameData.products.firstWhere((p) => p.id == productId);
+        final baseTime = product.productionTimeSeconds;
+        final adjustedTime = getAdjustedProductionTime(productId, baseTime);
+        if ((baseTime - adjustedTime).abs() > 0.01) {
+          final speedMultiplier = baseTime / adjustedTime;
+          GameLogger.info('⚡ Build speed bonus: $productId - ${baseTime}s → ${adjustedTime.toStringAsFixed(1)}s (${speedMultiplier.toStringAsFixed(2)}x faster)');
+        }
       }
 
       _state = _state.copyWith(
@@ -1037,16 +1053,28 @@ class ProductionGameService extends ChangeNotifier {
                 }
               }
               
+              // Apply auto-build machine speed bonus (1.2x per machine)
+              final adjustedTime = getAdjustedProductionTime(
+                productId,
+                product.productionTimeSeconds,
+              );
+              
               final task = ProductionTask(
                 id: '${DateTime.now().millisecondsSinceEpoch}_autobuild_$i',
                 productId: productId,
                 startTime: startTime,
-                durationSeconds: product.productionTimeSeconds,
+                durationSeconds: adjustedTime, // Adjusted for machine speed bonus
                 quantity: 1, // Always 1 for proper queue behavior
                 isQueued: shouldQueue,
               );
               
               newProductions.add(task);
+              
+              // Log speed bonus for auto-build (v1.5.0)
+              if (kDebugMode && (product.productionTimeSeconds - adjustedTime).abs() > 0.01) {
+                final speedMultiplier = product.productionTimeSeconds / adjustedTime;
+                GameLogger.info('⚡ Auto-build speed bonus: $productId - ${product.productionTimeSeconds}s → ${adjustedTime.toStringAsFixed(1)}s (${speedMultiplier.toStringAsFixed(2)}x faster)');
+              }
             }
           }
         }
@@ -1056,22 +1084,78 @@ class ProductionGameService extends ChangeNotifier {
         final updatedMaterials = Map<String, int>.from(_state.materials);
         final updatedProducts = Map<String, int>.from(_state.products);
         
+        // BUG FIX: Properly track consumed materials vs products
+        // materialsCopy is a merged inventory (materials + products merged together)
+        // We need to split it back correctly:
+        // 1. For pure materials (items that exist ONLY in materials, not products)
+        // 2. For products used as materials (items in products that were consumed)
+        
         // Update raw materials from materialsCopy
+        // Only update items that are PURE materials (not products)
         for (final matId in _state.materials.keys) {
-          updatedMaterials[matId] = materialsCopy[matId] ?? 0;
+          // Check if this is a pure material (not a product)
+          final isPureProduct = _state.products.containsKey(matId);
+          
+          if (!isPureProduct) {
+            // This is a pure material, update it from materialsCopy
+            final newAmount = materialsCopy[matId] ?? 0;
+            if (newAmount > 0) {
+              updatedMaterials[matId] = newAmount;
+            } else {
+              updatedMaterials.remove(matId);
+            }
+          } else {
+            // This item exists as BOTH material and product
+            // We need to carefully split the consumption
+            // The material portion was the original material count
+            final originalMaterial = _state.materials[matId] ?? 0;
+            final originalProduct = _state.products[matId] ?? 0;
+            final originalTotal = originalMaterial + originalProduct;
+            final remainingTotal = materialsCopy[matId] ?? 0;
+            final totalConsumed = originalTotal - remainingTotal;
+            
+            // Consume from materials first, then products
+            final materialConsumed = math.min(totalConsumed, originalMaterial);
+            final productConsumed = totalConsumed - materialConsumed;
+            
+            final newMaterialAmount = math.max(0, originalMaterial - materialConsumed);
+            final newProductAmount = math.max(0, originalProduct - productConsumed);
+            
+            if (newMaterialAmount > 0) {
+              updatedMaterials[matId] = newMaterialAmount;
+            } else {
+              updatedMaterials.remove(matId);
+            }
+            
+            if (newProductAmount > 0) {
+              updatedProducts[matId] = newProductAmount;
+            } else {
+              updatedProducts.remove(matId);
+            }
+          }
         }
         
-        // Update products that were consumed as materials
+        // Update products that were consumed as materials (but NOT in materials)
         for (final productId in _state.products.keys) {
+          // Skip if we already handled it above (exists in both materials and products)
+          if (_state.materials.containsKey(productId)) {
+            continue;
+          }
+          
           if (materialsCopy.containsKey(productId)) {
             // Calculate how much was consumed
-            final originalAmount = (_state.materials[productId] ?? 0) + (_state.products[productId] ?? 0);
+            final originalAmount = _state.products[productId] ?? 0;
             final remainingAmount = materialsCopy[productId] ?? 0;
             final consumed = originalAmount - remainingAmount;
             
             if (consumed > 0) {
               // Deduct consumed amount from product inventory
-              updatedProducts[productId] = math.max(0, (_state.products[productId] ?? 0) - consumed);
+              final newAmount = math.max(0, originalAmount - consumed);
+              if (newAmount > 0) {
+                updatedProducts[productId] = newAmount;
+              } else {
+                updatedProducts.remove(productId);
+              }
             }
           }
         }
@@ -1337,6 +1421,62 @@ class ProductionGameService extends ChangeNotifier {
     // Use cached status for performance, fallback to service check
     return _state.productUnlockStatus[productId] ??
         ProductUnlockService.isProductUnlocked(productId, _state);
+  }
+
+  /// Calculate adjusted production time with auto-build machine speed bonus
+  /// Each machine provides a 1.2x speed multiplier (stacks multiplicatively)
+  /// Formula: adjustedTime = baseTime / (1.2 ^ machineCount)
+  double getAdjustedProductionTime(String productId, double baseTime) {
+    // Find which tier this product belongs to
+    final product = GameData.products.firstWhere(
+      (p) => p.id == productId,
+      orElse: () => Product(
+        id: productId,
+        name: productId,
+        description: '',
+        sellPrice: 0,
+        emoji: '❓',
+        requiredMaterials: {},
+        productionTimeSeconds: baseTime,
+        baseShippingTimeSeconds: 0,
+        levelId: ProductLevel.basicParts,
+      ),
+    );
+
+    // Determine the tier key based on product level
+    String? tierKey;
+    switch (product.levelId) {
+      case ProductLevel.basicParts:
+        tierKey = 'basicParts';
+        break;
+      case ProductLevel.intermediate:
+        tierKey = 'intermediate';
+        break;
+      case ProductLevel.complex:
+        tierKey = 'complex';
+        break;
+      default:
+        // Materials and retail products don't get speed bonus
+        return baseTime;
+    }
+
+    // Get machine count for this tier
+    final machineCount = _state.autoBuildMachinesOwned[tierKey] ?? 0;
+    
+    if (machineCount <= 0) {
+      return baseTime;
+    }
+
+    // Calculate speed multiplier: 1.2 ^ machineCount
+    final speedMultiplier = math.pow(
+      AutoBuildConstants.buildSpeedMultiplierPerMachine,
+      machineCount,
+    ).toDouble();
+
+    // Apply speed bonus: time / multiplier
+    final adjustedTime = baseTime / speedMultiplier;
+
+    return adjustedTime;
   }
 
   /// Get filtered products by tier (only unlocked)
