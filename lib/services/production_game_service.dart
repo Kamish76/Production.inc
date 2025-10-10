@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:logger/logger.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import '../models/game_state.dart';
 import '../models/game_data.dart';
 import '../models/game_models.dart';
@@ -916,8 +917,39 @@ class ProductionGameService extends ChangeNotifier {
         }
       }
       
+      if (kDebugMode) {
+        GameLogger.info('Auto-build ($tier): ${unlockedProducts.length}/${productOrder.length} products unlocked: ${unlockedProducts.join(", ")}');
+        // Show available materials
+        final materialsList = <String>[];
+        final relevantMaterials = {'basic_metals', 'plastic', 'advanced_metals', 'glass', 'cardboard'};
+        for (final matId in relevantMaterials) {
+          final amount = _state.materials[matId] ?? 0;
+          if (amount > 0) {
+            materialsList.add('$matId:$amount');
+          }
+        }
+        if (materialsList.isNotEmpty) {
+          GameLogger.info('Auto-build ($tier): Materials available: ${materialsList.join(", ")}');
+        }
+      }
+      
       // Perform auto-build tick using pooled-capacity model
+      // Merge materials and products into a single inventory for material checking
+      // (products can be used as materials for other products)
       final materialsCopy = Map<String, int>.from(_state.materials);
+      // Add products to materials inventory so they can be consumed as materials
+      for (final entry in _state.products.entries) {
+        materialsCopy[entry.key] = (materialsCopy[entry.key] ?? 0) + entry.value;
+      }
+      
+      if (kDebugMode) {
+        // Log if wires are available in merged inventory
+        final wiresAvailable = materialsCopy['wires'] ?? 0;
+        if (wiresAvailable > 0) {
+          GameLogger.info('Auto-build ($tier): wires available in merged inventory: $wiresAvailable');
+        }
+      }
+      
       final productsCopy = Map<String, int>.from(_state.products);
       final capacity = _state.autoBuildProductCapacity[tier] ?? AutoBuildConstants.defaultProductCapacity;
       
@@ -1018,8 +1050,33 @@ class ProductionGameService extends ChangeNotifier {
         }
         
         // Update state with consumed materials and enqueued productions
+        // Split materialsCopy back into pure materials and products
+        final updatedMaterials = Map<String, int>.from(_state.materials);
+        final updatedProducts = Map<String, int>.from(_state.products);
+        
+        // Update raw materials from materialsCopy
+        for (final matId in _state.materials.keys) {
+          updatedMaterials[matId] = materialsCopy[matId] ?? 0;
+        }
+        
+        // Update products that were consumed as materials
+        for (final productId in _state.products.keys) {
+          if (materialsCopy.containsKey(productId)) {
+            // Calculate how much was consumed
+            final originalAmount = (_state.materials[productId] ?? 0) + (_state.products[productId] ?? 0);
+            final remainingAmount = materialsCopy[productId] ?? 0;
+            final consumed = originalAmount - remainingAmount;
+            
+            if (consumed > 0) {
+              // Deduct consumed amount from product inventory
+              updatedProducts[productId] = math.max(0, (_state.products[productId] ?? 0) - consumed);
+            }
+          }
+        }
+        
         _state = _state.copyWith(
-          materials: materialsCopy,
+          materials: updatedMaterials,
+          products: updatedProducts,
           activeProductions: newProductions,
           lastAutoBuildTick: newLastTicks,
         );
@@ -1038,7 +1095,31 @@ class ProductionGameService extends ChangeNotifier {
         _state = _state.copyWith(lastAutoBuildTick: newLastTicks);
         
         if (kDebugMode) {
-          GameLogger.info('Auto-build tick ($tier): no items built (at cap or insufficient materials)');
+          // Show detailed status for each unlocked product
+          final statusList = <String>[];
+          for (final productId in unlockedProducts) {
+            final inv = productsCopy[productId] ?? 0;
+            final queued = queuedProductCounts[productId] ?? 0;
+            final total = inv + queued;
+            
+            if (total >= capacity) {
+              statusList.add('$productId:$inv+$queued=$total(AT_CAP)');
+            } else {
+              // Show what materials are needed vs available
+              final recipe = productRecipes[productId];
+              final matsList = <String>[];
+              if (recipe != null) {
+                for (final entry in recipe.entries) {
+                  final matId = entry.key;
+                  final needed = entry.value;
+                  final available = materialsCopy[matId] ?? 0;
+                  matsList.add('$matId:$available/$needed');
+                }
+              }
+              statusList.add('$productId:$inv+$queued=$total(NEED_MATS[${matsList.join(",")}])');
+            }
+          }
+          GameLogger.info('Auto-build tick ($tier): no items built - ${statusList.join(" | ")}');
         }
       }
     }
@@ -1700,7 +1781,25 @@ class ProductionGameService extends ChangeNotifier {
       }
     }
     
+    
     return 'All at cap'; // All products at cap
   }
+
+  /// Dev method: Add product directly to inventory (for testing/unlocking)
+  void addProductToInventory(String productId, int quantity) {
+    if (quantity <= 0) return;
+    
+    final newProducts = Map<String, int>.from(_state.products);
+    final currentCount = newProducts[productId] ?? 0;
+    newProducts[productId] = currentCount + quantity;
+    
+    _state = _state.copyWith(products: newProducts);
+    notifyListeners();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Added $quantity $productId to inventory (total: ${newProducts[productId]})');
+    }
+  }
 }
+
 

@@ -256,6 +256,60 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           ),
           const SizedBox(height: 12),
 
+          // Quick unlock button for basic parts (wires production requirement)
+          if (tier == 'basicParts')
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      // Manually add 1 wires to inventory to unlock battery and solar_cells
+                      gameService.addProductToInventory('wires', 1);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Added 1 wires to inventory - battery & solar_cells should now unlock!'),
+                          duration: Duration(seconds: 3),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.flash_on, size: 18),
+                    label: const Text('Unlock Battery & Solar Cells (Add 1 Wires)'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[700],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      // Add materials needed for wires, battery, and solar_cells
+                      gameService.buyMaterial('basic_metals', 50);
+                      gameService.buyMaterial('plastic', 50);
+                      gameService.buyMaterial('advanced_metals', 50);
+                      gameService.buyMaterial('glass', 50);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Added materials (50 each: basic_metals, plastic, advanced_metals, glass)'),
+                          duration: Duration(seconds: 3),
+                          backgroundColor: Colors.blue,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.inventory_2, size: 18),
+                    label: const Text('Add Materials for Auto-Build'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[700],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // Machine count controls
           Row(
             children: [
