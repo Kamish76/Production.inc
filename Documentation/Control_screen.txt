@@ -1,0 +1,44 @@
+new control screen from ideas to be implemented.
+
+contents of screen.
+
+settings button to access settings screen.
+
+tier upgrading.
+machine buying.
+machine controls - capacity controls.
+
+dev controls.
+
+## CRITICAL BUG REPORT - Database Reset Issue
+
+**Date**: Implementation of Control Screen feature
+**Severity**: CRITICAL - Complete data loss
+
+**Issue**: After implementing the control screen changes and moving machine controls from dev-only to regular gameplay features, all user game data was completely reset back to starting state.
+
+**Root Cause**: Database migration failure. The app attempted to load an older save file that didn't have the new `auto_build_machines` table and related tables introduced in database version 6 (v1.5.0 Phase 2). The migration system failed to properly run, causing:
+- SQL error: "no such table: auto_build_machines"
+- Complete loss of unlocked products
+- Complete loss of material inventory
+- Full game state reset
+
+**Tables Added in v1.5.0 Phase 2** (Database Version 6):
+- auto_build_machines (tier-based machine ownership)
+- auto_build_enabled (tier-based enabled status)
+- auto_build_last_tick (tier-based last tick times)
+- auto_build_capacity (tier-based product capacity)
+
+**Fix Implemented**:
+1. Added "Repair Database" button in Control Screen → Developer Controls
+2. Created `repairDatabase()` method in ProductionGameService that:
+   - Closes current database connection
+   - Reinitializes database (triggers migration system)
+   - Reloads game state
+   - Reinitializes unlock state
+3. Shows confirmation dialog before repair
+4. Requires app restart after repair
+
+**Status**: Tool implemented but untested. User needs to test with their reset save file.
+
+**Prevention**: Future database schema changes should include better migration error handling and automatic backup/restore functionality.

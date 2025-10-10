@@ -60,12 +60,9 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
                   mode: FinancialDisplayMode.moneyOnly,
                 ),
 
-                // DEV MODE: Auto-Buy Machine Controls (v1.5.0)
-                _buildAutoBuyDevControls(gameService),
-
-                // Auto-Buy Machine Status Info (v1.5.0)
+                // Auto-Buy Machine Status Info (v1.5.0) - Now includes controls
                 if (gameService.state.autoBuyMachinesOwned > 0)
-                  _buildAutoBuyStatusInfo(gameService),
+                  _buildAutoBuyStatusWithControls(gameService),
 
                 // Materials list with single-column layout for better readability
                 Expanded(
@@ -93,218 +90,8 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
     );
   }
 
-  /// Build auto-buy machine dev controls (v1.5.0 - temporary for development)
-  Widget _buildAutoBuyDevControls(ProductionGameService gameService) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF263238),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.orange.withOpacity(0.5),
-          width: 2,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Dev mode header
-          Row(
-            children: [
-              Icon(Icons.construction, color: Colors.orange[400], size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'AUTO-BUY MACHINE (DEV MODE)',
-                style: TextStyle(
-                  color: Colors.orange[400],
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Machine count controls
-          Row(
-            children: [
-              const Text(
-                'Machines:',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-              ),
-              const SizedBox(width: 12),
-              
-              // Decrement button
-              IconButton(
-                onPressed: gameService.state.autoBuyMachinesOwned > 0
-                    ? gameService.decrementAutoBuyMachines
-                    : null,
-                icon: const Icon(Icons.remove_circle_outline),
-                color: Colors.red[400],
-                disabledColor: Colors.grey,
-                iconSize: 28,
-              ),
-              
-              // Count display
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A2E),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '${gameService.state.autoBuyMachinesOwned}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              
-              // Increment button
-              IconButton(
-                onPressed: gameService.incrementAutoBuyMachines,
-                icon: const Icon(Icons.add_circle_outline),
-                color: Colors.green[400],
-                iconSize: 28,
-              ),
-              
-              const Spacer(),
-              
-              // On/Off toggle
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: gameService.state.autoBuyEnabled
-                      ? Colors.green.withOpacity(0.2)
-                      : Colors.red.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: gameService.state.autoBuyEnabled
-                        ? Colors.green
-                        : Colors.red,
-                    width: 1.5,
-                  ),
-                ),
-                child: InkWell(
-                  onTap: gameService.state.autoBuyMachinesOwned > 0
-                      ? gameService.toggleAutoBuy
-                      : null,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        gameService.state.autoBuyEnabled
-                            ? Icons.power_settings_new
-                            : Icons.power_off,
-                        color: gameService.state.autoBuyEnabled
-                            ? Colors.green
-                            : Colors.red,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        gameService.state.autoBuyEnabled ? 'ON' : 'OFF',
-                        style: TextStyle(
-                          color: gameService.state.autoBuyEnabled
-                              ? Colors.green
-                              : Colors.red,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 12),
-
-          // Capacity controls
-          Row(
-            children: [
-              const Text(
-                'Capacity:',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-              ),
-              const SizedBox(width: 12),
-              
-              // Decrement button
-              IconButton(
-                onPressed: gameService.state.autoBuyResourceCapacity > 10
-                    ? gameService.decreaseAutoBuyCapacity
-                    : null,
-                icon: const Icon(Icons.remove_circle_outline),
-                color: Colors.red[400],
-                disabledColor: Colors.grey,
-                iconSize: 28,
-              ),
-              
-              // Capacity display
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A2E),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '${gameService.state.autoBuyResourceCapacity}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              
-              // Increment button
-              IconButton(
-                onPressed: gameService.increaseAutoBuyCapacity,
-                icon: const Icon(Icons.add_circle_outline),
-                color: Colors.green[400],
-                iconSize: 28,
-              ),
-              
-              const SizedBox(width: 8),
-              
-              // Info text
-              Expanded(
-                child: Text(
-                  'per resource',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          // Info text
-          if (gameService.state.autoBuyMachinesOwned > 0) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Buying ${gameService.state.autoBuyMachinesOwned * 5} materials every 5s${gameService.state.autoBuyEnabled ? " (active)" : " (paused)"}',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// Build auto-buy machine status info display (v1.5.0)
-  Widget _buildAutoBuyStatusInfo(ProductionGameService gameService) {
+  /// Build auto-buy machine status with embedded controls (v1.5.0)
+  Widget _buildAutoBuyStatusWithControls(ProductionGameService gameService) {
     final secondsRemaining = gameService.getSecondsUntilNextAutoBuyTick();
     final nextMaterial = gameService.getNextMaterialToBuy();
     final isActive = gameService.state.autoBuyEnabled;
@@ -323,22 +110,59 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header with On/Off toggle
           Row(
             children: [
               Icon(
-                Icons.info_outline,
+                Icons.precision_manufacturing,
                 color: isActive ? Colors.green[300] : Colors.grey,
-                size: 18,
+                size: 20,
               ),
               const SizedBox(width: 8),
               Text(
-                'AUTO-BUY STATUS',
+                'AUTO-BUY MACHINE',
                 style: TextStyle(
                   color: isActive ? Colors.green[300] : Colors.grey,
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
+                ),
+              ),
+              const Spacer(),
+              // On/Off toggle
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? Colors.green.withOpacity(0.2)
+                      : Colors.red.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isActive ? Colors.green : Colors.red,
+                    width: 1.5,
+                  ),
+                ),
+                child: InkWell(
+                  onTap: gameService.toggleAutoBuy,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isActive ? Icons.power_settings_new : Icons.power_off,
+                        color: isActive ? Colors.green : Colors.red,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isActive ? 'ON' : 'OFF',
+                        style: TextStyle(
+                          color: isActive ? Colors.green : Colors.red,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -351,20 +175,10 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
               // Machines count
               Expanded(
                 child: _buildStatusItem(
-                  icon: Icons.precision_manufacturing,
+                  icon: Icons.settings_input_component,
                   label: 'Machines',
                   value: '${gameService.state.autoBuyMachinesOwned}',
                   valueColor: Colors.white,
-                ),
-              ),
-              
-              // Capacity
-              Expanded(
-                child: _buildStatusItem(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'Capacity',
-                  value: '${gameService.state.autoBuyResourceCapacity}',
-                  valueColor: Colors.cyan[300]!,
                 ),
               ),
               
@@ -394,6 +208,90 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
                 ),
               ),
             ],
+          ),
+          
+          const SizedBox(height: 12),
+          const Divider(color: Colors.white24, height: 1),
+          const SizedBox(height: 12),
+          
+          // Capacity controls embedded in status
+          Row(
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                color: Colors.cyan[300],
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Capacity per Resource:',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              
+              // Decrement button
+              IconButton(
+                onPressed: gameService.state.autoBuyResourceCapacity > 10
+                    ? gameService.decreaseAutoBuyCapacity
+                    : null,
+                icon: const Icon(Icons.remove_circle_outline),
+                color: Colors.red[400],
+                disabledColor: Colors.grey,
+                iconSize: 24,
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // Capacity display
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.cyan.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: Colors.cyan.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  '${gameService.state.autoBuyResourceCapacity}',
+                  style: TextStyle(
+                    color: Colors.cyan[300],
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // Increment button
+              IconButton(
+                onPressed: gameService.increaseAutoBuyCapacity,
+                icon: const Icon(Icons.add_circle_outline),
+                color: Colors.green[400],
+                iconSize: 24,
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+          
+          // Info text
+          const SizedBox(height: 8),
+          Text(
+            'Buying ${gameService.state.autoBuyMachinesOwned * 5} materials every 5s${isActive ? " (active)" : " (paused)"}',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ],
       ),

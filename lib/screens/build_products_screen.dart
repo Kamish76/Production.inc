@@ -179,8 +179,9 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
 
     return Column(
       children: [
-        // Auto-Build dev controls (v1.5.0 Phase 2)
-        if (tierKey != null) _buildAutoBuildDevControls(gameService, tierKey, tierName),
+        // Auto-Build status with controls (v1.5.0 Phase 2) - now integrated
+        if (tierKey != null && (gameService.state.autoBuildMachinesOwned[tierKey] ?? 0) > 0)
+          _buildAutoBuildStatusWithControls(gameService, tierKey, tierName),
         
         // Tier section with products
         TierExpansionPanel(
@@ -218,101 +219,60 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     }
   }
 
-  /// Build auto-build machine dev controls (v1.5.0 Phase 2 - temporary for development)
-  Widget _buildAutoBuildDevControls(ProductionGameService gameService, String tier, String tierName) {
+  /// Build auto-build machine status with embedded controls (v1.5.0 Phase 2)
+  Widget _buildAutoBuildStatusWithControls(
+    ProductionGameService gameService,
+    String tier,
+    String tierName,
+  ) {
     final machineCount = gameService.state.autoBuildMachinesOwned[tier] ?? 0;
     final enabled = gameService.state.autoBuildEnabled[tier] ?? false;
     final capacity = gameService.state.autoBuildProductCapacity[tier] ?? 10;
+    final nextProduct = gameService.getNextProductToBuild(tier);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF263238),
+        color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.orange.withOpacity(0.5),
-          width: 2,
+          color: enabled ? Colors.blue.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
+          width: 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Dev mode header
+          // Header with On/Off toggle
           Row(
             children: [
-              Icon(Icons.construction, color: Colors.orange[400], size: 20),
+              Icon(
+                Icons.precision_manufacturing,
+                color: enabled ? Colors.blue[300] : Colors.grey,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
-                'AUTO-BUILD: $tierName (DEV MODE)',
+                'AUTO-BUILD: $tierName',
                 style: TextStyle(
-                  color: Colors.orange[400],
-                  fontSize: 12,
+                  color: enabled ? Colors.blue[300] : Colors.grey,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Machine count controls
-          Row(
-            children: [
-              const Text(
-                'Machines:',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-              ),
-              const SizedBox(width: 12),
-              
-              // Decrement button
-              IconButton(
-                onPressed: machineCount > 0
-                    ? () => gameService.decrementAutoBuildMachines(tier)
-                    : null,
-                icon: const Icon(Icons.remove_circle_outline),
-                color: Colors.red[400],
-                disabledColor: Colors.grey,
-                iconSize: 28,
-              ),
-              
-              // Count display
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A2E),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '$machineCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              
-              // Increment button
-              IconButton(
-                onPressed: () => gameService.incrementAutoBuildMachines(tier),
-                icon: const Icon(Icons.add_circle_outline),
-                color: Colors.green[400],
-                iconSize: 28,
-              ),
-              
               const Spacer(),
-              
               // On/Off toggle
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: enabled
-                      ? Colors.green.withOpacity(0.2)
+                      ? Colors.blue.withOpacity(0.2)
                       : Colors.red.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: enabled ? Colors.green : Colors.red,
+                    color: enabled ? Colors.blue : Colors.red,
                     width: 1.5,
                   ),
                 ),
@@ -324,18 +284,16 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        enabled
-                            ? Icons.power_settings_new
-                            : Icons.power_off,
-                        color: enabled ? Colors.green : Colors.red,
-                        size: 20,
+                        enabled ? Icons.power_settings_new : Icons.power_off,
+                        color: enabled ? Colors.blue : Colors.red,
+                        size: 18,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Text(
                         enabled ? 'ON' : 'OFF',
                         style: TextStyle(
-                          color: enabled ? Colors.green : Colors.red,
-                          fontSize: 14,
+                          color: enabled ? Colors.blue : Colors.red,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -345,17 +303,56 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
 
-          // Capacity controls
+          // Status info grid
           Row(
             children: [
-              const Text(
-                'Capacity:',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
+              // Machines count
+              Expanded(
+                child: _buildTierStatusItem(
+                  icon: Icons.settings_input_component,
+                  label: 'Machines',
+                  value: '$machineCount',
+                  valueColor: Colors.white,
+                ),
               ),
-              const SizedBox(width: 12),
+              
+              // Current/next product
+              Expanded(
+                flex: 2,
+                child: _buildTierStatusItem(
+                  icon: Icons.build_circle_outlined,
+                  label: 'Building',
+                  value: enabled ? (nextProduct ?? '--') : 'Paused',
+                  valueColor: enabled ? Colors.blue[300]! : Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          const Divider(color: Colors.white24, height: 1),
+          const SizedBox(height: 12),
+          
+          // Capacity controls embedded in status
+          Row(
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                color: Colors.cyan[300],
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Capacity per Product:',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
               
               // Decrement button
               IconButton(
@@ -365,64 +362,93 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                 icon: const Icon(Icons.remove_circle_outline),
                 color: Colors.red[400],
                 disabledColor: Colors.grey,
-                iconSize: 28,
+                iconSize: 24,
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(),
               ),
+              
+              const SizedBox(width: 12),
               
               // Capacity display
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A2E),
-                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.cyan.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: Colors.cyan.withOpacity(0.3),
+                    width: 1.5,
+                  ),
                 ),
                 child: Text(
                   '$capacity',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
+                  style: TextStyle(
+                    color: Colors.cyan[300],
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
+              
+              const SizedBox(width: 12),
               
               // Increment button
               IconButton(
                 onPressed: () => gameService.increaseAutoBuildCapacity(tier),
                 icon: const Icon(Icons.add_circle_outline),
                 color: Colors.green[400],
-                iconSize: 28,
-              ),
-              
-              const SizedBox(width: 8),
-              
-              // Info text
-              Expanded(
-                child: Text(
-                  'per product',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
+                iconSize: 24,
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(),
               ),
             ],
           ),
           
           // Info text
-          if (machineCount > 0) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Building ${machineCount * 2} products every 5s${enabled ? " (active)" : " (paused)"}',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-              ),
+          const SizedBox(height: 8),
+          Text(
+            'Building ${machineCount * 2} products every 5s${enabled ? " (active)" : " (paused)"}',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
             ),
-          ],
+          ),
         ],
       ),
+    );
+  }
+
+  /// Build a single tier status item
+  Widget _buildTierStatusItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white54, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white54,
+            fontSize: 10,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 
@@ -440,6 +466,4 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
         return Icons.category;
     }
   }
-
-
 }

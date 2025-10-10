@@ -1950,6 +1950,142 @@ class ProductionGameService extends ChangeNotifier {
       GameLogger.info('Dev: Added $quantity $productId to inventory (total: ${newProducts[productId]})');
     }
   }
+
+  /// Dev method: Add money directly to balance (for testing)
+  void addMoney(double amount) {
+    if (amount <= 0) return;
+    
+    _state = _state.copyWith(money: _state.money + amount);
+    
+    // Check for newly unlocked products after adding money
+    _checkAndUpdateUnlocks();
+    
+    notifyListeners();
+    _saveGameStateOptimized();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Added \$${amount.toStringAsFixed(2)} to balance (total: \$${_state.money.toStringAsFixed(2)})');
+    }
+  }
+
+  /// Dev method: Complete all active productions instantly (for testing)
+  void completeAllProductionsInstantly() {
+    if (_state.activeProductions.isEmpty) return;
+    
+    final completedCount = _state.activeProductions.length;
+    
+    // Set all productions to have started in the past so they complete immediately
+    final now = DateTime.now();
+    final updatedProductions = _state.activeProductions.map((task) {
+      return task.copyWith(
+        startTime: now.subtract(Duration(seconds: task.durationSeconds.ceil() + 1)),
+      );
+    }).toList();
+    
+    _state = _state.copyWith(activeProductions: updatedProductions);
+    
+    // Trigger update to process completed productions
+    updateProductions();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Completed $completedCount productions instantly');
+    }
+  }
+
+  /// Dev method: Complete all active shipments instantly (for testing)
+  void completeAllShipmentsInstantly() {
+    if (_state.activeShippingOrders.isEmpty) return;
+    
+    final completedCount = _state.activeShippingOrders.length;
+    
+    // Set all shipments to have started in the past so they complete immediately
+    final now = DateTime.now();
+    final updatedShipments = _state.activeShippingOrders.map((order) {
+      return ShippingOrder(
+        id: order.id,
+        items: order.items,
+        startTime: now.subtract(Duration(seconds: order.totalShippingTime.ceil() + 1)),
+        totalShippingTime: order.totalShippingTime,
+        totalRevenue: order.totalRevenue,
+      );
+    }).toList();
+    
+    _state = _state.copyWith(activeShippingOrders: updatedShipments);
+    
+    // Trigger update to process completed shipments
+    updateProductions();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Completed $completedCount shipments instantly');
+    }
+  }
+
+  /// Dev method: Unlock all products by setting a high money amount (for testing)
+  void unlockAllProductsForTesting() {
+    // Add a very large amount of money to trigger all unlocks
+    _state = _state.copyWith(money: _state.money + 1000000);
+    
+    // Force unlock check
+    _checkAndUpdateUnlocks();
+    
+    notifyListeners();
+    _saveGameStateOptimized();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Unlocked all products (added \$1,000,000)');
+    }
+  }
+
+  /// Dev method: Force a manual unlock check (for debugging)
+  void forceUnlockCheck() {
+    // Re-initialize unlock state from scratch
+    _initializeUnlockState();
+    
+    // Then check for any newly unlocked products
+    _checkAndUpdateUnlocks();
+    
+    notifyListeners();
+    _saveGameStateOptimized();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Forced unlock check - ${_state.unlockedProducts.length} products unlocked');
+    }
+  }
+
+  /// Dev method: Repair database structure (for fixing migration issues)
+  Future<void> repairDatabase() async {
+    try {
+      if (kDebugMode) {
+        GameLogger.info('Dev: Starting database repair...');
+      }
+      
+      // Close current database connection
+      await _persistenceService.dispose();
+      
+      // Reinitialize database (this will run migrations)
+      await _persistenceService.database;
+      
+      // Reload the game state
+      _state = await _persistenceService.loadGameState();
+      
+      // Reinitialize unlock state
+      _initializeUnlockState();
+      _checkAndUpdateUnlocks();
+      
+      notifyListeners();
+      
+      if (kDebugMode) {
+        GameLogger.info('Dev: Database repair completed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        GameLogger.error('Dev: Database repair failed: $e');
+      }
+      rethrow;
+    }
+  }
 }
+
+
 
 

@@ -5,7 +5,7 @@ import 'buy_materials_screen.dart';
 import 'build_products_screen.dart';
 import 'sell_products_screen.dart';
 import 'shipping_screen.dart';
-import 'settings_screen.dart';
+import 'control_screen.dart';
 
 class MainGameScreen extends StatefulWidget {
   final int initialIndex;
@@ -25,7 +25,7 @@ class _MainGameScreenState extends State<MainGameScreen> {
     const BuildProductsScreen(),
     const SellProductsScreen(),
     const ShippingScreen(),
-    const SettingsScreen(),
+    const ControlScreen(),
   ];
 
   @override
@@ -220,19 +220,19 @@ class _MainGameScreenState extends State<MainGameScreen> {
                     decoration: BoxDecoration(
                       color:
                           _currentIndex == 4
-                              ? Colors.grey[600]?.withValues(alpha: 0.3)
+                              ? Colors.cyan[600]?.withValues(alpha: 0.3)
                               : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      Icons.settings,
+                      Icons.tune,
                       color:
                           _currentIndex == 4
-                              ? Colors.grey[400]
+                              ? Colors.cyan[400]
                               : Colors.grey[400],
                     ),
                   ),
-                  label: 'Settings',
+                  label: 'Control',
                 ),
               ],
             ),
