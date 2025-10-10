@@ -861,6 +861,11 @@ class ProductionGameService extends ChangeNotifier {
         money: newMoney,
         lastAutoBuyTick: now,
       );
+      
+      // Check for newly unlocked products after material purchase (v1.5.0 bug fix)
+      // This ensures that auto-buy machines trigger unlocks just like manual purchases
+      _checkAndUpdateUnlocks();
+      
       notifyListeners();
 
       if (kDebugMode) {
@@ -1166,6 +1171,11 @@ class ProductionGameService extends ChangeNotifier {
           activeProductions: newProductions,
           lastAutoBuildTick: newLastTicks,
         );
+        
+        // Check for newly unlocked products after auto-build (v1.5.0 bug fix)
+        // This ensures that auto-build machines trigger unlocks when products are built
+        _checkAndUpdateUnlocks();
+        
         notifyListeners();
         
         if (kDebugMode) {
