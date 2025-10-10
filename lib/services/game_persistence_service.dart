@@ -12,7 +12,7 @@ class GamePersistenceService {
     static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      5; // Updated for v1.4.18 product unlock system
+      6; // Updated for v1.5.0 Phase 2 auto-build system
 
   Database? _database;
 
@@ -141,6 +141,10 @@ class GamePersistenceService {
         // v1.4.18 migrations - product unlock system
         await _migrateToVersion5(db);
         break;
+      case 6:
+        // v1.5.0 Phase 2 migrations - auto-build system
+        await _migrateToVersion6(db);
+        break;
       default:
         if (kDebugMode) {
           print('No migration defined for version $version');
@@ -263,6 +267,77 @@ class GamePersistenceService {
     } catch (e) {
       if (kDebugMode) {
         print('Migration warning (unlocked_products): $e');
+      }
+    }
+  }
+
+  /// Migration to version 6 (v1.5.0 Phase 2)
+  Future<void> _migrateToVersion6(Database db) async {
+    try {
+      // Create auto_build_machines table (tier-based machine ownership)
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS auto_build_machines (
+          tier TEXT PRIMARY KEY,
+          machine_count INTEGER NOT NULL DEFAULT 0
+        )
+      ''');
+      if (kDebugMode) {
+        print('Created auto_build_machines table');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (auto_build_machines): $e');
+      }
+    }
+
+    try {
+      // Create auto_build_enabled table (tier-based enabled status)
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS auto_build_enabled (
+          tier TEXT PRIMARY KEY,
+          enabled INTEGER NOT NULL DEFAULT 0
+        )
+      ''');
+      if (kDebugMode) {
+        print('Created auto_build_enabled table');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (auto_build_enabled): $e');
+      }
+    }
+
+    try {
+      // Create auto_build_last_tick table (tier-based last tick times)
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS auto_build_last_tick (
+          tier TEXT PRIMARY KEY,
+          last_tick INTEGER
+        )
+      ''');
+      if (kDebugMode) {
+        print('Created auto_build_last_tick table');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (auto_build_last_tick): $e');
+      }
+    }
+
+    try {
+      // Create auto_build_capacity table (tier-based product capacity)
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS auto_build_capacity (
+          tier TEXT PRIMARY KEY,
+          capacity INTEGER NOT NULL DEFAULT 10
+        )
+      ''');
+      if (kDebugMode) {
+        print('Created auto_build_capacity table');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (auto_build_capacity): $e');
       }
     }
   }
@@ -499,6 +574,7 @@ class GamePersistenceService {
       await _saveActiveProductions(txn, state);
       await _saveQuantityPreferences(txn, state);
       await _saveUnlockedProducts(txn, state);
+      await _saveAutoBuildData(txn, state);
       await _saveShippingData(txn, state);
     });
   }
@@ -607,6 +683,49 @@ class GamePersistenceService {
     }
   }
 
+  /// Save auto-build data (v1.5.0 Phase 2)
+  Future<void> _saveAutoBuildData(DatabaseExecutor txn, GameState state) async {
+    // Save machine counts
+    await txn.delete('auto_build_machines');
+    for (final entry in state.autoBuildMachinesOwned.entries) {
+      if (entry.value > 0) {
+        await txn.insert('auto_build_machines', {
+          'tier': entry.key,
+          'machine_count': entry.value,
+        });
+      }
+    }
+
+    // Save enabled status
+    await txn.delete('auto_build_enabled');
+    for (final entry in state.autoBuildEnabled.entries) {
+      await txn.insert('auto_build_enabled', {
+        'tier': entry.key,
+        'enabled': entry.value ? 1 : 0,
+      });
+    }
+
+    // Save last tick times
+    await txn.delete('auto_build_last_tick');
+    for (final entry in state.lastAutoBuildTick.entries) {
+      if (entry.value != null) {
+        await txn.insert('auto_build_last_tick', {
+          'tier': entry.key,
+          'last_tick': entry.value!.millisecondsSinceEpoch,
+        });
+      }
+    }
+
+    // Save capacity settings
+    await txn.delete('auto_build_capacity');
+    for (final entry in state.autoBuildProductCapacity.entries) {
+      await txn.insert('auto_build_capacity', {
+        'tier': entry.key,
+        'capacity': entry.value,
+      });
+    }
+  }
+
   /// Save shipping data (active orders and history)
   Future<void> _saveShippingData(DatabaseExecutor txn, GameState state) async {
     await _saveActiveShippingOrders(txn, state);
@@ -686,7 +805,12 @@ class GamePersistenceService {
     );
     if (gameStateResult.isEmpty) {
       // Return default state if no save exists
-      return const GameState();
+      return const GameState(
+        autoBuildMachinesOwned: {},
+        autoBuildEnabled: {},
+        lastAutoBuildTick: {},
+        autoBuildProductCapacity: {},
+      );
     }
 
     final money = gameStateResult.first['money'] as double;
@@ -699,6 +823,7 @@ class GamePersistenceService {
     final unlockedProducts = await _loadUnlockedProducts(db);
     final activeShippingOrders = await _loadActiveShippingOrders(db);
     final shippingHistory = await _loadShippingHistory(db);
+    final autoBuildData = await _loadAutoBuildData(db);
 
     return GameState(
       money: money,
@@ -711,6 +836,10 @@ class GamePersistenceService {
       buyQuantityPreferences: quantityPreferences.buy,
       sellQuantityPreferences: quantityPreferences.sell,
       unlockedProducts: unlockedProducts,
+      autoBuildMachinesOwned: autoBuildData.machines,
+      autoBuildEnabled: autoBuildData.enabled,
+      lastAutoBuildTick: autoBuildData.lastTick,
+      autoBuildProductCapacity: autoBuildData.capacity,
     );
   }
 
@@ -799,6 +928,53 @@ class GamePersistenceService {
       unlockedProducts.add(row['product_id'] as String);
     }
     return unlockedProducts;
+  }
+
+  /// Load auto-build data from database (v1.5.0 Phase 2)
+  Future<({
+    Map<String, int> machines,
+    Map<String, bool> enabled,
+    Map<String, DateTime?> lastTick,
+    Map<String, int> capacity,
+  })> _loadAutoBuildData(Database db) async {
+    final machines = <String, int>{};
+    final enabled = <String, bool>{};
+    final lastTick = <String, DateTime?>{};
+    final capacity = <String, int>{};
+
+    // Load machine counts
+    final machinesResult = await db.query('auto_build_machines');
+    for (final row in machinesResult) {
+      machines[row['tier'] as String] = row['machine_count'] as int;
+    }
+
+    // Load enabled status
+    final enabledResult = await db.query('auto_build_enabled');
+    for (final row in enabledResult) {
+      enabled[row['tier'] as String] = (row['enabled'] as int) == 1;
+    }
+
+    // Load last tick times
+    final lastTickResult = await db.query('auto_build_last_tick');
+    for (final row in lastTickResult) {
+      final tickTime = row['last_tick'] as int?;
+      lastTick[row['tier'] as String] = tickTime != null
+          ? DateTime.fromMillisecondsSinceEpoch(tickTime)
+          : null;
+    }
+
+    // Load capacity settings
+    final capacityResult = await db.query('auto_build_capacity');
+    for (final row in capacityResult) {
+      capacity[row['tier'] as String] = row['capacity'] as int;
+    }
+
+    return (
+      machines: machines,
+      enabled: enabled,
+      lastTick: lastTick,
+      capacity: capacity,
+    );
   }
 
   /// Load active shipping orders from database
