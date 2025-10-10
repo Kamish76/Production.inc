@@ -1358,6 +1358,11 @@ class GamePersistenceService {
           state.sellQuantityPreferences,
         );
       }
+
+      // Save automation data (auto-buy and auto-build machines) - v1.5.0
+      if (_dirtyTables.contains('automation')) {
+        await _saveAutomationDataOptimized(txn, state);
+      }
     });
 
     if (kDebugMode) {
@@ -1395,6 +1400,7 @@ class GamePersistenceService {
         state.buyQuantityPreferences,
         state.sellQuantityPreferences,
       );
+      await _saveAutomationDataOptimized(txn, state); // v1.5.0 - Save automation data
     });
   }
 
@@ -1530,6 +1536,65 @@ class GamePersistenceService {
       await txn.insert('sell_quantity_preferences', {
         'product_id': entry.key,
         'quantity': entry.value,
+      });
+    }
+  }
+
+  /// Optimized automation data save (v1.5.0) - Auto-buy and Auto-build
+  Future<void> _saveAutomationDataOptimized(
+    Transaction txn,
+    GameState state,
+  ) async {
+    // Update auto-buy data in core game state
+    await txn.update(
+      'game_state',
+      {
+        'auto_buy_machines_owned': state.autoBuyMachinesOwned,
+        'auto_buy_enabled': state.autoBuyEnabled ? 1 : 0,
+        'auto_buy_last_tick': state.lastAutoBuyTick?.millisecondsSinceEpoch,
+        'auto_buy_resource_capacity': state.autoBuyResourceCapacity,
+      },
+      where: 'id = ?',
+      whereArgs: [1],
+    );
+
+    // Save auto-build machine counts
+    await txn.delete('auto_build_machines');
+    for (final entry in state.autoBuildMachinesOwned.entries) {
+      if (entry.value > 0) {
+        await txn.insert('auto_build_machines', {
+          'tier': entry.key,
+          'machine_count': entry.value,
+        });
+      }
+    }
+
+    // Save auto-build enabled status
+    await txn.delete('auto_build_enabled');
+    for (final entry in state.autoBuildEnabled.entries) {
+      await txn.insert('auto_build_enabled', {
+        'tier': entry.key,
+        'enabled': entry.value ? 1 : 0,
+      });
+    }
+
+    // Save auto-build last tick times
+    await txn.delete('auto_build_last_tick');
+    for (final entry in state.lastAutoBuildTick.entries) {
+      if (entry.value != null) {
+        await txn.insert('auto_build_last_tick', {
+          'tier': entry.key,
+          'last_tick': entry.value!.millisecondsSinceEpoch,
+        });
+      }
+    }
+
+    // Save auto-build capacity settings
+    await txn.delete('auto_build_capacity');
+    for (final entry in state.autoBuildProductCapacity.entries) {
+      await txn.insert('auto_build_capacity', {
+        'tier': entry.key,
+        'capacity': entry.value,
       });
     }
   }
