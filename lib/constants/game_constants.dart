@@ -283,6 +283,7 @@ class AutoBuildConstants {
   
   /// Build time reduction multiplier per machine (1.1x speed per machine)
   /// Stacks multiplicatively: finalTime = baseTime / (speedMultiplier ^ machineCount)
+  /// Note: Production time is capped at a minimum of 1 second
   static const double buildSpeedMultiplierPerMachine = 1.1;
   
   /// Product order for auto-build processing per tier (ordered by production time, simplest first)
