@@ -361,11 +361,13 @@ class ProductionGameService extends ChangeNotifier {
       );
 
       // Check for newly unlocked products after material purchase (v1.4.18)
+      // Note: This will call notifyListeners() if any products are newly unlocked
       _checkAndUpdateUnlocks();
 
       // Mark materials as dirty for incremental save (v1.4.8)
       _persistenceService.markDirty('materials');
 
+      // Notify listeners for material/money changes (unlock check notifies separately if needed)
       notifyListeners();
       _saveGameStateOptimized(); // Use optimized save after major transaction
       return true;
@@ -1275,6 +1277,9 @@ class ProductionGameService extends ChangeNotifier {
 
         // Mark as dirty for saving
         _persistenceService.markDirty('unlocked_products');
+
+        // Notify listeners so UI updates to show newly unlocked products
+        notifyListeners();
 
         if (kDebugMode) {
           GameLogger.info('🔓 Unlocked new products: ${newlyUnlocked.join(', ')} (Total unlocked: ${updatedUnlockedProducts.length})');

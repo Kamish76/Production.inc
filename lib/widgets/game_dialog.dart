@@ -37,7 +37,7 @@ class GameDialog extends StatelessWidget {
     this.onCancel,
   }) : mode = GameDialogMode.confirmation,
        product = null,
-    gameService = null;
+       gameService = null;
 
   const GameDialog.productDetails({
     super.key,
@@ -51,7 +51,7 @@ class GameDialog extends StatelessWidget {
        confirmText = null,
        cancelText = null,
        onConfirm = null,
-     onCancel = null;
+       onCancel = null;
 
   @override
   Widget build(BuildContext context) {
