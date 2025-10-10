@@ -273,6 +273,51 @@ class GamePersistenceService {
 
   /// Migration to version 6 (v1.5.0 Phase 2)
   Future<void> _migrateToVersion6(Database db) async {
+    // Add auto-buy fields to game_state table if they don't exist
+    try {
+      await db.execute('''
+        ALTER TABLE game_state ADD COLUMN 
+        auto_buy_machines_owned INTEGER DEFAULT 0
+      ''');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (auto_buy_machines_owned): $e');
+      }
+    }
+
+    try {
+      await db.execute('''
+        ALTER TABLE game_state ADD COLUMN 
+        auto_buy_enabled INTEGER DEFAULT 0
+      ''');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (auto_buy_enabled): $e');
+      }
+    }
+
+    try {
+      await db.execute('''
+        ALTER TABLE game_state ADD COLUMN 
+        auto_buy_last_tick INTEGER
+      ''');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (auto_buy_last_tick): $e');
+      }
+    }
+
+    try {
+      await db.execute('''
+        ALTER TABLE game_state ADD COLUMN 
+        auto_buy_resource_capacity INTEGER DEFAULT 10
+      ''');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Migration warning (auto_buy_resource_capacity): $e');
+      }
+    }
+
     try {
       // Create auto_build_machines table (tier-based machine ownership)
       await db.execute('''
@@ -452,7 +497,11 @@ class GamePersistenceService {
         money REAL NOT NULL,
         last_saved INTEGER NOT NULL,
         data_checksum TEXT DEFAULT NULL,
-        last_backup INTEGER DEFAULT 0
+        last_backup INTEGER DEFAULT 0,
+        auto_buy_machines_owned INTEGER DEFAULT 0,
+        auto_buy_enabled INTEGER DEFAULT 0,
+        auto_buy_last_tick INTEGER,
+        auto_buy_resource_capacity INTEGER DEFAULT 10
       )
     ''');
 
@@ -555,6 +604,38 @@ class GamePersistenceService {
       )
     ''');
 
+    // Auto-build machines table (V1.5.0 Phase 2)
+    await db.execute('''
+      CREATE TABLE auto_build_machines (
+        tier TEXT PRIMARY KEY,
+        machine_count INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    // Auto-build enabled table (V1.5.0 Phase 2)
+    await db.execute('''
+      CREATE TABLE auto_build_enabled (
+        tier TEXT PRIMARY KEY,
+        enabled INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    // Auto-build last tick table (V1.5.0 Phase 2)
+    await db.execute('''
+      CREATE TABLE auto_build_last_tick (
+        tier TEXT PRIMARY KEY,
+        last_tick INTEGER
+      )
+    ''');
+
+    // Auto-build capacity table (V1.5.0 Phase 2)
+    await db.execute('''
+      CREATE TABLE auto_build_capacity (
+        tier TEXT PRIMARY KEY,
+        capacity INTEGER NOT NULL DEFAULT 10
+      )
+    ''');
+
     // Insert initial game state record
     await db.insert('game_state', {
       'id': 1,
@@ -579,13 +660,17 @@ class GamePersistenceService {
     });
   }
 
-  /// Save core game state (money, last saved time)
+  /// Save core game state (money, last saved time, auto-buy state)
   Future<void> _saveCoreGameState(DatabaseExecutor txn, GameState state) async {
     await txn.update(
       'game_state',
       {
         'money': state.money,
         'last_saved': DateTime.now().millisecondsSinceEpoch,
+        'auto_buy_machines_owned': state.autoBuyMachinesOwned,
+        'auto_buy_enabled': state.autoBuyEnabled ? 1 : 0,
+        'auto_buy_last_tick': state.lastAutoBuyTick?.millisecondsSinceEpoch,
+        'auto_buy_resource_capacity': state.autoBuyResourceCapacity,
       },
       where: 'id = ?',
       whereArgs: [1],
@@ -814,6 +899,16 @@ class GamePersistenceService {
     }
 
     final money = gameStateResult.first['money'] as double;
+    
+    // Load auto-buy state from game_state table
+    final row = gameStateResult.first;
+    final autoBuyMachinesOwned = (row['auto_buy_machines_owned'] as int?) ?? 0;
+    final autoBuyEnabled = ((row['auto_buy_enabled'] as int?) ?? 0) == 1;
+    final autoBuyLastTickMs = row['auto_buy_last_tick'] as int?;
+    final autoBuyLastTick = autoBuyLastTickMs != null 
+        ? DateTime.fromMillisecondsSinceEpoch(autoBuyLastTickMs) 
+        : null;
+    final autoBuyResourceCapacity = (row['auto_buy_resource_capacity'] as int?) ?? 10;
 
     // Load all game components in parallel where possible
     final materials = await _loadMaterials(db);
@@ -836,6 +931,10 @@ class GamePersistenceService {
       buyQuantityPreferences: quantityPreferences.buy,
       sellQuantityPreferences: quantityPreferences.sell,
       unlockedProducts: unlockedProducts,
+      autoBuyMachinesOwned: autoBuyMachinesOwned,
+      autoBuyEnabled: autoBuyEnabled,
+      lastAutoBuyTick: autoBuyLastTick,
+      autoBuyResourceCapacity: autoBuyResourceCapacity,
       autoBuildMachinesOwned: autoBuildData.machines,
       autoBuildEnabled: autoBuildData.enabled,
       lastAutoBuildTick: autoBuildData.lastTick,

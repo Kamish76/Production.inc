@@ -234,6 +234,9 @@ class ValidationConstants {
 
 /// Auto-Buy Machine configuration and behavior constants
 class AutoBuyConstants {
+  /// Cost to purchase one auto-buy machine
+  static const double machineCost = 1000.0;
+  
   /// Number of items one machine buys per tick
   static const int buysPerMachinePerTick = 5;
   
@@ -263,6 +266,9 @@ class AutoBuyConstants {
 
 /// Auto-Build Machine configuration and behavior constants
 class AutoBuildConstants {
+  /// Cost to purchase one auto-build machine (per tier)
+  static const double machineCost = 1000.0;
+  
   /// Number of products one machine builds per tick
   static const int buildsPerMachinePerTick = 2;
   

@@ -220,16 +220,6 @@ class ControlScreen extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             
-            IconButton(
-              onPressed: gameService.state.autoBuyMachinesOwned > 0
-                  ? gameService.decrementAutoBuyMachines
-                  : null,
-              icon: const Icon(Icons.remove_circle_outline),
-              color: Colors.red[400],
-              disabledColor: Colors.grey,
-              iconSize: 24,
-            ),
-            
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
@@ -246,14 +236,40 @@ class ControlScreen extends StatelessWidget {
               ),
             ),
             
-            IconButton(
-              onPressed: gameService.incrementAutoBuyMachines,
-              icon: const Icon(Icons.add_circle_outline),
-              color: Colors.green[400],
-              iconSize: 24,
+            const SizedBox(width: 16),
+            
+            // Buy Machine button
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: gameService.state.money >= 1000
+                    ? () {
+                        final success = gameService.buyAutoBuyMachine();
+                        if (!success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Not enough money to buy machine!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      }
+                    : null,
+                icon: const Icon(Icons.add_shopping_cart, size: 18),
+                label: const Text(
+                  'Buy Machine (\$1,000)',
+                  style: TextStyle(fontSize: 13),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[700],
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey[800],
+                  disabledForegroundColor: Colors.grey[600],
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              ),
             ),
             
-            const Spacer(),
+            const SizedBox(width: 12),
             
             // Enable/Disable Toggle
             Switch(
@@ -437,26 +453,13 @@ class ControlScreen extends StatelessWidget {
           
           const SizedBox(height: 8),
           
-          // Machine count
+          // Machine count and buy button
           Row(
             children: [
               const Text(
                 'Machines:',
                 style: TextStyle(color: Colors.white60, fontSize: 12),
               ),
-              const SizedBox(width: 8),
-              
-              IconButton(
-                onPressed: machineCount > 0
-                    ? () => gameService.decrementAutoBuildMachines(tier)
-                    : null,
-                icon: const Icon(Icons.remove_circle_outline, size: 20),
-                color: Colors.red[400],
-                disabledColor: Colors.grey,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              
               const SizedBox(width: 8),
               
               Container(
@@ -475,19 +478,46 @@ class ControlScreen extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               
-              IconButton(
-                onPressed: () => gameService.incrementAutoBuildMachines(tier),
-                icon: const Icon(Icons.add_circle_outline, size: 20),
-                color: Colors.green[400],
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+              // Buy Machine button
+              ElevatedButton.icon(
+                onPressed: gameService.state.money >= 1000
+                    ? () {
+                        final success = gameService.buyAutoBuildMachine(tier);
+                        if (!success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Not enough money to buy machine!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      }
+                    : null,
+                icon: const Icon(Icons.add_shopping_cart, size: 16),
+                label: const Text(
+                  'Buy (\$1k)',
+                  style: TextStyle(fontSize: 11),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[700],
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey[800],
+                  disabledForegroundColor: Colors.grey[600],
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
               ),
-              
-              const SizedBox(width: 16),
-              
-              // Capacity
+            ],
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Capacity controls
+          Row(
+            children: [
               const Text(
                 'Cap:',
                 style: TextStyle(color: Colors.white60, fontSize: 12),

@@ -4,3 +4,5 @@ auto-buy(implemented)
 auto-build(implemented)
 auto-sell
 
+machine aquisition system:
+    
