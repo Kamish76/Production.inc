@@ -78,6 +78,12 @@ class GameState {
   final DateTime? lastAutoBuyTick; // Last time auto-buy tick was processed
   final int autoBuyResourceCapacity; // Player-configurable capacity per resource (increments of 10)
 
+  // Auto-Build Machine state (v1.5.0 Phase 2 - in development)
+  final Map<String, int> autoBuildMachinesOwned; // tier -> number of machines (e.g., 'basicParts' -> 2)
+  final Map<String, bool> autoBuildEnabled; // tier -> on/off toggle (e.g., 'basicParts' -> true)
+  final Map<String, DateTime?> lastAutoBuildTick; // tier -> last tick time
+  final Map<String, int> autoBuildProductCapacity; // tier -> capacity setting (e.g., 'basicParts' -> 10)
+
   const GameState({
     this.money = 100.0, // Starting money
     this.materials = const {},
@@ -95,6 +101,10 @@ class GameState {
     this.autoBuyEnabled = false,
     this.lastAutoBuyTick,
     this.autoBuyResourceCapacity = 10, // Default starting capacity
+    required this.autoBuildMachinesOwned, // Required - default to empty map
+    required this.autoBuildEnabled, // Required - default to empty map
+    required this.lastAutoBuildTick, // Required - default to empty map
+    required this.autoBuildProductCapacity, // Required - default to empty map
   });
 
   GameState copyWith({
@@ -114,6 +124,10 @@ class GameState {
     bool? autoBuyEnabled,
     DateTime? lastAutoBuyTick,
     int? autoBuyResourceCapacity,
+    Map<String, int>? autoBuildMachinesOwned,
+    Map<String, bool>? autoBuildEnabled,
+    Map<String, DateTime?>? lastAutoBuildTick,
+    Map<String, int>? autoBuildProductCapacity,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -135,6 +149,10 @@ class GameState {
       autoBuyEnabled: autoBuyEnabled ?? this.autoBuyEnabled,
       lastAutoBuyTick: lastAutoBuyTick ?? this.lastAutoBuyTick,
       autoBuyResourceCapacity: autoBuyResourceCapacity ?? this.autoBuyResourceCapacity,
+      autoBuildMachinesOwned: autoBuildMachinesOwned ?? this.autoBuildMachinesOwned,
+      autoBuildEnabled: autoBuildEnabled ?? this.autoBuildEnabled,
+      lastAutoBuildTick: lastAutoBuildTick ?? this.lastAutoBuildTick,
+      autoBuildProductCapacity: autoBuildProductCapacity ?? this.autoBuildProductCapacity,
     );
   }
 

@@ -80,7 +80,7 @@ class GameData {
       sellPrice: 15.0,
       emoji: '💾',
       requiredMaterials: {'basic_metals': 3, 'plastic': 2},
-      productionTimeSeconds: 8.0,
+      productionTimeSeconds: 5.0,
       baseShippingTimeSeconds: 4.0,
       levelId: ProductLevel.basicParts,
     ),

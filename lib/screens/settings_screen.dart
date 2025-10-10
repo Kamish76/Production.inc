@@ -274,6 +274,14 @@ class SettingsScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      color: Colors.grey[400],
+                      iconSize: 28,
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Back',
+                    ),
+                    const SizedBox(width: 8),
                     Icon(Icons.settings, color: Colors.grey[400], size: 28),
                     const SizedBox(width: 12),
                     const Text(
