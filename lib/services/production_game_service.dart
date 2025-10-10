@@ -1084,22 +1084,78 @@ class ProductionGameService extends ChangeNotifier {
         final updatedMaterials = Map<String, int>.from(_state.materials);
         final updatedProducts = Map<String, int>.from(_state.products);
         
+        // BUG FIX: Properly track consumed materials vs products
+        // materialsCopy is a merged inventory (materials + products merged together)
+        // We need to split it back correctly:
+        // 1. For pure materials (items that exist ONLY in materials, not products)
+        // 2. For products used as materials (items in products that were consumed)
+        
         // Update raw materials from materialsCopy
+        // Only update items that are PURE materials (not products)
         for (final matId in _state.materials.keys) {
-          updatedMaterials[matId] = materialsCopy[matId] ?? 0;
+          // Check if this is a pure material (not a product)
+          final isPureProduct = _state.products.containsKey(matId);
+          
+          if (!isPureProduct) {
+            // This is a pure material, update it from materialsCopy
+            final newAmount = materialsCopy[matId] ?? 0;
+            if (newAmount > 0) {
+              updatedMaterials[matId] = newAmount;
+            } else {
+              updatedMaterials.remove(matId);
+            }
+          } else {
+            // This item exists as BOTH material and product
+            // We need to carefully split the consumption
+            // The material portion was the original material count
+            final originalMaterial = _state.materials[matId] ?? 0;
+            final originalProduct = _state.products[matId] ?? 0;
+            final originalTotal = originalMaterial + originalProduct;
+            final remainingTotal = materialsCopy[matId] ?? 0;
+            final totalConsumed = originalTotal - remainingTotal;
+            
+            // Consume from materials first, then products
+            final materialConsumed = math.min(totalConsumed, originalMaterial);
+            final productConsumed = totalConsumed - materialConsumed;
+            
+            final newMaterialAmount = math.max(0, originalMaterial - materialConsumed);
+            final newProductAmount = math.max(0, originalProduct - productConsumed);
+            
+            if (newMaterialAmount > 0) {
+              updatedMaterials[matId] = newMaterialAmount;
+            } else {
+              updatedMaterials.remove(matId);
+            }
+            
+            if (newProductAmount > 0) {
+              updatedProducts[matId] = newProductAmount;
+            } else {
+              updatedProducts.remove(matId);
+            }
+          }
         }
         
-        // Update products that were consumed as materials
+        // Update products that were consumed as materials (but NOT in materials)
         for (final productId in _state.products.keys) {
+          // Skip if we already handled it above (exists in both materials and products)
+          if (_state.materials.containsKey(productId)) {
+            continue;
+          }
+          
           if (materialsCopy.containsKey(productId)) {
             // Calculate how much was consumed
-            final originalAmount = (_state.materials[productId] ?? 0) + (_state.products[productId] ?? 0);
+            final originalAmount = _state.products[productId] ?? 0;
             final remainingAmount = materialsCopy[productId] ?? 0;
             final consumed = originalAmount - remainingAmount;
             
             if (consumed > 0) {
               // Deduct consumed amount from product inventory
-              updatedProducts[productId] = math.max(0, (_state.products[productId] ?? 0) - consumed);
+              final newAmount = math.max(0, originalAmount - consumed);
+              if (newAmount > 0) {
+                updatedProducts[productId] = newAmount;
+              } else {
+                updatedProducts.remove(productId);
+              }
             }
           }
         }
