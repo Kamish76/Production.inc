@@ -6,8 +6,9 @@
 /// Algorithm:
 /// - totalBuys = machinesEnabled × buysPerMachinePerTick
 /// - Process resources in resourceOrder sequentially
-/// - For each resource: buy min(remaining pooled buys, deficit to reach resourceCap)
+/// - For each resource: buy min(remaining pooled buys, max affordable)
 /// - Skip resources already at or above resourceCap
+/// - Machines buy full batches even if exceeding cap (batch-purchase model)
 /// - Wrap back to top of resourceOrder if pooled buys remain and resources still have deficits
 library;
 
@@ -34,7 +35,7 @@ class AutoBuyTickResult {
 /// - [machinesEnabled]: Number of enabled auto-buy machines (>= 0).
 /// - [buysPerMachinePerTick]: Number of items one machine buys per tick (>= 0).
 /// - [resourceOrder]: Ordered list of resource names to process.
-/// - [resourceCap]: Per-resource soft cap (machines aim to fill to this level).
+/// - [resourceCap]: Per-resource soft cap (machines skip resources at or above this, but can exceed it with full batch purchases).
 ///
 /// Returns: AutoBuyTickResult with items purchased and money spent.
 ///
@@ -43,6 +44,7 @@ class AutoBuyTickResult {
 /// - If inventory doesn't contain a resource in resourceOrder, it's initialized to 0.
 /// - If all resources are at or above resourceCap, remaining pooled buys are unused.
 /// - If money runs out, stops buying immediately (mid-tick).
+/// - Machines buy full batches even if it exceeds resourceCap (e.g., metal at 8, cap 10, batch 5 → buys 5, resulting in 13).
 /// - Wraps back to top of resourceOrder if pooled buys remain after one pass.
 AutoBuyTickResult performAutoBuyTick({
   required Map<String, int> inventory,
@@ -93,18 +95,17 @@ AutoBuyTickResult performAutoBuyTick({
       final currentAmount = inventory[resource] ?? 0;
       inventory[resource] = currentAmount;
 
-      // Calculate deficit (how much more we can buy before hitting cap)
-      final deficit = math.max(0, safeCap - currentAmount);
-      if (deficit == 0) {
+      // Skip if already at or above cap
+      if (currentAmount >= safeCap) {
         continue; // Resource at or above cap, skip
       }
 
       // Calculate how many we can buy, limited by:
       // 1. Remaining pooled buys
-      // 2. Deficit to reach cap
-      // 3. Available money
+      // 2. Available money
+      // Note: We don't limit by deficit - machines buy full batches even if exceeding cap
       final maxAffordable = (moneyRemaining / pricePerUnit).floor();
-      final buyAmount = math.min(pooledBuys, math.min(deficit, maxAffordable));
+      final buyAmount = math.min(pooledBuys, maxAffordable);
 
       if (buyAmount <= 0) {
         continue; // Can't buy any of this resource
