@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game1/services/production_game_service.dart';
 import 'package:game1/services/game_persistence_service.dart';
-import 'package:game1/models/game_data.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
 void main() {
@@ -16,10 +15,10 @@ void main() {
       GamePersistenceService.initializeDatabaseFactory(
         testDatabaseName: testDbName,
       );
-      gameService = ProductionGameService();
+      gameService = ProductionGameService(testMode: true);
     });
 
-    tearDown() async {
+    tearDown(() async {
       await gameService.dispose();
       final dbPath = await sqflite.getDatabasesPath();
       final fullPath = [dbPath, testDbName].join(Platform.pathSeparator);

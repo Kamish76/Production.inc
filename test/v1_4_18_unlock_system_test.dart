@@ -143,6 +143,10 @@ void main() {
       const gameState = GameState(
         materials: {},
         unlockedProducts: {'box'},
+        autoBuildMachinesOwned: {},
+        autoBuildEnabled: {},
+        lastAutoBuildTick: {},
+        autoBuildProductCapacity: {},
       );
 
       expect(ProductUnlockService.isProductUnlocked('box', gameState), isTrue);

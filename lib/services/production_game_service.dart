@@ -1944,6 +1944,22 @@ class ProductionGameService extends ChangeNotifier {
     return 'All at cap'; // All products at cap
   }
 
+  /// Set auto-buy machine count directly (for testing)
+  void setAutoBuyMachineCount(int count) {
+    _state = _state.copyWith(autoBuyMachinesOwned: count);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Increment auto-build machines for a tier (for testing)
+  void incrementAutoBuildMachines(String tier) {
+    final newMachines = Map<String, int>.from(_state.autoBuildMachinesOwned);
+    newMachines[tier] = (newMachines[tier] ?? 0) + 1;
+    _state = _state.copyWith(autoBuildMachinesOwned: newMachines);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
   /// Dev method: Add product directly to inventory (for testing/unlocking)
   void addProductToInventory(String productId, int quantity) {
     if (quantity <= 0) return;
