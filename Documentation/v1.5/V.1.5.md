@@ -308,7 +308,7 @@ Complete redesign of the Control Screen with nested sections for better organiza
 ## 📝 Version Information
 
 ### Current Version
-- **App Version**: 1.4.14+14 (will be updated to 1.5.0 before release)
+- **App Version**: 1.5.0+15 (updated for release)
 - **Minimum SDK**: Flutter 3.7.0+
 - **Target Platform**: Android
 - **Build Mode**: Release (with ProGuard enabled)

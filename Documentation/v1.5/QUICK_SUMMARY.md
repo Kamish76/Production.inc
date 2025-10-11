@@ -77,7 +77,7 @@
 - Performance (no leaks detected)
 
 ### ⚠️ Not Yet Done
-- Version number update (still 1.4.14)
+- Version number update (now 1.5.0+15)
 - Release APK build
 - Play Console upload
 - Beta tester invites
@@ -144,7 +144,7 @@
 
 ### Immediate (Today)
 1. ✅ Create comprehensive documentation ← YOU ARE HERE
-2. [ ] Update version to 1.5.0+15
+2. [x] Update version to 1.5.0+15
 3. [ ] Build release APK
 4. [ ] Test on physical device
 

@@ -8,7 +8,7 @@ We use **Semantic Versioning (SemVer)** with the following format:
 - **Flutter (pubspec.yaml):** `MAJOR.MINOR.PATCH+BUILD`
 - **Android:** `versionName = "MAJOR.MINOR.PATCH"` and `versionCode = BUILD`
 
-### Current Version: `1.4.14+14`
+### Current Version: `1.5.0+15`
 - **Major:** 1 (Breaking changes)
 - **Minor:** 4 (New features, backward compatible)
 - **Patch:** 14 (Bug fixes, backward compatible)
@@ -18,13 +18,13 @@ We use **Semantic Versioning (SemVer)** with the following format:
 
 ### 1. `pubspec.yaml`
 ```yaml
-version: 1.4.14+14
+version: 1.5.0+15
 ```
 
 ### 2. `android/app/build.gradle.kts`
 ```kotlin
-versionCode = 14
-versionName = "1.4.14"
+versionCode = 15
+versionName = "1.5.0"
 ```
 
 ## Version Update Process
@@ -37,14 +37,14 @@ versionName = "1.4.14"
 ### Step 2: Update Version Numbers
 1. **Update `pubspec.yaml`:**
    ```bash
-   # Example: 1.4.14+14 → 1.4.15+15
-   version: 1.4.15+15
+   # Example: 1.4.14+14 → 1.5.0+15
+   version: 1.5.0+15
    ```
 
 2. **Update `android/app/build.gradle.kts`:**
    ```kotlin
    versionCode = 15        // Always increment
-   versionName = "1.4.15"  // Match semantic version
+   versionName = "1.5.0"  // Match semantic version
    ```
 
 ### Step 3: Verification Commands
@@ -64,21 +64,21 @@ flutter build apk --release
 # Create version update branch
 git checkout develop
 git pull origin develop
-git checkout -b version/1.4.15
+git checkout -b version/1.5.0
 
 # Make version changes
 # ... edit files ...
 
 # Commit changes
 git add pubspec.yaml android/app/build.gradle.kts
-git commit -m "chore: bump version to 1.4.15+15
+git commit -m "chore: bump version to 1.5.0+15
 
-- Update pubspec.yaml version to 1.4.15+15
+- Update pubspec.yaml version to 1.5.0+15
 - Update Android versionCode to 15
-- Update Android versionName to 1.4.15"
+- Update Android versionName to 1.5.0"
 
 # Push and create PR
-git push origin version/1.4.15
+git push origin version/1.5.0
 # Create PR to develop branch
 ```
 

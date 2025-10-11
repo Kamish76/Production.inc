@@ -2,7 +2,7 @@ name: game1
 description: "An Android game built with Flutter."
 publish_to: "none"
 
-version: 1.4.14+14
+version: 1.5.0+15
 
 environment:
   sdk: "^3.7.0"

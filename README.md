@@ -8,7 +8,7 @@ A sophisticated Flutter-based mobile business simulation game where you build an
 
 Start by gathering raw materials and discovering what you can build. Progress through increasingly complex production tiers - from basic parts to intermediate components, complex assemblies, and premium retail products. Master supply chain management and unlock advanced manufacturing capabilities!
 
-## 🌟 Current Features (v1.4.19)
+## 🌟 Current Features (v1.5.0)
 
 ### 📦 Production Tiers
 - **Materials** - 6 raw materials (cardboard, plastic, metals, glass, etc.)

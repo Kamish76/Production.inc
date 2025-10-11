@@ -2,6 +2,21 @@
 
 All notable changes to Production.Inc will be documented in this file.
 
+## [1.5.0] - 2025-10-11
+
+### 🎮 Minor Release: Automation Systems & Bug Fixes
+- **Auto-Buy Machines**: Automatically purchase raw materials to maintain production
+- **Auto-Build Machines**: Automated production across multiple tiers with queue management
+- **Control Screen**: New central UI to manage automation settings and machines
+- **Bug Fixes**:
+  - Fixed material leak in auto-build system
+  - Fixed unlock display issues
+  - Fixed automation not triggering unlocks
+  - Fixed duplicate ID generation
+  - Performance improvements and stability fixes
+
+---
+
 ## [1.4.19] - 2025-07-11
 
 ### 🚀 MAJOR RELEASE: Final Optimization & Code Cleanup

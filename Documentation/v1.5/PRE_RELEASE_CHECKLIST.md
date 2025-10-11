@@ -5,11 +5,10 @@
 
 ## ✅ CODE & BUILD
 
-### Version Updates
-- [ ] Update `pubspec.yaml` version: `1.4.14+14` → `1.5.0+15`
-- [ ] Update `README.md` current version reference
-- [ ] Update `CHANGELOG.md` with v1.5.0 entry
-- [ ] Verify version number in app title/splash (if applicable)
+-### Version Updates
+- [x] Update `pubspec.yaml` version: `1.4.14+14` → `1.5.0+15`
+- [x] Update `README.md` current version reference
+- [x] Update `CHANGELOG.md` with v1.5.0 entry
 
 ### Code Quality
 - [x] All critical bugs fixed
@@ -20,11 +19,11 @@
 - [ ] Remove or hide developer controls (optional)
 
 ### Build Configuration
-- [ ] Verify `android/app/build.gradle.kts` version code/name
-- [ ] Confirm ProGuard/R8 enabled for release
-- [ ] Check `key.properties` exists (for signing)
-- [ ] Verify minSdkVersion and targetSdkVersion
-- [ ] Check app permissions in AndroidManifest.xml
+- [x] Verify `android/app/build.gradle.kts` version code/name (versionName = `1.5.0`, versionCode = `15`)
+- [x] Confirm ProGuard/R8 enabled for release (release: `isMinifyEnabled = true`, `proguard-rules.pro` present)
+- [ ] Check `key.properties` exists (for signing) (not present in repository; ensure on build machine or set env vars KEY_ALIAS/KEY_PASSWORD/STORE_FILE/STORE_PASSWORD)
+- [x] Verify minSdkVersion and targetSdkVersion (minSdk = `24`, targetSdk = `36`)
+- [x] Check app permissions in AndroidManifest.xml (INTERNET, VIBRATE, WAKE_LOCK present)
 
 ### Testing
 - [x] Auto-Buy machines tested
