@@ -1436,8 +1436,9 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   /// Calculate adjusted production time with auto-build machine speed bonus
-  /// Each machine provides a 1.2x speed multiplier (stacks multiplicatively)
-  /// Formula: adjustedTime = baseTime / (1.2 ^ machineCount)
+  /// Each machine provides a 1.1x speed multiplier (stacks multiplicatively)
+  /// Formula: adjustedTime = baseTime / (1.1 ^ machineCount)
+  /// Minimum production time is enforced at 1 second to match tick mechanism
   double getAdjustedProductionTime(String productId, double baseTime) {
     // Find which tier this product belongs to
     final product = GameData.products.firstWhere(
@@ -1479,7 +1480,7 @@ class ProductionGameService extends ChangeNotifier {
       return baseTime;
     }
 
-    // Calculate speed multiplier: 1.2 ^ machineCount
+    // Calculate speed multiplier: 1.1 ^ machineCount
     final speedMultiplier = math.pow(
       AutoBuildConstants.buildSpeedMultiplierPerMachine,
       machineCount,
@@ -1488,7 +1489,8 @@ class ProductionGameService extends ChangeNotifier {
     // Apply speed bonus: time / multiplier
     final adjustedTime = baseTime / speedMultiplier;
 
-    return adjustedTime;
+    // Enforce minimum of 1 second (tick mechanism operates by seconds, not milliseconds)
+    return math.max(1.0, adjustedTime);
   }
 
   /// Get filtered products by tier (only unlocked)
