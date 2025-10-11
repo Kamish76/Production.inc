@@ -229,6 +229,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     final enabled = gameService.state.autoBuildEnabled[tier] ?? false;
     final capacity = gameService.state.autoBuildProductCapacity[tier] ?? 10;
     final nextProduct = gameService.getNextProductToBuild(tier);
+    final secondsRemaining = gameService.getSecondsUntilNextAutoBuildTick(tier);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -318,9 +319,24 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                 ),
               ),
               
+              // Next tick countdown
+              Expanded(
+                child: _buildTierStatusItem(
+                  icon: Icons.timer_outlined,
+                  label: 'Next Tick',
+                  value: enabled
+                      ? (secondsRemaining != null ? '${secondsRemaining}s' : '--')
+                      : 'Paused',
+                  valueColor: enabled
+                      ? (secondsRemaining != null && secondsRemaining <= 2
+                          ? Colors.orange
+                          : Colors.blue[300]!)
+                      : Colors.grey,
+                ),
+              ),
+              
               // Current/next product
               Expanded(
-                flex: 2,
                 child: _buildTierStatusItem(
                   icon: Icons.build_circle_outlined,
                   label: 'Building',

@@ -530,8 +530,9 @@ class ProductionGameService extends ChangeNotifier {
           product.productionTimeSeconds,
         );
         
+        // Use microseconds to ensure unique IDs even when multiple items are produced in same millisecond
         final task = ProductionTask(
-          id: '${DateTime.now().millisecondsSinceEpoch}_$i',
+          id: '${DateTime.now().microsecondsSinceEpoch}_manual_$i',
           productId: productId,
           startTime: startTime,
           durationSeconds: adjustedTime, // Adjusted for machine speed bonus
@@ -650,9 +651,9 @@ class ProductionGameService extends ChangeNotifier {
         newProducts.remove(productId);
       }
 
-      // Create shipping order
+      // Create shipping order (use microseconds for unique ID)
       final shippingOrder = ShippingOrder(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
         items: [ShippingItem(productId: productId, quantity: quantity)],
         startTime: DateTime.now(),
         totalShippingTime: totalShippingTime,
@@ -1064,8 +1065,9 @@ class ProductionGameService extends ChangeNotifier {
                 product.productionTimeSeconds,
               );
               
+              // Use microseconds to ensure unique IDs even when multiple items are built in same millisecond
               final task = ProductionTask(
-                id: '${DateTime.now().millisecondsSinceEpoch}_autobuild_$i',
+                id: '${DateTime.now().microsecondsSinceEpoch}_autobuild_${tier}_$i',
                 productId: productId,
                 startTime: startTime,
                 durationSeconds: adjustedTime, // Adjusted for machine speed bonus
@@ -1434,8 +1436,9 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   /// Calculate adjusted production time with auto-build machine speed bonus
-  /// Each machine provides a 1.2x speed multiplier (stacks multiplicatively)
-  /// Formula: adjustedTime = baseTime / (1.2 ^ machineCount)
+  /// Each machine provides a 1.1x speed multiplier (stacks multiplicatively)
+  /// Formula: adjustedTime = baseTime / (1.1 ^ machineCount)
+  /// Minimum production time is enforced at 1 second to match tick mechanism
   double getAdjustedProductionTime(String productId, double baseTime) {
     // Find which tier this product belongs to
     final product = GameData.products.firstWhere(
@@ -1477,7 +1480,7 @@ class ProductionGameService extends ChangeNotifier {
       return baseTime;
     }
 
-    // Calculate speed multiplier: 1.2 ^ machineCount
+    // Calculate speed multiplier: 1.1 ^ machineCount
     final speedMultiplier = math.pow(
       AutoBuildConstants.buildSpeedMultiplierPerMachine,
       machineCount,
@@ -1486,7 +1489,8 @@ class ProductionGameService extends ChangeNotifier {
     // Apply speed bonus: time / multiplier
     final adjustedTime = baseTime / speedMultiplier;
 
-    return adjustedTime;
+    // Enforce minimum of 1 second (tick mechanism operates by seconds, not milliseconds)
+    return math.max(1.0, adjustedTime);
   }
 
   /// Get filtered products by tier (only unlocked)
@@ -1700,7 +1704,7 @@ class ProductionGameService extends ChangeNotifier {
 
   /// Buy one auto-buy machine for $1000
   /// Returns true if purchase was successful, false if not enough money
-  bool buyAutoBuyMachine() {
+  Future<bool> buyAutoBuyMachine() async {
     if (_state.money < AutoBuyConstants.machineCost) {
       return false; // Not enough money
     }
@@ -1714,7 +1718,10 @@ class ProductionGameService extends ChangeNotifier {
       autoBuyMachinesOwned: newCount,
     );
     notifyListeners();
-    _saveGameStateOptimized();
+    
+    // Mark automation data as dirty for incremental save
+    _persistenceService.markDirty('automation');
+    await _saveGameStateOptimized(); // Await to ensure save completes
 
     if (kDebugMode) {
       GameLogger.info('Auto-buy machine purchased! Count: $newCount, Money remaining: \$${newMoney.toStringAsFixed(2)}');
@@ -1816,7 +1823,7 @@ class ProductionGameService extends ChangeNotifier {
 
   /// Buy one auto-build machine for a specific tier for $1000
   /// Returns true if purchase was successful, false if not enough money
-  bool buyAutoBuildMachine(String tier) {
+  Future<bool> buyAutoBuildMachine(String tier) async {
     if (_state.money < AutoBuildConstants.machineCost) {
       return false; // Not enough money
     }
@@ -1831,7 +1838,10 @@ class ProductionGameService extends ChangeNotifier {
       autoBuildMachinesOwned: newMachines,
     );
     notifyListeners();
-    _saveGameStateOptimized();
+    
+    // Mark automation data as dirty for incremental save
+    _persistenceService.markDirty('automation');
+    await _saveGameStateOptimized(); // Await to ensure save completes
 
     if (kDebugMode) {
       GameLogger.info('Auto-build machine for $tier purchased! Count: ${newMachines[tier]}, Money remaining: \$${newMoney.toStringAsFixed(2)}');
@@ -2084,6 +2094,60 @@ class ProductionGameService extends ChangeNotifier {
     } catch (e) {
       if (kDebugMode) {
         GameLogger.error('Dev: Database repair failed: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Dev method: Verify and fix database schema (for "no such column" errors)
+  Future<void> verifyAndFixDatabaseSchema() async {
+    try {
+      if (kDebugMode) {
+        GameLogger.info('Dev: Verifying and fixing database schema...');
+      }
+      
+      await _persistenceService.verifyAndFixSchema();
+      
+      // Reload the game state to ensure everything is in sync
+      _state = await _persistenceService.loadGameState();
+      
+      notifyListeners();
+      
+      if (kDebugMode) {
+        GameLogger.info('Dev: Schema verification completed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        GameLogger.error('Dev: Schema verification failed: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Dev method: Reset database completely (WARNING: Deletes all data!)
+  Future<void> resetDatabase() async {
+    try {
+      if (kDebugMode) {
+        GameLogger.warning('Dev: RESETTING DATABASE - ALL DATA WILL BE LOST!');
+      }
+      
+      await _persistenceService.resetDatabase();
+      
+      // Reload the game state (will be fresh/default state)
+      _state = await _persistenceService.loadGameState();
+      
+      // Reinitialize unlock state
+      _initializeUnlockState();
+      _checkAndUpdateUnlocks();
+      
+      notifyListeners();
+      
+      if (kDebugMode) {
+        GameLogger.warning('Dev: Database reset complete - game state restored to default');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        GameLogger.error('Dev: Database reset failed: $e');
       }
       rethrow;
     }

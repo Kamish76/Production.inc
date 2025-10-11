@@ -242,9 +242,9 @@ class ControlScreen extends StatelessWidget {
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: gameService.state.money >= 1000
-                    ? () {
-                        final success = gameService.buyAutoBuyMachine();
-                        if (!success) {
+                    ? () async {
+                        final success = await gameService.buyAutoBuyMachine();
+                        if (!success && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Not enough money to buy machine!'),
@@ -483,9 +483,9 @@ class ControlScreen extends StatelessWidget {
               // Buy Machine button
               ElevatedButton.icon(
                 onPressed: gameService.state.money >= 1000
-                    ? () {
-                        final success = gameService.buyAutoBuildMachine(tier);
-                        if (!success) {
+                    ? () async {
+                        final success = await gameService.buyAutoBuildMachine(tier);
+                        if (!success && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Not enough money to buy machine!'),
@@ -564,6 +564,28 @@ class ControlScreen extends StatelessWidget {
               ),
             ],
           ),
+          
+          // Status info with tick tracker
+          if (machineCount > 0) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: enabled
+                    ? Colors.blue.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Building ${machineCount * 5} products every 5s${enabled ? " (active)" : " (paused)"}',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -671,10 +693,21 @@ class ControlScreen extends StatelessWidget {
           // Database Repair Tool
           _buildDevControl(
             icon: Icons.build_circle,
-            title: 'Repair Database',
-            subtitle: 'Fix database structure issues (recreates tables)',
-            color: Colors.amber,
-            onPressed: () => _repairDatabase(context, gameService),
+            title: 'Verify Database Schema',
+            subtitle: 'Check and fix missing columns/tables',
+            color: Colors.cyan,
+            onPressed: () => _verifyDatabaseSchema(context, gameService),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Database Reset Tool (Dangerous)
+          _buildDevControl(
+            icon: Icons.warning,
+            title: 'Reset Database',
+            subtitle: 'WARNING: Deletes all data and recreates DB',
+            color: Colors.red,
+            onPressed: () => _resetDatabase(context, gameService),
           ),
           
           const SizedBox(height: 16),
@@ -871,8 +904,46 @@ class ControlScreen extends StatelessWidget {
     );
   }
 
-  /// Dev tool: Repair database structure
-  void _repairDatabase(
+  /// Dev tool: Verify and fix database schema
+  void _verifyDatabaseSchema(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🔍 Verifying database schema...'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
+      await gameService.verifyAndFixDatabaseSchema();
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Database schema verified and fixed!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Schema fix failed: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Dev tool: Reset database (DANGEROUS - deletes all data)
+  void _resetDatabase(
     BuildContext context,
     ProductionGameService gameService,
   ) async {
@@ -880,36 +951,58 @@ class ControlScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Repair Database?'),
+        backgroundColor: Colors.red.shade900,
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.yellow),
+            SizedBox(width: 8),
+            Text('DANGER: Reset Database?'),
+          ],
+        ),
         content: const Text(
-          'This will recreate missing database tables.\n\n'
-          'Your current game data will be preserved.\n\n'
-          'The app will restart after repair.',
+          '⚠️ THIS WILL DELETE ALL YOUR DATA!\n\n'
+          'All progress, machines, money, and items will be permanently lost.\n\n'
+          'This creates a fresh database from scratch.\n\n'
+          'Only use this if the database is corrupted beyond repair.',
+          style: TextStyle(color: Colors.white),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white)),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Repair'),
+            child: const Text('DELETE EVERYTHING'),
           ),
         ],
       ),
     );
     
     if (confirmed == true) {
-      await gameService.repairDatabase();
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🔧 Database repaired! Restart the app.'),
-            backgroundColor: Colors.amber,
-            duration: Duration(seconds: 3),
-          ),
-        );
+      try {
+        await gameService.resetDatabase();
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('� Database reset complete! Restart the app.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Reset failed: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
       }
     }
   }
