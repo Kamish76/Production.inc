@@ -17,7 +17,6 @@ class MessageDisplay extends StatelessWidget {
   final Color? titleColor;
   final Color? subtitleColor;
   final double? iconSize;
-  final bool expanded;
   final String? extraText;
 
   const MessageDisplay.empty({
@@ -30,13 +29,11 @@ class MessageDisplay extends StatelessWidget {
     this.subtitleColor,
     this.iconSize,
   }) : mode = MessageDisplayMode.empty,
-       expanded = true,
        extraText = null;
 
   const MessageDisplay.welcome({
     super.key,
   }) : mode = MessageDisplayMode.welcome,
-       expanded = false,
        icon = Icons.lightbulb_outline,
        title = 'Welcome to Production.Inc!',
        subtitle = 'Visit the Buy Materials screen to purchase materials and discover what you can build!',
@@ -57,7 +54,7 @@ class MessageDisplay extends StatelessWidget {
   }
 
   Widget _buildEmptyMessage() {
-    Widget content = Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -87,8 +84,6 @@ class MessageDisplay extends StatelessWidget {
         ],
       ),
     );
-
-    return expanded ? Expanded(child: content) : content;
   }
 
   Widget _buildWelcomeCard() {

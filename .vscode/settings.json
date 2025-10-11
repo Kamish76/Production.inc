@@ -1,7 +1,10 @@
 {
     "java.configuration.updateBuildConfiguration": "interactive",
     "cSpell.words": [
+        "cupertino",
+        "LOCALAPPDATA",
         "prefs",
+        "sqflite",
         "stackable"
     ]
 }

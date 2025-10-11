@@ -75,7 +75,7 @@ AutoBuildTickResult performAutoBuildTick({
 
   // If no pooled capacity or no products to build, return early
   if (pooledBuildsRemaining <= 0 || productOrder.isEmpty) {
-    return AutoBuildTickResult(
+    return const AutoBuildTickResult(
       itemsBuilt: 0,
       materialsConsumed: {},
     );

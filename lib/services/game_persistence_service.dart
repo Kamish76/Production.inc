@@ -273,6 +273,83 @@ class GamePersistenceService {
 
   /// Migration to version 6 (v1.5.0 Phase 2)
   Future<void> _migrateToVersion6(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 6 (auto-buy system)');
+    }
+
+    // Check if columns already exist by querying table info
+    final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+    final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+    
+    if (kDebugMode) {
+      print('Existing game_state columns: ${existingColumns.join(", ")}');
+    }
+
+    // Add auto-buy fields to game_state table if they don't exist
+    if (!existingColumns.contains('auto_buy_machines_owned')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_buy_machines_owned INTEGER DEFAULT 0
+        ''');
+        if (kDebugMode) {
+          print('Added column: auto_buy_machines_owned');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (auto_buy_machines_owned): $e');
+        }
+      }
+    }
+
+    if (!existingColumns.contains('auto_buy_enabled')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_buy_enabled INTEGER DEFAULT 0
+        ''');
+        if (kDebugMode) {
+          print('Added column: auto_buy_enabled');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (auto_buy_enabled): $e');
+        }
+      }
+    }
+
+    if (!existingColumns.contains('auto_buy_last_tick')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_buy_last_tick INTEGER
+        ''');
+        if (kDebugMode) {
+          print('Added column: auto_buy_last_tick');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (auto_buy_last_tick): $e');
+        }
+      }
+    }
+
+    if (!existingColumns.contains('auto_buy_resource_capacity')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_buy_resource_capacity INTEGER DEFAULT 10
+        ''');
+        if (kDebugMode) {
+          print('Added column: auto_buy_resource_capacity');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (auto_buy_resource_capacity): $e');
+        }
+      }
+    }
+
     try {
       // Create auto_build_machines table (tier-based machine ownership)
       await db.execute('''
@@ -435,6 +512,35 @@ class GamePersistenceService {
           throw Exception('Missing required table: $table');
         }
       }
+
+      // Verify game_state has required columns for auto-buy (v1.5.0)
+      final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+      final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+      
+      final requiredAutoColumns = {
+        'auto_buy_machines_owned',
+        'auto_buy_enabled',
+        'auto_buy_last_tick',
+        'auto_buy_resource_capacity',
+      };
+      
+      bool missingColumns = false;
+      for (final column in requiredAutoColumns) {
+        if (!existingColumns.contains(column)) {
+          missingColumns = true;
+          if (kDebugMode) {
+            print('Database verification: Missing column $column, will attempt fix');
+          }
+        }
+      }
+      
+      // If columns are missing, run migration 6 to add them
+      if (missingColumns) {
+        if (kDebugMode) {
+          print('Applying schema fix for auto-buy columns...');
+        }
+        await _migrateToVersion6(db);
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Database verification failed: $e');
@@ -452,7 +558,11 @@ class GamePersistenceService {
         money REAL NOT NULL,
         last_saved INTEGER NOT NULL,
         data_checksum TEXT DEFAULT NULL,
-        last_backup INTEGER DEFAULT 0
+        last_backup INTEGER DEFAULT 0,
+        auto_buy_machines_owned INTEGER DEFAULT 0,
+        auto_buy_enabled INTEGER DEFAULT 0,
+        auto_buy_last_tick INTEGER,
+        auto_buy_resource_capacity INTEGER DEFAULT 10
       )
     ''');
 
@@ -555,6 +665,38 @@ class GamePersistenceService {
       )
     ''');
 
+    // Auto-build machines table (V1.5.0 Phase 2)
+    await db.execute('''
+      CREATE TABLE auto_build_machines (
+        tier TEXT PRIMARY KEY,
+        machine_count INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    // Auto-build enabled table (V1.5.0 Phase 2)
+    await db.execute('''
+      CREATE TABLE auto_build_enabled (
+        tier TEXT PRIMARY KEY,
+        enabled INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    // Auto-build last tick table (V1.5.0 Phase 2)
+    await db.execute('''
+      CREATE TABLE auto_build_last_tick (
+        tier TEXT PRIMARY KEY,
+        last_tick INTEGER
+      )
+    ''');
+
+    // Auto-build capacity table (V1.5.0 Phase 2)
+    await db.execute('''
+      CREATE TABLE auto_build_capacity (
+        tier TEXT PRIMARY KEY,
+        capacity INTEGER NOT NULL DEFAULT 10
+      )
+    ''');
+
     // Insert initial game state record
     await db.insert('game_state', {
       'id': 1,
@@ -579,13 +721,17 @@ class GamePersistenceService {
     });
   }
 
-  /// Save core game state (money, last saved time)
+  /// Save core game state (money, last saved time, auto-buy state)
   Future<void> _saveCoreGameState(DatabaseExecutor txn, GameState state) async {
     await txn.update(
       'game_state',
       {
         'money': state.money,
         'last_saved': DateTime.now().millisecondsSinceEpoch,
+        'auto_buy_machines_owned': state.autoBuyMachinesOwned,
+        'auto_buy_enabled': state.autoBuyEnabled ? 1 : 0,
+        'auto_buy_last_tick': state.lastAutoBuyTick?.millisecondsSinceEpoch,
+        'auto_buy_resource_capacity': state.autoBuyResourceCapacity,
       },
       where: 'id = ?',
       whereArgs: [1],
@@ -814,6 +960,16 @@ class GamePersistenceService {
     }
 
     final money = gameStateResult.first['money'] as double;
+    
+    // Load auto-buy state from game_state table
+    final row = gameStateResult.first;
+    final autoBuyMachinesOwned = (row['auto_buy_machines_owned'] as int?) ?? 0;
+    final autoBuyEnabled = ((row['auto_buy_enabled'] as int?) ?? 0) == 1;
+    final autoBuyLastTickMs = row['auto_buy_last_tick'] as int?;
+    final autoBuyLastTick = autoBuyLastTickMs != null 
+        ? DateTime.fromMillisecondsSinceEpoch(autoBuyLastTickMs) 
+        : null;
+    final autoBuyResourceCapacity = (row['auto_buy_resource_capacity'] as int?) ?? 10;
 
     // Load all game components in parallel where possible
     final materials = await _loadMaterials(db);
@@ -836,6 +992,10 @@ class GamePersistenceService {
       buyQuantityPreferences: quantityPreferences.buy,
       sellQuantityPreferences: quantityPreferences.sell,
       unlockedProducts: unlockedProducts,
+      autoBuyMachinesOwned: autoBuyMachinesOwned,
+      autoBuyEnabled: autoBuyEnabled,
+      lastAutoBuyTick: autoBuyLastTick,
+      autoBuyResourceCapacity: autoBuyResourceCapacity,
       autoBuildMachinesOwned: autoBuildData.machines,
       autoBuildEnabled: autoBuildData.enabled,
       lastAutoBuildTick: autoBuildData.lastTick,
@@ -1198,6 +1358,11 @@ class GamePersistenceService {
           state.sellQuantityPreferences,
         );
       }
+
+      // Save automation data (auto-buy and auto-build machines) - v1.5.0
+      if (_dirtyTables.contains('automation')) {
+        await _saveAutomationDataOptimized(txn, state);
+      }
     });
 
     if (kDebugMode) {
@@ -1235,6 +1400,7 @@ class GamePersistenceService {
         state.buyQuantityPreferences,
         state.sellQuantityPreferences,
       );
+      await _saveAutomationDataOptimized(txn, state); // v1.5.0 - Save automation data
     });
   }
 
@@ -1371,6 +1537,184 @@ class GamePersistenceService {
         'product_id': entry.key,
         'quantity': entry.value,
       });
+    }
+  }
+
+  /// Optimized automation data save (v1.5.0) - Auto-buy and Auto-build
+  Future<void> _saveAutomationDataOptimized(
+    Transaction txn,
+    GameState state,
+  ) async {
+    // Update auto-buy data in core game state
+    await txn.update(
+      'game_state',
+      {
+        'auto_buy_machines_owned': state.autoBuyMachinesOwned,
+        'auto_buy_enabled': state.autoBuyEnabled ? 1 : 0,
+        'auto_buy_last_tick': state.lastAutoBuyTick?.millisecondsSinceEpoch,
+        'auto_buy_resource_capacity': state.autoBuyResourceCapacity,
+      },
+      where: 'id = ?',
+      whereArgs: [1],
+    );
+
+    // Save auto-build machine counts
+    await txn.delete('auto_build_machines');
+    for (final entry in state.autoBuildMachinesOwned.entries) {
+      if (entry.value > 0) {
+        await txn.insert('auto_build_machines', {
+          'tier': entry.key,
+          'machine_count': entry.value,
+        });
+      }
+    }
+
+    // Save auto-build enabled status
+    await txn.delete('auto_build_enabled');
+    for (final entry in state.autoBuildEnabled.entries) {
+      await txn.insert('auto_build_enabled', {
+        'tier': entry.key,
+        'enabled': entry.value ? 1 : 0,
+      });
+    }
+
+    // Save auto-build last tick times
+    await txn.delete('auto_build_last_tick');
+    for (final entry in state.lastAutoBuildTick.entries) {
+      if (entry.value != null) {
+        await txn.insert('auto_build_last_tick', {
+          'tier': entry.key,
+          'last_tick': entry.value!.millisecondsSinceEpoch,
+        });
+      }
+    }
+
+    // Save auto-build capacity settings
+    await txn.delete('auto_build_capacity');
+    for (final entry in state.autoBuildProductCapacity.entries) {
+      await txn.insert('auto_build_capacity', {
+        'tier': entry.key,
+        'capacity': entry.value,
+      });
+    }
+  }
+
+  /// Manually verify and fix database schema (for debugging)
+  /// Call this if you encounter "no such column" errors
+  Future<void> verifyAndFixSchema() async {
+    try {
+      final db = await database;
+      
+      if (kDebugMode) {
+        print('=== Starting manual schema verification ===');
+      }
+      
+      // Check game_state table columns
+      final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+      final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+      
+      if (kDebugMode) {
+        print('Existing game_state columns: ${existingColumns.join(", ")}');
+      }
+      
+      // Required columns for auto-buy
+      final requiredColumns = {
+        'auto_buy_machines_owned',
+        'auto_buy_enabled',
+        'auto_buy_last_tick',
+        'auto_buy_resource_capacity',
+      };
+      
+      bool needsFix = false;
+      for (final column in requiredColumns) {
+        if (!existingColumns.contains(column)) {
+          needsFix = true;
+          if (kDebugMode) {
+            print('Missing column: $column');
+          }
+        }
+      }
+      
+      if (needsFix) {
+        if (kDebugMode) {
+          print('Schema incomplete, running migration to version 6...');
+        }
+        await _migrateToVersion6(db);
+        if (kDebugMode) {
+          print('Schema fix completed');
+        }
+      } else {
+        if (kDebugMode) {
+          print('Schema is complete, no fixes needed');
+        }
+      }
+      
+      // Verify auto-build tables exist
+      final tables = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table'",
+      );
+      final existingTables = tables.map((t) => t['name'] as String).toSet();
+      
+      final requiredTables = [
+        'auto_build_machines',
+        'auto_build_enabled',
+        'auto_build_last_tick',
+        'auto_build_capacity',
+      ];
+      
+      for (final table in requiredTables) {
+        if (!existingTables.contains(table)) {
+          if (kDebugMode) {
+            print('Missing table: $table, will be created by migration');
+          }
+        }
+      }
+      
+      if (kDebugMode) {
+        print('=== Schema verification complete ===');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Schema verification error: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Force a complete database reset (WARNING: Deletes all data!)
+  /// Use only for development or when database is corrupted beyond repair
+  Future<void> resetDatabase() async {
+    try {
+      if (kDebugMode) {
+        print('=== RESETTING DATABASE (ALL DATA WILL BE LOST) ===');
+      }
+      
+      // Close current database
+      if (_database != null) {
+        await _database!.close();
+        _database = null;
+      }
+      
+      // Delete database file
+      final dbPath = await getDatabasesPath();
+      final path = '$dbPath/$_databaseName';
+      await deleteDatabase(path);
+      
+      if (kDebugMode) {
+        print('Database deleted, will be recreated on next access');
+      }
+      
+      // Reinitialize
+      _database = await _initDatabase();
+      
+      if (kDebugMode) {
+        print('Database reset complete');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Database reset error: $e');
+      }
+      rethrow;
     }
   }
 }

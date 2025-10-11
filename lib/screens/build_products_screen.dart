@@ -229,6 +229,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     final enabled = gameService.state.autoBuildEnabled[tier] ?? false;
     final capacity = gameService.state.autoBuildProductCapacity[tier] ?? 10;
     final nextProduct = gameService.getNextProductToBuild(tier);
+    final secondsRemaining = gameService.getSecondsUntilNextAutoBuildTick(tier);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -237,7 +238,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
         color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: enabled ? Colors.blue.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
+          color: enabled ? Colors.blue.withValues(alpha: 77) : Colors.grey.withValues(alpha: 77),
           width: 1,
         ),
       ),
@@ -268,8 +269,8 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: enabled
-                      ? Colors.blue.withOpacity(0.2)
-                      : Colors.red.withOpacity(0.2),
+                      ? Colors.blue.withValues(alpha: 51)
+                      : Colors.red.withValues(alpha: 51),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: enabled ? Colors.blue : Colors.red,
@@ -318,9 +319,24 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                 ),
               ),
               
+              // Next tick countdown
+              Expanded(
+                child: _buildTierStatusItem(
+                  icon: Icons.timer_outlined,
+                  label: 'Next Tick',
+                  value: enabled
+                      ? (secondsRemaining != null ? '${secondsRemaining}s' : '--')
+                      : 'Paused',
+                  valueColor: enabled
+                      ? (secondsRemaining != null && secondsRemaining <= 2
+                          ? Colors.orange
+                          : Colors.blue[300]!)
+                      : Colors.grey,
+                ),
+              ),
+              
               // Current/next product
               Expanded(
-                flex: 2,
                 child: _buildTierStatusItem(
                   icon: Icons.build_circle_outlined,
                   label: 'Building',
@@ -373,10 +389,10 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.cyan.withOpacity(0.15),
+                  color: Colors.cyan.withValues(alpha: 38),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: Colors.cyan.withOpacity(0.3),
+                    color: Colors.cyan.withValues(alpha: 77),
                     width: 1.5,
                   ),
                 ),
@@ -409,7 +425,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           Text(
             'Building ${machineCount * 2} products every 5s${enabled ? " (active)" : " (paused)"}',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 128),
               fontSize: 11,
               fontStyle: FontStyle.italic,
             ),

@@ -73,6 +73,10 @@ void main() {
             totalRevenue: 10.0,
           ),
         ],
+        autoBuildMachinesOwned: {},
+        autoBuildEnabled: {},
+        lastAutoBuildTick: {},
+        autoBuildProductCapacity: {},
       );
 
       // This test verifies the structure is correct

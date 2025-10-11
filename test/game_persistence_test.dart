@@ -65,6 +65,10 @@ void main() {
               totalRevenue: 5.0,
             ),
           ],
+          autoBuildMachinesOwned: {},
+          autoBuildEnabled: {},
+          lastAutoBuildTick: {},
+          autoBuildProductCapacity: {},
         );
 
         // Save the state
@@ -145,6 +149,10 @@ void main() {
               isQueued: false,
             ),
           ],
+          autoBuildMachinesOwned: {},
+          autoBuildEnabled: {},
+          lastAutoBuildTick: {},
+          autoBuildProductCapacity: {},
         );
 
         await persistenceService.saveGameState(testState);
@@ -193,7 +201,13 @@ void main() {
 
       try {
         // Save some data
-        await persistenceService.saveGameState(const GameState(money: 200.0));
+        await persistenceService.saveGameState(const GameState(
+          money: 200.0,
+          autoBuildMachinesOwned: {},
+          autoBuildEnabled: {},
+          lastAutoBuildTick: {},
+          autoBuildProductCapacity: {},
+        ));
 
         // Now should have save data
         expect(await persistenceService.hasSaveData(), isTrue);
