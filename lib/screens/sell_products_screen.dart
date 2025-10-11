@@ -121,10 +121,12 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                     gameService.state.products.values.every(
                       (count) => count == 0,
                     ))
-                  const MessageDisplay.empty(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'No Products to Sell',
-                    subtitle: 'Build some products first to sell them here!',
+                  const Expanded(
+                    child: MessageDisplay.empty(
+                      icon: Icons.inventory_2_outlined,
+                      title: 'No Products to Sell',
+                      subtitle: 'Build some products first to sell them here!',
+                    ),
                   )
                 else
                   // Products list - organized by tiers with enhanced grid layout

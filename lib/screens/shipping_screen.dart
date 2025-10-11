@@ -81,10 +81,12 @@ class ShippingScreen extends StatelessWidget {
     final activeOrders = gameService.state.activeShippingOrders;
 
     if (activeOrders.isEmpty) {
-      return const MessageDisplay.empty(
-        icon: Icons.inventory_2_outlined,
-        title: 'No Active Shipping Orders',
-        subtitle: 'Sell products to create shipping orders!',
+      return const Center(
+        child: MessageDisplay.empty(
+          icon: Icons.inventory_2_outlined,
+          title: 'No Active Shipping Orders',
+          subtitle: 'Sell products to create shipping orders!',
+        ),
       );
     }
 
@@ -104,10 +106,12 @@ class ShippingScreen extends StatelessWidget {
     );
 
     if (history.isEmpty) {
-      return const MessageDisplay.empty(
-        icon: Icons.history,
-        title: 'No Shipping History',
-        subtitle: 'Complete some orders to see history here!',
+      return const Center(
+        child: MessageDisplay.empty(
+          icon: Icons.history,
+          title: 'No Shipping History',
+          subtitle: 'Complete some orders to see history here!',
+        ),
       );
     }
 
