@@ -1,12 +1,36 @@
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:logger/logger.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import '../models/game_state.dart';
 import '../models/game_data.dart';
 import '../models/game_models.dart';
 import '../constants/game_constants.dart';
 import 'game_persistence_service.dart';
 import 'product_unlock_service.dart';
+import 'machine_buyer.dart' as machine_buyer;
+import 'machine_builder.dart' as machine_builder;
+
+// Logging utility for Production.INC
+class GameLogger {
+  static final Logger _logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 5,
+      lineLength: 80,
+      colors: true,
+      printEmojis: true,
+      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
+    ),
+  );
+
+  static void debug(String message) => _logger.d(message);
+  static void info(String message) => _logger.i(message);
+  static void warning(String message) => _logger.w(message);
+  static void error(String message, [Object? error, StackTrace? stackTrace]) => _logger.e(message, error: error, stackTrace: stackTrace);
+}
 
 /// Container for operation processing results
 /// Used internally by ProductionGameService for updateProductions refactoring
@@ -35,7 +59,12 @@ class _MoneyAndHistory {
 
 // Production.INC Game Service - handles all game logic
 class ProductionGameService extends ChangeNotifier {
-  GameState _state = const GameState();
+  GameState _state = const GameState(
+    autoBuildMachinesOwned: {},
+    autoBuildEnabled: {},
+    lastAutoBuildTick: {},
+    autoBuildProductCapacity: {},
+  );
   Timer? _updateTimer;
   Timer? _saveTimer;
   final GamePersistenceService _persistenceService = GamePersistenceService();
@@ -58,7 +87,12 @@ class ProductionGameService extends ChangeNotifier {
     try {
       if (_isTestMode) {
         // In test mode, use default state and don't start timers
-        _state = const GameState();
+        _state = const GameState(
+          autoBuildMachinesOwned: {},
+          autoBuildEnabled: {},
+          lastAutoBuildTick: {},
+          autoBuildProductCapacity: {},
+        );
 
         // Initialize unlock state for test mode (v1.4.18)
         _initializeUnlockState();
@@ -86,10 +120,15 @@ class ProductionGameService extends ChangeNotifier {
       });
     } catch (e) {
       if (kDebugMode) {
-        print('Error loading game state: $e');
+        GameLogger.error('Error loading game state', e);
       }
       // If loading fails, start with default state
-      _state = const GameState();
+      _state = const GameState(
+        autoBuildMachinesOwned: {},
+        autoBuildEnabled: {},
+        lastAutoBuildTick: {},
+        autoBuildProductCapacity: {},
+      );
 
       // Initialize unlock state for error fallback (v1.4.18)
       _initializeUnlockState();
@@ -121,10 +160,10 @@ class ProductionGameService extends ChangeNotifier {
     // Determine timer interval based on activity using centralized constants
     final Duration interval =
         _hasActiveOperations()
-            ? Duration(
+            ? const Duration(
               milliseconds: TimerConstants.normalUpdateMs,
             ) // Active operations
-            : Duration(milliseconds: TimerConstants.idleUpdateMs); // Idle state
+            : const Duration(milliseconds: TimerConstants.idleUpdateMs); // Idle state
 
     _updateTimer = Timer.periodic(interval, (timer) {
       if (!_isAppPaused) {
@@ -188,13 +227,13 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     _updateTimer?.cancel();
     _saveTimer?.cancel();
     if (!_isTestMode) {
-      _saveGameState(); // Save one final time before disposing (except in test mode)
+      await _saveGameState(); // Save one final time before disposing (except in test mode)
     }
-    _persistenceService.dispose();
+    await _persistenceService.dispose();
     super.dispose();
   }
 
@@ -206,7 +245,7 @@ class ProductionGameService extends ChangeNotifier {
       await _persistenceService.saveGameStateOptimized(_state);
     } catch (e) {
       if (kDebugMode) {
-        print('Error saving game state (optimized): $e');
+        GameLogger.error('Error saving game state (optimized)', e);
       }
       // Fallback to original save
       await _saveGameState();
@@ -221,7 +260,7 @@ class ProductionGameService extends ChangeNotifier {
       await _persistenceService.saveGameState(_state);
     } catch (e) {
       if (kDebugMode) {
-        print('Error saving game state: $e');
+        GameLogger.error('Error saving game state', e);
       }
     }
   }
@@ -236,18 +275,28 @@ class ProductionGameService extends ChangeNotifier {
   Future<void> resetGame() async {
     if (_isTestMode) {
       // In test mode, just reset state without database operations
-      _state = const GameState();
+      _state = const GameState(
+        autoBuildMachinesOwned: {},
+        autoBuildEnabled: {},
+        lastAutoBuildTick: {},
+        autoBuildProductCapacity: {},
+      );
       notifyListeners();
       return;
     }
 
     try {
       await _persistenceService.resetGameData();
-      _state = const GameState();
+      _state = const GameState(
+        autoBuildMachinesOwned: {},
+        autoBuildEnabled: {},
+        lastAutoBuildTick: {},
+        autoBuildProductCapacity: {},
+      );
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('Error resetting game: $e');
+        GameLogger.error('Error resetting game', e);
       }
     }
   }
@@ -263,9 +312,7 @@ class ProductionGameService extends ChangeNotifier {
       // Input validation
       if (materialId.isEmpty || quantity <= 0) {
         if (kDebugMode) {
-          print(
-            'Invalid buy material parameters: materialId=$materialId, quantity=$quantity',
-          );
+          GameLogger.warning('Invalid buy material parameters: materialId=$materialId, quantity=$quantity');
         }
         return false;
       }
@@ -273,7 +320,7 @@ class ProductionGameService extends ChangeNotifier {
       final material = GameData.getMaterial(materialId);
       if (material == null) {
         if (kDebugMode) {
-          print('Material not found: $materialId');
+          GameLogger.warning('Material not found: $materialId');
         }
         return false;
       }
@@ -281,9 +328,7 @@ class ProductionGameService extends ChangeNotifier {
       final totalCost = material.buyPrice * quantity;
       if (!_state.canAfford(totalCost)) {
         if (kDebugMode) {
-          print(
-            'Insufficient funds: need \$${totalCost.toStringAsFixed(2)}, have \$${_state.money.toStringAsFixed(2)}',
-          );
+          GameLogger.warning('Insufficient funds: need \$${totalCost.toStringAsFixed(2)}, have \$${_state.money.toStringAsFixed(2)}');
         }
         return false;
       }
@@ -292,7 +337,7 @@ class ProductionGameService extends ChangeNotifier {
       const maxQuantity = 1000000;
       if (quantity > maxQuantity) {
         if (kDebugMode) {
-          print('Quantity too large: $quantity > $maxQuantity');
+          GameLogger.warning('Quantity too large: $quantity > $maxQuantity');
         }
         return false;
       }
@@ -303,9 +348,7 @@ class ProductionGameService extends ChangeNotifier {
       // Check for potential overflow
       if (currentAmount > maxQuantity - quantity) {
         if (kDebugMode) {
-          print(
-            'Would exceed maximum material amount: $currentAmount + $quantity > $maxQuantity',
-          );
+          GameLogger.warning('Would exceed maximum material amount: $currentAmount + $quantity > $maxQuantity');
         }
         return false;
       }
@@ -318,17 +361,19 @@ class ProductionGameService extends ChangeNotifier {
       );
 
       // Check for newly unlocked products after material purchase (v1.4.18)
+      // Note: This will call notifyListeners() if any products are newly unlocked
       _checkAndUpdateUnlocks();
 
       // Mark materials as dirty for incremental save (v1.4.8)
       _persistenceService.markDirty('materials');
 
+      // Notify listeners for material/money changes (unlock check notifies separately if needed)
       notifyListeners();
       _saveGameStateOptimized(); // Use optimized save after major transaction
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error buying material $materialId (quantity: $quantity): $e');
+        GameLogger.error('Error buying material $materialId (quantity: $quantity)', e);
       }
       return false;
     }
@@ -340,9 +385,7 @@ class ProductionGameService extends ChangeNotifier {
       // Input validation
       if (productId.isEmpty || quantity <= 0) {
         if (kDebugMode) {
-          print(
-            'Invalid production parameters: productId=$productId, quantity=$quantity',
-          );
+          GameLogger.warning('Invalid production parameters: productId=$productId, quantity=$quantity');
         }
         return false;
       }
@@ -350,7 +393,7 @@ class ProductionGameService extends ChangeNotifier {
       final product = GameData.getProduct(productId);
       if (product == null) {
         if (kDebugMode) {
-          print('Product not found: $productId');
+          GameLogger.warning('Product not found: $productId');
         }
         return false;
       }
@@ -359,7 +402,7 @@ class ProductionGameService extends ChangeNotifier {
       const maxQuantity = 10000;
       if (quantity > maxQuantity) {
         if (kDebugMode) {
-          print('Production quantity too large: $quantity > $maxQuantity');
+          GameLogger.warning('Production quantity too large: $quantity > $maxQuantity');
         }
         return false;
       }
@@ -370,9 +413,7 @@ class ProductionGameService extends ChangeNotifier {
         final needed = entry.value * quantity;
         if (needed < 0) {
           if (kDebugMode) {
-            print(
-              'Invalid material requirement calculation for ${entry.key}: $needed',
-            );
+            GameLogger.error('Invalid material requirement calculation for ${entry.key}: $needed');
           }
           return false;
         }
@@ -381,16 +422,12 @@ class ProductionGameService extends ChangeNotifier {
 
       if (!_state.hasMaterialsFor(requiredMaterials)) {
         if (kDebugMode) {
-          print(
-            'Insufficient materials for production of $productId x$quantity',
-          );
+          GameLogger.warning('Insufficient materials for production of $productId x$quantity');
           for (final entry in requiredMaterials.entries) {
-            final have =
-                _state.getMaterialCount(entry.key) +
-                _state.getProductCount(entry.key);
+            final have = _state.getMaterialCount(entry.key) + _state.getProductCount(entry.key);
             final need = entry.value;
             if (have < need) {
-              print('  - ${entry.key}: have $have, need $need');
+              GameLogger.info('  - ${entry.key}: have $have, need $need');
             }
           }
         }
@@ -424,9 +461,7 @@ class ProductionGameService extends ChangeNotifier {
           final availableProducts = newProducts[itemId] ?? 0;
           if (availableProducts < remaining) {
             if (kDebugMode) {
-              print(
-                'Insufficient products for consumption: $itemId, need $remaining, have $availableProducts',
-              );
+              GameLogger.warning('Insufficient products for consumption: $itemId, need $remaining, have $availableProducts');
             }
             return false;
           }
@@ -443,7 +478,7 @@ class ProductionGameService extends ChangeNotifier {
       if (totalDuration <= 0 || totalDuration > 86400) {
         // Max 24 hours
         if (kDebugMode) {
-          print('Invalid production duration: ${totalDuration}s');
+          GameLogger.warning('Invalid production duration: ${totalDuration}s');
         }
         return false;
       }
@@ -489,17 +524,34 @@ class ProductionGameService extends ChangeNotifier {
         }
 
         // Create individual production task (quantity = 1 for proper queueing)
+        // Apply auto-build machine speed bonus (1.2x per machine)
+        final adjustedTime = getAdjustedProductionTime(
+          productId,
+          product.productionTimeSeconds,
+        );
+        
+        // Use microseconds to ensure unique IDs even when multiple items are produced in same millisecond
         final task = ProductionTask(
-          id: '${DateTime.now().millisecondsSinceEpoch}_$i',
+          id: '${DateTime.now().microsecondsSinceEpoch}_manual_$i',
           productId: productId,
           startTime: startTime,
-          durationSeconds:
-              product.productionTimeSeconds, // Single item duration
+          durationSeconds: adjustedTime, // Adjusted for machine speed bonus
           quantity: 1, // Always 1 for proper queue behavior
           isQueued: shouldQueue,
         );
 
         newProductions.add(task);
+      }
+
+      // Log speed bonus if machines are present (v1.5.0)
+      if (kDebugMode) {
+        final product = GameData.products.firstWhere((p) => p.id == productId);
+        final baseTime = product.productionTimeSeconds;
+        final adjustedTime = getAdjustedProductionTime(productId, baseTime);
+        if ((baseTime - adjustedTime).abs() > 0.01) {
+          final speedMultiplier = baseTime / adjustedTime;
+          GameLogger.info('⚡ Build speed bonus: $productId - ${baseTime}s → ${adjustedTime.toStringAsFixed(1)}s (${speedMultiplier.toStringAsFixed(2)}x faster)');
+        }
       }
 
       _state = _state.copyWith(
@@ -518,9 +570,9 @@ class ProductionGameService extends ChangeNotifier {
       _startUpdateTimer(); // Restart timer with optimal frequency for new activity
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print('Error starting production $productId (quantity: $quantity): $e');
-      }
+        if (kDebugMode) {
+          GameLogger.error('Error starting production $productId (quantity: $quantity)', e);
+        }
       return false;
     }
   }
@@ -531,9 +583,7 @@ class ProductionGameService extends ChangeNotifier {
       // Input validation
       if (productId.isEmpty || quantity <= 0) {
         if (kDebugMode) {
-          print(
-            'Invalid sell parameters: productId=$productId, quantity=$quantity',
-          );
+          GameLogger.warning('Invalid sell parameters: productId=$productId, quantity=$quantity');
         }
         return false;
       }
@@ -541,7 +591,7 @@ class ProductionGameService extends ChangeNotifier {
       final product = GameData.getProduct(productId);
       if (product == null) {
         if (kDebugMode) {
-          print('Product not found: $productId');
+          GameLogger.warning('Product not found: $productId');
         }
         return false;
       }
@@ -549,9 +599,7 @@ class ProductionGameService extends ChangeNotifier {
       final available = _state.getProductCount(productId);
       if (available < quantity) {
         if (kDebugMode) {
-          print(
-            'Insufficient products to sell: $productId, need $quantity, have $available',
-          );
+          GameLogger.warning('Insufficient products to sell: $productId, need $quantity, have $available');
         }
         return false;
       }
@@ -560,7 +608,7 @@ class ProductionGameService extends ChangeNotifier {
       const maxQuantity = 10000;
       if (quantity > maxQuantity) {
         if (kDebugMode) {
-          print('Sell quantity too large: $quantity > $maxQuantity');
+          GameLogger.warning('Sell quantity too large: $quantity > $maxQuantity');
         }
         return false;
       }
@@ -572,7 +620,7 @@ class ProductionGameService extends ChangeNotifier {
       if (totalShippingTime <= 0 || totalShippingTime > 86400) {
         // Max 24 hours
         if (kDebugMode) {
-          print('Invalid shipping time: ${totalShippingTime}s');
+          GameLogger.warning('Invalid shipping time: ${totalShippingTime}s');
         }
         return false;
       }
@@ -582,7 +630,7 @@ class ProductionGameService extends ChangeNotifier {
       // Validate revenue calculation
       if (totalRevenue <= 0) {
         if (kDebugMode) {
-          print('Invalid revenue calculation: $totalRevenue');
+          GameLogger.warning('Invalid revenue calculation: $totalRevenue');
         }
         return false;
       }
@@ -591,9 +639,7 @@ class ProductionGameService extends ChangeNotifier {
       const maxActiveOrders = 100;
       if (_state.activeShippingOrders.length >= maxActiveOrders) {
         if (kDebugMode) {
-          print(
-            'Too many active shipping orders: ${_state.activeShippingOrders.length}',
-          );
+          GameLogger.warning('Too many active shipping orders: ${_state.activeShippingOrders.length}');
         }
         return false;
       }
@@ -605,9 +651,9 @@ class ProductionGameService extends ChangeNotifier {
         newProducts.remove(productId);
       }
 
-      // Create shipping order
+      // Create shipping order (use microseconds for unique ID)
       final shippingOrder = ShippingOrder(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
         items: [ShippingItem(productId: productId, quantity: quantity)],
         startTime: DateTime.now(),
         totalShippingTime: totalShippingTime,
@@ -634,7 +680,7 @@ class ProductionGameService extends ChangeNotifier {
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error selling product $productId (quantity: $quantity): $e');
+        GameLogger.error('Error selling product $productId (quantity: $quantity)', e);
       }
       return false;
     }
@@ -644,6 +690,12 @@ class ProductionGameService extends ChangeNotifier {
   /// This is the central orchestrator for all game progress updates
   void updateProductions() {
     try {
+      // Check and process auto-buy tick (v1.5.0)
+      _processAutoBuyTick();
+      
+      // Check and process auto-build ticks for all tiers (v1.5.0 Phase 2)
+      _processAutoBuildTicks();
+      
       // Early return if no active operations (battery optimization)
       if (!_hasActiveOperations()) {
         return;
@@ -659,7 +711,7 @@ class ProductionGameService extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error updating productions: $e');
+        GameLogger.error('Error updating productions', e);
       }
       // In case of error, still notify listeners to update UI
       notifyListeners();
@@ -704,7 +756,7 @@ class ProductionGameService extends ChangeNotifier {
         }
       } catch (e) {
         if (kDebugMode) {
-          print('Error checking production task ${task.id}: $e');
+          GameLogger.error('Error checking production task ${task.id}', e);
         }
         // If there's an error with a task, consider it active to prevent data loss
         activeTasks.add(task);
@@ -750,7 +802,7 @@ class ProductionGameService extends ChangeNotifier {
         }
       } catch (e) {
         if (kDebugMode) {
-          print('Error checking shipping order ${order.id}: $e');
+          GameLogger.error('Error checking shipping order ${order.id}', e);
         }
         // If there's an error with an order, consider it active to prevent data loss
         activeShipping.add(order);
@@ -764,6 +816,411 @@ class ProductionGameService extends ChangeNotifier {
         results.completedShipping.isNotEmpty ||
         _state.activeProductions.isNotEmpty ||
         _state.activeShippingOrders.isNotEmpty;
+  }
+
+  /// Process auto-buy tick if enabled and interval has elapsed (v1.5.0)
+  void _processAutoBuyTick() {
+    // Skip if not enabled or no machines owned
+    if (!_state.autoBuyEnabled || _state.autoBuyMachinesOwned <= 0) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final lastTick = _state.lastAutoBuyTick;
+
+    // Check if it's time for a tick
+    if (lastTick != null) {
+      final elapsed = now.difference(lastTick).inSeconds;
+      if (elapsed < AutoBuyConstants.tickIntervalSeconds) {
+        return; // Not time yet
+      }
+    }
+
+    // Build material prices map from game data
+    final materialPrices = <String, double>{};
+    for (final material in GameData.materials) {
+      materialPrices[material.id] = material.buyPrice;
+    }
+
+    // Perform auto-buy tick using pooled-capacity model with money constraints
+    final materialsCopy = Map<String, int>.from(_state.materials);
+    final result = machine_buyer.performAutoBuyTick(
+      inventory: materialsCopy,
+      currentMoney: _state.money,
+      materialPrices: materialPrices,
+      machinesEnabled: _state.autoBuyMachinesOwned,
+      buysPerMachinePerTick: AutoBuyConstants.buysPerMachinePerTick,
+      resourceOrder: AutoBuyConstants.resourceOrder,
+      resourceCap: _state.autoBuyResourceCapacity, // Use player's configurable capacity
+    );
+
+    // Update state if any purchases were made
+    if (result.itemsPurchased > 0) {
+      final newMoney = _state.money - result.moneySpent;
+      _state = _state.copyWith(
+        materials: materialsCopy,
+        money: newMoney,
+        lastAutoBuyTick: now,
+      );
+      
+      // Check for newly unlocked products after material purchase (v1.5.0 bug fix)
+      // This ensures that auto-buy machines trigger unlocks just like manual purchases
+      _checkAndUpdateUnlocks();
+      
+      notifyListeners();
+
+      if (kDebugMode) {
+        GameLogger.info(
+          'Auto-buy tick: purchased ${result.itemsPurchased} items for \$${result.moneySpent.toStringAsFixed(2)} with ${_state.autoBuyMachinesOwned} machines',
+        );
+      }
+    } else {
+      // Update tick time even if no purchases (all resources at cap or out of money)
+      _state = _state.copyWith(lastAutoBuyTick: now);
+      
+      if (kDebugMode) {
+        final cheapestMaterial = materialPrices.values.isEmpty ? 0.0 : materialPrices.values.reduce((a, b) => a < b ? a : b);
+        if (_state.money < cheapestMaterial) {
+          GameLogger.warning('Auto-buy tick: insufficient money to buy any materials');
+        }
+      }
+    }
+  }
+
+  /// Process auto-build ticks for all tiers (v1.5.0 Phase 2)
+  void _processAutoBuildTicks() {
+    // Process each tier independently
+    for (final tierEntry in AutoBuildConstants.productOrderByTier.entries) {
+      final tier = tierEntry.key;
+      final productOrder = tierEntry.value;
+      
+      if (productOrder.isEmpty) continue; // Skip tiers with no products defined
+      
+      final machineCount = _state.autoBuildMachinesOwned[tier] ?? 0;
+      final enabled = _state.autoBuildEnabled[tier] ?? false;
+      
+      // Skip if disabled or no machines
+      if (!enabled || machineCount <= 0) continue;
+      
+      // Check if it's time for a tick
+      final now = DateTime.now();
+      final lastTick = _state.lastAutoBuildTick[tier];
+      
+      if (lastTick != null) {
+        final elapsed = now.difference(lastTick).inSeconds;
+        if (elapsed < AutoBuildConstants.tickIntervalSeconds) {
+          continue; // Not time yet for this tier
+        }
+      }
+      
+      // Build product recipes map
+      final productRecipes = <String, Map<String, int>>{};
+      for (final productId in productOrder) {
+        final product = GameData.products.firstWhere(
+          (p) => p.id == productId,
+          orElse: () => Product(
+            id: productId,
+            name: productId,
+            description: '',
+            sellPrice: 0,
+            emoji: '❓',
+            requiredMaterials: {},
+            productionTimeSeconds: 0,
+            baseShippingTimeSeconds: 0,
+            levelId: ProductLevel.basicParts,
+          ),
+        );
+        productRecipes[productId] = product.requiredMaterials;
+      }
+      
+      // Get unlocked products for this tier
+      final unlockedProducts = <String>{};
+      for (final productId in productOrder) {
+        if (isProductUnlocked(productId)) {
+          unlockedProducts.add(productId);
+        }
+      }
+      
+      if (kDebugMode) {
+        GameLogger.info('Auto-build ($tier): ${unlockedProducts.length}/${productOrder.length} products unlocked: ${unlockedProducts.join(", ")}');
+        // Show available materials
+        final materialsList = <String>[];
+        final relevantMaterials = {'basic_metals', 'plastic', 'advanced_metals', 'glass', 'cardboard'};
+        for (final matId in relevantMaterials) {
+          final amount = _state.materials[matId] ?? 0;
+          if (amount > 0) {
+            materialsList.add('$matId:$amount');
+          }
+        }
+        if (materialsList.isNotEmpty) {
+          GameLogger.info('Auto-build ($tier): Materials available: ${materialsList.join(", ")}');
+        }
+      }
+      
+      // Perform auto-build tick using pooled-capacity model
+      // Merge materials and products into a single inventory for material checking
+      // (products can be used as materials for other products)
+      final materialsCopy = Map<String, int>.from(_state.materials);
+      // Add products to materials inventory so they can be consumed as materials
+      for (final entry in _state.products.entries) {
+        materialsCopy[entry.key] = (materialsCopy[entry.key] ?? 0) + entry.value;
+      }
+      
+      if (kDebugMode) {
+        // Log if wires are available in merged inventory
+        final wiresAvailable = materialsCopy['wires'] ?? 0;
+        if (wiresAvailable > 0) {
+          GameLogger.info('Auto-build ($tier): wires available in merged inventory: $wiresAvailable');
+        }
+      }
+      
+      final productsCopy = Map<String, int>.from(_state.products);
+      final capacity = _state.autoBuildProductCapacity[tier] ?? AutoBuildConstants.defaultProductCapacity;
+      
+      // Calculate queued product counts (items currently in production or queued)
+      final queuedProductCounts = <String, int>{};
+      for (final task in _state.activeProductions) {
+        queuedProductCounts[task.productId] = (queuedProductCounts[task.productId] ?? 0) + task.quantity;
+      }
+      
+      final result = machine_builder.performAutoBuildTick(
+        productInventory: productsCopy,
+        materialInventory: materialsCopy,
+        productRecipes: productRecipes,
+        unlockedProducts: unlockedProducts,
+        queuedProductCounts: queuedProductCounts,
+        machinesEnabled: machineCount,
+        buildsPerMachinePerTick: AutoBuildConstants.buildsPerMachinePerTick,
+        productOrder: productOrder,
+        productCap: capacity,
+      );
+      
+      // Update state and enqueue production tasks if any items were built
+      if (result.itemsBuilt > 0) {
+        // Update tick time
+        final newLastTicks = Map<String, DateTime?>.from(_state.lastAutoBuildTick);
+        newLastTicks[tier] = now;
+        
+        // Enqueue production tasks for built items (following v1.4.10 queue system)
+        final newProductions = List<ProductionTask>.from(_state.activeProductions);
+        
+        for (final entry in productsCopy.entries) {
+          final productId = entry.key;
+          final newAmount = entry.value;
+          final oldAmount = _state.products[productId] ?? 0;
+          final builtCount = newAmount - oldAmount;
+          
+          if (builtCount > 0) {
+            // Find product info for production time
+            final product = GameData.products.firstWhere(
+              (p) => p.id == productId,
+              orElse: () => Product(
+                id: productId,
+                name: productId,
+                description: '',
+                sellPrice: 0,
+                emoji: '❓',
+                requiredMaterials: {},
+                productionTimeSeconds: 1,
+                baseShippingTimeSeconds: 0,
+                levelId: ProductLevel.basicParts,
+              ),
+            );
+            
+            // Check if there's already an active production of this product
+            final hasActiveProduction = newProductions.any(
+              (task) => task.productId == productId && !task.isQueued,
+            );
+            
+            // Enqueue production tasks (one per unit, following v1.4.10 pattern)
+            for (int i = 0; i < builtCount; i++) {
+              final shouldQueue = hasActiveProduction || i > 0;
+              
+              DateTime startTime = DateTime.now();
+              if (shouldQueue) {
+                // Find the latest task for this product type to chain after it
+                final lastTaskForProduct = newProductions
+                    .where((task) => task.productId == productId)
+                    .fold<ProductionTask?>(null, (latest, current) {
+                  if (latest == null) return current;
+                  final latestEnd = latest.startTime.add(
+                    Duration(seconds: latest.durationSeconds.round()),
+                  );
+                  final currentEnd = current.startTime.add(
+                    Duration(seconds: current.durationSeconds.round()),
+                  );
+                  return latestEnd.isAfter(currentEnd) ? latest : current;
+                });
+                
+                if (lastTaskForProduct != null) {
+                  startTime = lastTaskForProduct.startTime.add(
+                    Duration(seconds: lastTaskForProduct.durationSeconds.round()),
+                  );
+                }
+              }
+              
+              // Apply auto-build machine speed bonus (1.2x per machine)
+              final adjustedTime = getAdjustedProductionTime(
+                productId,
+                product.productionTimeSeconds,
+              );
+              
+              // Use microseconds to ensure unique IDs even when multiple items are built in same millisecond
+              final task = ProductionTask(
+                id: '${DateTime.now().microsecondsSinceEpoch}_autobuild_${tier}_$i',
+                productId: productId,
+                startTime: startTime,
+                durationSeconds: adjustedTime, // Adjusted for machine speed bonus
+                quantity: 1, // Always 1 for proper queue behavior
+                isQueued: shouldQueue,
+              );
+              
+              newProductions.add(task);
+              
+              // Log speed bonus for auto-build (v1.5.0)
+              if (kDebugMode && (product.productionTimeSeconds - adjustedTime).abs() > 0.01) {
+                final speedMultiplier = product.productionTimeSeconds / adjustedTime;
+                GameLogger.info('⚡ Auto-build speed bonus: $productId - ${product.productionTimeSeconds}s → ${adjustedTime.toStringAsFixed(1)}s (${speedMultiplier.toStringAsFixed(2)}x faster)');
+              }
+            }
+          }
+        }
+        
+        // Update state with consumed materials and enqueued productions
+        // Split materialsCopy back into pure materials and products
+        final updatedMaterials = Map<String, int>.from(_state.materials);
+        final updatedProducts = Map<String, int>.from(_state.products);
+        
+        // BUG FIX: Properly track consumed materials vs products
+        // materialsCopy is a merged inventory (materials + products merged together)
+        // We need to split it back correctly:
+        // 1. For pure materials (items that exist ONLY in materials, not products)
+        // 2. For products used as materials (items in products that were consumed)
+        
+        // Update raw materials from materialsCopy
+        // Only update items that are PURE materials (not products)
+        for (final matId in _state.materials.keys) {
+          // Check if this is a pure material (not a product)
+          final isPureProduct = _state.products.containsKey(matId);
+          
+          if (!isPureProduct) {
+            // This is a pure material, update it from materialsCopy
+            final newAmount = materialsCopy[matId] ?? 0;
+            if (newAmount > 0) {
+              updatedMaterials[matId] = newAmount;
+            } else {
+              updatedMaterials.remove(matId);
+            }
+          } else {
+            // This item exists as BOTH material and product
+            // We need to carefully split the consumption
+            // The material portion was the original material count
+            final originalMaterial = _state.materials[matId] ?? 0;
+            final originalProduct = _state.products[matId] ?? 0;
+            final originalTotal = originalMaterial + originalProduct;
+            final remainingTotal = materialsCopy[matId] ?? 0;
+            final totalConsumed = originalTotal - remainingTotal;
+            
+            // Consume from materials first, then products
+            final materialConsumed = math.min(totalConsumed, originalMaterial);
+            final productConsumed = totalConsumed - materialConsumed;
+            
+            final newMaterialAmount = math.max(0, originalMaterial - materialConsumed);
+            final newProductAmount = math.max(0, originalProduct - productConsumed);
+            
+            if (newMaterialAmount > 0) {
+              updatedMaterials[matId] = newMaterialAmount;
+            } else {
+              updatedMaterials.remove(matId);
+            }
+            
+            if (newProductAmount > 0) {
+              updatedProducts[matId] = newProductAmount;
+            } else {
+              updatedProducts.remove(matId);
+            }
+          }
+        }
+        
+        // Update products that were consumed as materials (but NOT in materials)
+        for (final productId in _state.products.keys) {
+          // Skip if we already handled it above (exists in both materials and products)
+          if (_state.materials.containsKey(productId)) {
+            continue;
+          }
+          
+          if (materialsCopy.containsKey(productId)) {
+            // Calculate how much was consumed
+            final originalAmount = _state.products[productId] ?? 0;
+            final remainingAmount = materialsCopy[productId] ?? 0;
+            final consumed = originalAmount - remainingAmount;
+            
+            if (consumed > 0) {
+              // Deduct consumed amount from product inventory
+              final newAmount = math.max(0, originalAmount - consumed);
+              if (newAmount > 0) {
+                updatedProducts[productId] = newAmount;
+              } else {
+                updatedProducts.remove(productId);
+              }
+            }
+          }
+        }
+        
+        _state = _state.copyWith(
+          materials: updatedMaterials,
+          products: updatedProducts,
+          activeProductions: newProductions,
+          lastAutoBuildTick: newLastTicks,
+        );
+        
+        // Check for newly unlocked products after auto-build (v1.5.0 bug fix)
+        // This ensures that auto-build machines trigger unlocks when products are built
+        _checkAndUpdateUnlocks();
+        
+        notifyListeners();
+        
+        if (kDebugMode) {
+          GameLogger.info(
+            'Auto-build tick ($tier): built ${result.itemsBuilt} items with $machineCount machines',
+          );
+        }
+      } else {
+        // Update tick time even if nothing built (all at cap or insufficient materials)
+        final newLastTicks = Map<String, DateTime?>.from(_state.lastAutoBuildTick);
+        newLastTicks[tier] = now;
+        
+        _state = _state.copyWith(lastAutoBuildTick: newLastTicks);
+        
+        if (kDebugMode) {
+          // Show detailed status for each unlocked product
+          final statusList = <String>[];
+          for (final productId in unlockedProducts) {
+            final inv = productsCopy[productId] ?? 0;
+            final queued = queuedProductCounts[productId] ?? 0;
+            final total = inv + queued;
+            
+            if (total >= capacity) {
+              statusList.add('$productId:$inv+$queued=$total(AT_CAP)');
+            } else {
+              // Show what materials are needed vs available
+              final recipe = productRecipes[productId];
+              final matsList = <String>[];
+              if (recipe != null) {
+                for (final entry in recipe.entries) {
+                  final matId = entry.key;
+                  final needed = entry.value;
+                  final available = materialsCopy[matId] ?? 0;
+                  matsList.add('$matId:$available/$needed');
+                }
+              }
+              statusList.add('$productId:$inv+$queued=$total(NEED_MATS[${matsList.join(",")}])');
+            }
+          }
+          GameLogger.info('Auto-build tick ($tier): no items built - ${statusList.join(" | ")}');
+        }
+      }
+    }
   }
 
   /// Apply completed operations to game state
@@ -802,9 +1259,7 @@ class ProductionGameService extends ChangeNotifier {
         // Prevent overflow
         if (currentCount > maxProducts - task.quantity) {
           if (kDebugMode) {
-            print(
-              'Product overflow prevented: ${task.productId}, current: $currentCount, adding: ${task.quantity}',
-            );
+            GameLogger.warning('Product overflow prevented: ${task.productId}, current: $currentCount, adding: ${task.quantity}');
           }
           // Add what we can without overflow
           newProducts[task.productId] = maxProducts;
@@ -813,7 +1268,7 @@ class ProductionGameService extends ChangeNotifier {
         }
       } catch (e) {
         if (kDebugMode) {
-          print('Error completing production task ${task.id}: $e');
+          GameLogger.error('Error completing production task ${task.id}', e);
         }
       }
     }
@@ -846,7 +1301,7 @@ class ProductionGameService extends ChangeNotifier {
         newHistory.add(historyEntry);
       } catch (e) {
         if (kDebugMode) {
-          print('Error completing shipping order ${order.id}: $e');
+          GameLogger.error('Error completing shipping order ${order.id}', e);
         }
       }
     }
@@ -863,9 +1318,7 @@ class ProductionGameService extends ChangeNotifier {
 
     if (currentMoney > maxMoney - revenue) {
       if (kDebugMode) {
-        print(
-          'Money overflow prevented: current: $currentMoney, adding: $revenue',
-        );
+        GameLogger.warning('Money overflow prevented: current: $currentMoney, adding: $revenue');
       }
       return maxMoney;
     } else {
@@ -921,8 +1374,11 @@ class ProductionGameService extends ChangeNotifier {
         // Mark as dirty for saving
         _persistenceService.markDirty('unlocked_products');
 
+        // Notify listeners so UI updates to show newly unlocked products
+        notifyListeners();
+
         if (kDebugMode) {
-          print('Unlocked new products: ${newlyUnlocked.join(', ')}');
+          GameLogger.info('🔓 Unlocked new products: ${newlyUnlocked.join(', ')} (Total unlocked: ${updatedUnlockedProducts.length})');
         }
       }
     } catch (e) {
@@ -963,13 +1419,11 @@ class ProductionGameService extends ChangeNotifier {
       );
 
       if (kDebugMode) {
-        print(
-          'Initialized unlock state: ${allUnlockedProducts.length} products unlocked',
-        );
+        GameLogger.info('Initialized unlock state: ${allUnlockedProducts.length} products unlocked');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error initializing unlock state: $e');
+        GameLogger.error('Error initializing unlock state', e);
       }
     }
   }
@@ -979,6 +1433,64 @@ class ProductionGameService extends ChangeNotifier {
     // Use cached status for performance, fallback to service check
     return _state.productUnlockStatus[productId] ??
         ProductUnlockService.isProductUnlocked(productId, _state);
+  }
+
+  /// Calculate adjusted production time with auto-build machine speed bonus
+  /// Each machine provides a 1.1x speed multiplier (stacks multiplicatively)
+  /// Formula: adjustedTime = baseTime / (1.1 ^ machineCount)
+  /// Minimum production time is enforced at 1 second to match tick mechanism
+  double getAdjustedProductionTime(String productId, double baseTime) {
+    // Find which tier this product belongs to
+    final product = GameData.products.firstWhere(
+      (p) => p.id == productId,
+      orElse: () => Product(
+        id: productId,
+        name: productId,
+        description: '',
+        sellPrice: 0,
+        emoji: '❓',
+        requiredMaterials: {},
+        productionTimeSeconds: baseTime,
+        baseShippingTimeSeconds: 0,
+        levelId: ProductLevel.basicParts,
+      ),
+    );
+
+    // Determine the tier key based on product level
+    String? tierKey;
+    switch (product.levelId) {
+      case ProductLevel.basicParts:
+        tierKey = 'basicParts';
+        break;
+      case ProductLevel.intermediate:
+        tierKey = 'intermediate';
+        break;
+      case ProductLevel.complex:
+        tierKey = 'complex';
+        break;
+      default:
+        // Materials and retail products don't get speed bonus
+        return baseTime;
+    }
+
+    // Get machine count for this tier
+    final machineCount = _state.autoBuildMachinesOwned[tierKey] ?? 0;
+    
+    if (machineCount <= 0) {
+      return baseTime;
+    }
+
+    // Calculate speed multiplier: 1.1 ^ machineCount
+    final speedMultiplier = math.pow(
+      AutoBuildConstants.buildSpeedMultiplierPerMachine,
+      machineCount,
+    ).toDouble();
+
+    // Apply speed bonus: time / multiplier
+    final adjustedTime = baseTime / speedMultiplier;
+
+    // Enforce minimum of 1 second (tick mechanism operates by seconds, not milliseconds)
+    return math.max(1.0, adjustedTime);
   }
 
   /// Get filtered products by tier (only unlocked)
@@ -1038,7 +1550,7 @@ class ProductionGameService extends ChangeNotifier {
       // Check for negative values
       if (_state.money < 0) {
         if (kDebugMode) {
-          print('Invalid game state: negative money');
+          GameLogger.warning('Invalid game state: negative money');
         }
         return false;
       }
@@ -1047,9 +1559,7 @@ class ProductionGameService extends ChangeNotifier {
       for (final entry in _state.materials.entries) {
         if (entry.value < 0) {
           if (kDebugMode) {
-            print(
-              'Invalid game state: negative material count for ${entry.key}',
-            );
+            GameLogger.warning('Invalid game state: negative material count for ${entry.key}');
           }
           return false;
         }
@@ -1059,9 +1569,7 @@ class ProductionGameService extends ChangeNotifier {
       for (final entry in _state.products.entries) {
         if (entry.value < 0) {
           if (kDebugMode) {
-            print(
-              'Invalid game state: negative product count for ${entry.key}',
-            );
+            GameLogger.warning('Invalid game state: negative product count for ${entry.key}');
           }
           return false;
         }
@@ -1071,7 +1579,7 @@ class ProductionGameService extends ChangeNotifier {
       for (final task in _state.activeProductions) {
         if (task.quantity <= 0 || task.durationSeconds <= 0) {
           if (kDebugMode) {
-            print('Invalid production task: ${task.id}');
+            GameLogger.warning('Invalid production task: ${task.id}');
           }
           return false;
         }
@@ -1081,7 +1589,7 @@ class ProductionGameService extends ChangeNotifier {
       for (final order in _state.activeShippingOrders) {
         if (order.totalRevenue <= 0 || order.totalShippingTime <= 0) {
           if (kDebugMode) {
-            print('Invalid shipping order: ${order.id}');
+            GameLogger.warning('Invalid shipping order: ${order.id}');
           }
           return false;
         }
@@ -1090,7 +1598,7 @@ class ProductionGameService extends ChangeNotifier {
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error validating game state: $e');
+        GameLogger.error('Error validating game state', e);
       }
       return false;
     }
@@ -1179,4 +1687,489 @@ class ProductionGameService extends ChangeNotifier {
     notifyListeners();
     _saveGameStateOptimized();
   }
+
+  // V1.5.0 Auto-Buy Machine Management
+  /// Toggle auto-buy machines on/off
+  void toggleAutoBuy() {
+    _state = _state.copyWith(autoBuyEnabled: !_state.autoBuyEnabled);
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Auto-buy toggled: ${_state.autoBuyEnabled ? "ON" : "OFF"}',
+      );
+    }
+  }
+
+  /// Buy one auto-buy machine for $1000
+  /// Returns true if purchase was successful, false if not enough money
+  Future<bool> buyAutoBuyMachine() async {
+    if (_state.money < AutoBuyConstants.machineCost) {
+      return false; // Not enough money
+    }
+
+    // Deduct cost
+    final newMoney = _state.money - AutoBuyConstants.machineCost;
+    final newCount = _state.autoBuyMachinesOwned + 1;
+
+    _state = _state.copyWith(
+      money: newMoney,
+      autoBuyMachinesOwned: newCount,
+    );
+    notifyListeners();
+    
+    // Mark automation data as dirty for incremental save
+    _persistenceService.markDirty('automation');
+    await _saveGameStateOptimized(); // Await to ensure save completes
+
+    if (kDebugMode) {
+      GameLogger.info('Auto-buy machine purchased! Count: $newCount, Money remaining: \$${newMoney.toStringAsFixed(2)}');
+    }
+
+    return true;
+  }
+
+  /// Increase auto-buy resource capacity by 10
+  void increaseAutoBuyCapacity() {
+    final newCapacity = _state.autoBuyResourceCapacity + AutoBuyConstants.capacityIncrement;
+    _state = _state.copyWith(autoBuyResourceCapacity: newCapacity);
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info('Auto-buy capacity increased to: $newCapacity');
+    }
+  }
+
+  /// Decrease auto-buy resource capacity by 10 (minimum 10)
+  void decreaseAutoBuyCapacity() {
+    if (_state.autoBuyResourceCapacity > AutoBuyConstants.defaultResourceCapacity) {
+      final newCapacity = _state.autoBuyResourceCapacity - AutoBuyConstants.capacityIncrement;
+      _state = _state.copyWith(autoBuyResourceCapacity: newCapacity);
+      notifyListeners();
+      _saveGameStateOptimized();
+
+      if (kDebugMode) {
+        GameLogger.info('Auto-buy capacity decreased to: $newCapacity');
+      }
+    }
+  }
+
+  // Auto-Buy Machine Status Getters (v1.5.0)
+  
+  /// Get seconds remaining until next auto-buy tick (returns null if not active)
+  int? getSecondsUntilNextAutoBuyTick() {
+    if (!_state.autoBuyEnabled || _state.autoBuyMachinesOwned <= 0) {
+      return null;
+    }
+    
+    final lastTick = _state.lastAutoBuyTick;
+    if (lastTick == null) {
+      return 0; // Never ticked yet, will tick immediately
+    }
+    
+    final now = DateTime.now();
+    final elapsed = now.difference(lastTick).inSeconds;
+    final remaining = AutoBuyConstants.tickIntervalSeconds - elapsed;
+    return remaining > 0 ? remaining : 0;
+  }
+  
+  /// Get the name of the next material that will be bought (based on current inventory)
+  String? getNextMaterialToBuy() {
+    if (!_state.autoBuyEnabled || _state.autoBuyMachinesOwned <= 0) {
+      return null;
+    }
+    
+    // Check each resource in order to find the first one below cap
+    for (final resourceId in AutoBuyConstants.resourceOrder) {
+      final currentAmount = _state.materials[resourceId] ?? 0;
+      if (currentAmount < _state.autoBuyResourceCapacity) {
+        // Find the material name from game data
+        final material = GameData.materials.firstWhere(
+          (m) => m.id == resourceId,
+          orElse: () => Material(
+            id: resourceId,
+            name: resourceId,
+            description: '',
+            buyPrice: 0,
+            emoji: '❓',
+          ),
+        );
+        return material.name;
+      }
+    }
+    
+    return 'All at cap'; // All resources at cap
+  }
+
+  // V1.5.0 Phase 2: Auto-Build Machine Management
+  
+  /// Toggle auto-build machines on/off for a specific tier
+  void toggleAutoBuild(String tier) {
+    final newEnabled = Map<String, bool>.from(_state.autoBuildEnabled);
+    newEnabled[tier] = !(newEnabled[tier] ?? false);
+    
+    _state = _state.copyWith(autoBuildEnabled: newEnabled);
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Auto-build toggled for $tier: ${newEnabled[tier]! ? "ON" : "OFF"}',
+      );
+    }
+  }
+
+  /// Buy one auto-build machine for a specific tier for $1000
+  /// Returns true if purchase was successful, false if not enough money
+  Future<bool> buyAutoBuildMachine(String tier) async {
+    if (_state.money < AutoBuildConstants.machineCost) {
+      return false; // Not enough money
+    }
+
+    // Deduct cost
+    final newMoney = _state.money - AutoBuildConstants.machineCost;
+    final newMachines = Map<String, int>.from(_state.autoBuildMachinesOwned);
+    newMachines[tier] = (newMachines[tier] ?? 0) + 1;
+    
+    _state = _state.copyWith(
+      money: newMoney,
+      autoBuildMachinesOwned: newMachines,
+    );
+    notifyListeners();
+    
+    // Mark automation data as dirty for incremental save
+    _persistenceService.markDirty('automation');
+    await _saveGameStateOptimized(); // Await to ensure save completes
+
+    if (kDebugMode) {
+      GameLogger.info('Auto-build machine for $tier purchased! Count: ${newMachines[tier]}, Money remaining: \$${newMoney.toStringAsFixed(2)}');
+    }
+
+    return true;
+  }
+
+  /// Increase auto-build product capacity by 10 for a tier
+  void increaseAutoBuildCapacity(String tier) {
+    final newCapacities = Map<String, int>.from(_state.autoBuildProductCapacity);
+    final currentCapacity = newCapacities[tier] ?? AutoBuildConstants.defaultProductCapacity;
+    newCapacities[tier] = currentCapacity + AutoBuildConstants.capacityIncrement;
+    
+    _state = _state.copyWith(autoBuildProductCapacity: newCapacities);
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info('Auto-build capacity for $tier increased to: ${newCapacities[tier]}');
+    }
+  }
+
+  /// Decrease auto-build product capacity by 10 for a tier (minimum 10)
+  void decreaseAutoBuildCapacity(String tier) {
+    final currentCapacity = _state.autoBuildProductCapacity[tier] ?? AutoBuildConstants.defaultProductCapacity;
+    if (currentCapacity > AutoBuildConstants.defaultProductCapacity) {
+      final newCapacities = Map<String, int>.from(_state.autoBuildProductCapacity);
+      newCapacities[tier] = currentCapacity - AutoBuildConstants.capacityIncrement;
+      
+      _state = _state.copyWith(autoBuildProductCapacity: newCapacities);
+      notifyListeners();
+      _saveGameStateOptimized();
+
+      if (kDebugMode) {
+        GameLogger.info('Auto-build capacity for $tier decreased to: ${newCapacities[tier]}');
+      }
+    }
+  }
+
+  /// Get seconds remaining until next auto-build tick for a tier (returns null if not active)
+  int? getSecondsUntilNextAutoBuildTick(String tier) {
+    final machineCount = _state.autoBuildMachinesOwned[tier] ?? 0;
+    final enabled = _state.autoBuildEnabled[tier] ?? false;
+    
+    if (!enabled || machineCount <= 0) {
+      return null;
+    }
+    
+    final lastTick = _state.lastAutoBuildTick[tier];
+    if (lastTick == null) {
+      return 0; // Never ticked yet, will tick immediately
+    }
+    
+    final now = DateTime.now();
+    final elapsed = now.difference(lastTick).inSeconds;
+    final remaining = AutoBuildConstants.tickIntervalSeconds - elapsed;
+    return remaining > 0 ? remaining : 0;
+  }
+  
+  /// Get the name of the next product that will be built for a tier (based on current inventory)
+  String? getNextProductToBuild(String tier) {
+    final machineCount = _state.autoBuildMachinesOwned[tier] ?? 0;
+    final enabled = _state.autoBuildEnabled[tier] ?? false;
+    
+    if (!enabled || machineCount <= 0) {
+      return null;
+    }
+    
+    // Get product order for this tier
+    final productOrder = AutoBuildConstants.productOrderByTier[tier] ?? [];
+    final capacity = _state.autoBuildProductCapacity[tier] ?? AutoBuildConstants.defaultProductCapacity;
+    
+    // Check each product in order to find the first one below cap and unlocked
+    for (final productId in productOrder) {
+      if (!isProductUnlocked(productId)) continue;
+      
+      final currentAmount = _state.products[productId] ?? 0;
+      if (currentAmount < capacity) {
+        // Find the product name from game data
+        final product = GameData.products.firstWhere(
+          (p) => p.id == productId,
+          orElse: () => Product(
+            id: productId,
+            name: productId,
+            description: '',
+            sellPrice: 0,
+            emoji: '❓',
+            requiredMaterials: {},
+            productionTimeSeconds: 0,
+            baseShippingTimeSeconds: 0,
+            levelId: ProductLevel.basicParts,
+          ),
+        );
+        return product.name;
+      }
+    }
+    
+    
+    return 'All at cap'; // All products at cap
+  }
+
+  /// Set auto-buy machine count directly (for testing)
+  void setAutoBuyMachineCount(int count) {
+    _state = _state.copyWith(autoBuyMachinesOwned: count);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Increment auto-build machines for a tier (for testing)
+  void incrementAutoBuildMachines(String tier) {
+    final newMachines = Map<String, int>.from(_state.autoBuildMachinesOwned);
+    newMachines[tier] = (newMachines[tier] ?? 0) + 1;
+    _state = _state.copyWith(autoBuildMachinesOwned: newMachines);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Dev method: Add product directly to inventory (for testing/unlocking)
+  void addProductToInventory(String productId, int quantity) {
+    if (quantity <= 0) return;
+    
+    final newProducts = Map<String, int>.from(_state.products);
+    final currentCount = newProducts[productId] ?? 0;
+    newProducts[productId] = currentCount + quantity;
+    
+    _state = _state.copyWith(products: newProducts);
+    
+    // Check for newly unlocked products after adding to inventory
+    _checkAndUpdateUnlocks();
+    
+    notifyListeners();
+    _saveGameStateOptimized();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Added $quantity $productId to inventory (total: ${newProducts[productId]})');
+    }
+  }
+
+  /// Dev method: Add money directly to balance (for testing)
+  void addMoney(double amount) {
+    if (amount <= 0) return;
+    
+    _state = _state.copyWith(money: _state.money + amount);
+    
+    // Check for newly unlocked products after adding money
+    _checkAndUpdateUnlocks();
+    
+    notifyListeners();
+    _saveGameStateOptimized();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Added \$${amount.toStringAsFixed(2)} to balance (total: \$${_state.money.toStringAsFixed(2)})');
+    }
+  }
+
+  /// Dev method: Complete all active productions instantly (for testing)
+  void completeAllProductionsInstantly() {
+    if (_state.activeProductions.isEmpty) return;
+    
+    final completedCount = _state.activeProductions.length;
+    
+    // Set all productions to have started in the past so they complete immediately
+    final now = DateTime.now();
+    final updatedProductions = _state.activeProductions.map((task) {
+      return task.copyWith(
+        startTime: now.subtract(Duration(seconds: task.durationSeconds.ceil() + 1)),
+      );
+    }).toList();
+    
+    _state = _state.copyWith(activeProductions: updatedProductions);
+    
+    // Trigger update to process completed productions
+    updateProductions();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Completed $completedCount productions instantly');
+    }
+  }
+
+  /// Dev method: Complete all active shipments instantly (for testing)
+  void completeAllShipmentsInstantly() {
+    if (_state.activeShippingOrders.isEmpty) return;
+    
+    final completedCount = _state.activeShippingOrders.length;
+    
+    // Set all shipments to have started in the past so they complete immediately
+    final now = DateTime.now();
+    final updatedShipments = _state.activeShippingOrders.map((order) {
+      return ShippingOrder(
+        id: order.id,
+        items: order.items,
+        startTime: now.subtract(Duration(seconds: order.totalShippingTime.ceil() + 1)),
+        totalShippingTime: order.totalShippingTime,
+        totalRevenue: order.totalRevenue,
+      );
+    }).toList();
+    
+    _state = _state.copyWith(activeShippingOrders: updatedShipments);
+    
+    // Trigger update to process completed shipments
+    updateProductions();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Completed $completedCount shipments instantly');
+    }
+  }
+
+  /// Dev method: Unlock all products by setting a high money amount (for testing)
+  void unlockAllProductsForTesting() {
+    // Add a very large amount of money to trigger all unlocks
+    _state = _state.copyWith(money: _state.money + 1000000);
+    
+    // Force unlock check
+    _checkAndUpdateUnlocks();
+    
+    notifyListeners();
+    _saveGameStateOptimized();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Unlocked all products (added \$1,000,000)');
+    }
+  }
+
+  /// Dev method: Force a manual unlock check (for debugging)
+  void forceUnlockCheck() {
+    // Re-initialize unlock state from scratch
+    _initializeUnlockState();
+    
+    // Then check for any newly unlocked products
+    _checkAndUpdateUnlocks();
+    
+    notifyListeners();
+    _saveGameStateOptimized();
+    
+    if (kDebugMode) {
+      GameLogger.info('Dev: Forced unlock check - ${_state.unlockedProducts.length} products unlocked');
+    }
+  }
+
+  /// Dev method: Repair database structure (for fixing migration issues)
+  Future<void> repairDatabase() async {
+    try {
+      if (kDebugMode) {
+        GameLogger.info('Dev: Starting database repair...');
+      }
+      
+      // Close current database connection
+      await _persistenceService.dispose();
+      
+      // Reinitialize database (this will run migrations)
+      await _persistenceService.database;
+      
+      // Reload the game state
+      _state = await _persistenceService.loadGameState();
+      
+      // Reinitialize unlock state
+      _initializeUnlockState();
+      _checkAndUpdateUnlocks();
+      
+      notifyListeners();
+      
+      if (kDebugMode) {
+        GameLogger.info('Dev: Database repair completed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        GameLogger.error('Dev: Database repair failed: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Dev method: Verify and fix database schema (for "no such column" errors)
+  Future<void> verifyAndFixDatabaseSchema() async {
+    try {
+      if (kDebugMode) {
+        GameLogger.info('Dev: Verifying and fixing database schema...');
+      }
+      
+      await _persistenceService.verifyAndFixSchema();
+      
+      // Reload the game state to ensure everything is in sync
+      _state = await _persistenceService.loadGameState();
+      
+      notifyListeners();
+      
+      if (kDebugMode) {
+        GameLogger.info('Dev: Schema verification completed');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        GameLogger.error('Dev: Schema verification failed: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Dev method: Reset database completely (WARNING: Deletes all data!)
+  Future<void> resetDatabase() async {
+    try {
+      if (kDebugMode) {
+        GameLogger.warning('Dev: RESETTING DATABASE - ALL DATA WILL BE LOST!');
+      }
+      
+      await _persistenceService.resetDatabase();
+      
+      // Reload the game state (will be fresh/default state)
+      _state = await _persistenceService.loadGameState();
+      
+      // Reinitialize unlock state
+      _initializeUnlockState();
+      _checkAndUpdateUnlocks();
+      
+      notifyListeners();
+      
+      if (kDebugMode) {
+        GameLogger.warning('Dev: Database reset complete - game state restored to default');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        GameLogger.error('Dev: Database reset failed: $e');
+      }
+      rethrow;
+    }
+  }
 }
+
+
+
+

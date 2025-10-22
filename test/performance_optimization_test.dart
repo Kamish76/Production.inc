@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:game1/services/production_game_service.dart';
+import 'package:game1/services/game_persistence_service.dart';
 import 'package:game1/models/game_state.dart';
 import 'package:game1/models/game_models.dart';
 
@@ -9,11 +10,14 @@ void main() {
     late ProductionGameService gameService;
 
     setUp(() {
-      gameService = ProductionGameService();
+  // Initialize database factory for testing with unique DB name
+  final testDbName = 'test_db_performance_opt_${DateTime.now().microsecondsSinceEpoch}.db';
+  GamePersistenceService.initializeDatabaseFactory(testDatabaseName: testDbName);
+  gameService = ProductionGameService();
     });
 
-    tearDown(() {
-      gameService.dispose();
+    tearDown(() async {
+      await gameService.dispose();
     });
 
     test('should handle app lifecycle state changes correctly', () async {
@@ -63,12 +67,16 @@ void main() {
         activeShippingOrders: [
           ShippingOrder(
             id: 'ship1',
-            items: [ShippingItem(productId: 'box', quantity: 1)],
+            items: const [ShippingItem(productId: 'box', quantity: 1)],
             startTime: DateTime.now(),
             totalShippingTime: 300,
             totalRevenue: 10.0,
           ),
         ],
+        autoBuildMachinesOwned: {},
+        autoBuildEnabled: {},
+        lastAutoBuildTick: {},
+        autoBuildProductCapacity: {},
       );
 
       // This test verifies the structure is correct

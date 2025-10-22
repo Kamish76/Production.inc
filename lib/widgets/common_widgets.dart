@@ -267,7 +267,7 @@ class _AnimatedExpandIconState extends State<AnimatedExpandIcon>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: Duration(milliseconds: UIConstants.iconAnimationMs),
+      duration: const Duration(milliseconds: UIConstants.iconAnimationMs),
       vsync: this,
     );
     _rotationAnimation = Tween<double>(

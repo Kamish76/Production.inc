@@ -1,0 +1,37 @@
+LOOKING FOR MORE CONTENT FOR THIS GAME
+
+current plans - 
+    implemented machines:
+        buyer
+
+    add automation on all tiers in build section. essentially automating enqueueing items for building.
+    
+    acquiring machines:
+        machines are un lockable at certain tier upgrades, essentially they will be buyable but price is exponential
+        the more you buy the more expensive it will be to buy the next one.
+
+
+    but after that i don't have enough content that would make the game fun.
+
+new idea!
+    build screen will have to screens in, the retail build and parts build
+
+    retails items separate screen for building, will also incorporate tiers.
+        each tiers can be unlocked, this way players progress the game 
+        not in a way that they can just jump to a tier asap that yields more profit, 
+        and not have to go through other tiers or cheaper easier products
+
+tier unlocking system. 
+    for retail items, will be unlocked by amount of money.
+    for parts items. will be unlocked by amount of money.
+
+    tiers are unlocked incrementally,
+
+    separate screen for tier unlocking, highlighting what will the tier unlock n such.
+
+    settings screen to be replaced by tier upgrade screen. and settings screen will be accessible through
+    tier upgrade screen.
+
+
+
+

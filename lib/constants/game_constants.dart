@@ -229,6 +229,91 @@ class ValidationConstants {
 }
 
 // ==================================================
+// AUTO-BUY MACHINE CONSTANTS (v1.5.0 - in development)
+// ==================================================
+
+/// Auto-Buy Machine configuration and behavior constants
+class AutoBuyConstants {
+  /// Cost to purchase one auto-buy machine
+  static const double machineCost = 1000.0;
+  
+  /// Number of items one machine buys per tick
+  static const int buysPerMachinePerTick = 5;
+  
+  /// Default resource capacity (player-configurable in increments of 10)
+  static const int defaultResourceCapacity = 10;
+  
+  /// Capacity increment step (capacity can only be changed in multiples of this)
+  static const int capacityIncrement = 10;
+  
+  /// Interval between auto-buy ticks (seconds) - DEV MODE: reduced to 5s for testing
+  static const int tickIntervalSeconds = 5;
+  
+  /// Resource order for auto-buy processing (priority order)
+  /// Earlier resources in the list are filled first
+  static const List<String> resourceOrder = [
+    'cardboard', // Cardboard ($1) - cheapest first
+    'plastic', // Plastic ($2)
+    'basic_metals', // Basic Metals ($3)
+    'glass', // Glass ($5)
+    'advanced_metals', // Advanced Metals ($8) - most expensive last
+  ];
+}
+
+// ==================================================
+// AUTO-BUILD MACHINE CONSTANTS (v1.5.0 Phase 2 - in development)
+// ==================================================
+
+/// Auto-Build Machine configuration and behavior constants
+class AutoBuildConstants {
+  /// Cost to purchase one auto-build machine (per tier)
+  static const double machineCost = 1000.0;
+  
+  /// Number of products one machine builds per tick
+  static const int buildsPerMachinePerTick = 2;
+  
+  /// Default product capacity (player-configurable in increments of 10)
+  static const int defaultProductCapacity = 10;
+  
+  /// Capacity increment step (capacity can only be changed in multiples of this)
+  static const int capacityIncrement = 10;
+  
+  /// Interval between auto-build ticks (seconds) - DEV MODE: 5s for testing
+  static const int tickIntervalSeconds = 5;
+  
+  /// Build time reduction multiplier per machine (1.1x speed per machine)
+  /// Stacks multiplicatively: finalTime = baseTime / (speedMultiplier ^ machineCount)
+  /// Note: Production time is capped at a minimum of 1 second
+  static const double buildSpeedMultiplierPerMachine = 1.1;
+  
+  /// Product order for auto-build processing per tier (ordered by production time, simplest first)
+  /// Earlier products in each tier list are built first
+  static const Map<String, List<String>> productOrderByTier = {
+    'basicParts': [
+      'box', // Box - 3 seconds (simplest)
+      'wires', // Wires - 5 seconds
+      'enclosure_plastic', // Plastic Enclosure - 6 seconds
+      'metal_enclosure', // Metal Enclosure - 7 seconds
+      'circuits', // Circuits - 8 seconds
+      'lens', // Lens - 10 seconds
+      'battery', // Battery - 12 seconds
+      'sound_driver', // Sound Driver - 15 seconds
+      'solar_cells', // Solar Cells - 15 seconds
+      'gears', // Gears - 2 seconds
+    ],
+    'intermediate': [
+      'display_screen', // 20 seconds
+      'processor', // 25 seconds
+      'image_sensor', // 30 seconds
+      'gear_mechanism', // 15 seconds
+    ],
+    'complex': [
+      'camera_module', // 50 seconds
+    ],
+  };
+}
+
+// ==================================================
 // COLOR CONSTANTS
 // ==================================================
 

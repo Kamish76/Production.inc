@@ -18,10 +18,14 @@ void main() async {
 
     // Test save operation
     debugPrint('Testing save operation...');
-    final testState = GameState(
+    final testState = const GameState(
       money: 500.0,
       materials: {'cardboard': 10, 'plastic': 5},
       products: {'box': 3},
+      autoBuildMachinesOwned: {},
+      autoBuildEnabled: {},
+      lastAutoBuildTick: {},
+      autoBuildProductCapacity: {},
     );
 
     await service.saveGameState(testState);

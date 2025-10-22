@@ -71,6 +71,18 @@ class GameState {
   final Set<String> unlockedProducts; // productId -> unlocked status
   final Map<String, bool>
   productUnlockStatus; // productId -> unlock status cache for performance
+  
+  // Auto-Buy Machine state (v1.5.0 - in development)
+  final int autoBuyMachinesOwned; // Number of auto-buy machines owned
+  final bool autoBuyEnabled; // Master on/off toggle for auto-buy machines
+  final DateTime? lastAutoBuyTick; // Last time auto-buy tick was processed
+  final int autoBuyResourceCapacity; // Player-configurable capacity per resource (increments of 10)
+
+  // Auto-Build Machine state (v1.5.0 Phase 2 - in development)
+  final Map<String, int> autoBuildMachinesOwned; // tier -> number of machines (e.g., 'basicParts' -> 2)
+  final Map<String, bool> autoBuildEnabled; // tier -> on/off toggle (e.g., 'basicParts' -> true)
+  final Map<String, DateTime?> lastAutoBuildTick; // tier -> last tick time
+  final Map<String, int> autoBuildProductCapacity; // tier -> capacity setting (e.g., 'basicParts' -> 10)
 
   const GameState({
     this.money = 100.0, // Starting money
@@ -85,6 +97,14 @@ class GameState {
     this.sellQuantityPreferences = const {},
     this.unlockedProducts = const {},
     this.productUnlockStatus = const {},
+    this.autoBuyMachinesOwned = 0,
+    this.autoBuyEnabled = false,
+    this.lastAutoBuyTick,
+    this.autoBuyResourceCapacity = 10, // Default starting capacity
+    required this.autoBuildMachinesOwned, // Required - default to empty map
+    required this.autoBuildEnabled, // Required - default to empty map
+    required this.lastAutoBuildTick, // Required - default to empty map
+    required this.autoBuildProductCapacity, // Required - default to empty map
   });
 
   GameState copyWith({
@@ -100,6 +120,14 @@ class GameState {
     Map<String, int>? sellQuantityPreferences,
     Set<String>? unlockedProducts,
     Map<String, bool>? productUnlockStatus,
+    int? autoBuyMachinesOwned,
+    bool? autoBuyEnabled,
+    DateTime? lastAutoBuyTick,
+    int? autoBuyResourceCapacity,
+    Map<String, int>? autoBuildMachinesOwned,
+    Map<String, bool>? autoBuildEnabled,
+    Map<String, DateTime?>? lastAutoBuildTick,
+    Map<String, int>? autoBuildProductCapacity,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -117,6 +145,14 @@ class GameState {
           sellQuantityPreferences ?? this.sellQuantityPreferences,
       unlockedProducts: unlockedProducts ?? this.unlockedProducts,
       productUnlockStatus: productUnlockStatus ?? this.productUnlockStatus,
+      autoBuyMachinesOwned: autoBuyMachinesOwned ?? this.autoBuyMachinesOwned,
+      autoBuyEnabled: autoBuyEnabled ?? this.autoBuyEnabled,
+      lastAutoBuyTick: lastAutoBuyTick ?? this.lastAutoBuyTick,
+      autoBuyResourceCapacity: autoBuyResourceCapacity ?? this.autoBuyResourceCapacity,
+      autoBuildMachinesOwned: autoBuildMachinesOwned ?? this.autoBuildMachinesOwned,
+      autoBuildEnabled: autoBuildEnabled ?? this.autoBuildEnabled,
+      lastAutoBuildTick: lastAutoBuildTick ?? this.lastAutoBuildTick,
+      autoBuildProductCapacity: autoBuildProductCapacity ?? this.autoBuildProductCapacity,
     );
   }
 

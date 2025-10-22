@@ -1,12 +1,30 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game1/services/game_persistence_service.dart';
 import 'package:game1/models/game_state.dart';
 import 'package:game1/models/game_models.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 
 void main() {
-  // Setup for SQLite testing
-  setUpAll(() {
-    GamePersistenceService.initializeDatabaseFactory();
+  late String testDbName;
+
+  setUp(() async {
+    testDbName =
+        'test_db_game_persistence_${DateTime.now().microsecondsSinceEpoch}.db';
+    GamePersistenceService.initializeDatabaseFactory(
+      testDatabaseName: testDbName,
+    );
+
+    final dbPath = await sqflite.getDatabasesPath();
+    final fullPath = [dbPath, testDbName].join(Platform.pathSeparator);
+    await sqflite.databaseFactory.deleteDatabase(fullPath);
+  });
+
+  tearDown(() async {
+    final dbPath = await sqflite.getDatabasesPath();
+    final fullPath = [dbPath, testDbName].join(Platform.pathSeparator);
+    await sqflite.databaseFactory.deleteDatabase(fullPath);
   });
 
   group('GamePersistenceService Tests', () {
@@ -33,7 +51,7 @@ void main() {
           activeShippingOrders: [
             ShippingOrder(
               id: 'test_ship_1',
-              items: [ShippingItem(productId: 'box', quantity: 1)],
+              items: const [ShippingItem(productId: 'box', quantity: 1)],
               startTime: DateTime.now().subtract(const Duration(minutes: 2)),
               totalShippingTime: 300,
               totalRevenue: 10.0,
@@ -42,11 +60,15 @@ void main() {
           shippingHistory: [
             ShippingHistory(
               id: 'test_hist_1',
-              items: [ShippingItem(productId: 'bottle', quantity: 1)],
+              items: const [ShippingItem(productId: 'bottle', quantity: 1)],
               completedTime: DateTime.now().subtract(const Duration(hours: 1)),
               totalRevenue: 5.0,
             ),
           ],
+          autoBuildMachinesOwned: {},
+          autoBuildEnabled: {},
+          lastAutoBuildTick: {},
+          autoBuildProductCapacity: {},
         );
 
         // Save the state
@@ -127,6 +149,10 @@ void main() {
               isQueued: false,
             ),
           ],
+          autoBuildMachinesOwned: {},
+          autoBuildEnabled: {},
+          lastAutoBuildTick: {},
+          autoBuildProductCapacity: {},
         );
 
         await persistenceService.saveGameState(testState);
@@ -175,7 +201,13 @@ void main() {
 
       try {
         // Save some data
-        await persistenceService.saveGameState(const GameState(money: 200.0));
+        await persistenceService.saveGameState(const GameState(
+          money: 200.0,
+          autoBuildMachinesOwned: {},
+          autoBuildEnabled: {},
+          lastAutoBuildTick: {},
+          autoBuildProductCapacity: {},
+        ));
 
         // Now should have save data
         expect(await persistenceService.hasSaveData(), isTrue);

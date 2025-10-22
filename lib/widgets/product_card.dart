@@ -54,7 +54,7 @@ class ProductCard extends StatelessWidget {
     }
 
     return AnimatedContainer(
-      duration: Duration(milliseconds: UIConstants.standardAnimationMs),
+      duration: const Duration(milliseconds: UIConstants.standardAnimationMs),
       child: GameCard(
         onTap: onTap,
         showBorder: isNewlyUnlocked,
@@ -103,13 +103,13 @@ class ProductCard extends StatelessWidget {
   Widget _buildLockedCard() {
     return GameCard(
       backgroundColor: AppColors.cardBackground.withValues(alpha: 0.5),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(Icons.lock, color: AppColors.textHint, size: 20),
-              const SizedBox(width: UIConstants.standardSpacing),
+              SizedBox(width: UIConstants.standardSpacing),
               Expanded(
                 child: Text(
                   'Locked Product',
@@ -122,7 +122,7 @@ class ProductCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: UIConstants.smallPadding),
+          SizedBox(height: UIConstants.smallPadding),
           Text(
             'Gather materials to discover this product',
             style: TextStyle(

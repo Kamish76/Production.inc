@@ -19,7 +19,7 @@ void main() {
     DeviceOrientation.portraitDown,
   ]);
 
-  runApp(ProductionIncApp());
+  runApp(const ProductionIncApp());
 }
 
 class ProductionIncApp extends StatefulWidget {
@@ -52,6 +52,7 @@ class _ProductionIncAppState extends State<ProductionIncApp>
       GoRoute(path: '/sell', redirect: (context, state) => '/game?index=2'),
       GoRoute(path: '/shipping', redirect: (context, state) => '/game?index=3'),
       GoRoute(path: '/settings', redirect: (context, state) => '/game?index=4'),
+      GoRoute(path: '/control', redirect: (context, state) => '/game?index=4'),
     ],
   );
 

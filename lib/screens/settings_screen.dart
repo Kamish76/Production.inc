@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/production_game_service.dart';
+import '../widgets/game_dialog.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -14,56 +15,30 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.warning, color: Colors.red[400]),
-              const SizedBox(width: 8),
-              const Text('Reset Game?', style: TextStyle(color: Colors.white)),
-            ],
-          ),
-          content: const Text(
-            'This will permanently delete all your progress including:\n\n'
-            '• All money and materials\n'
-            '• All products and inventory\n'
-            '• Active productions and shipments\n'
-            '• All game history\n\n'
-            'This action cannot be undone!',
-            style: TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await gameService.resetGame();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('🔄 Game has been reset!'),
-                      backgroundColor: Colors.orange,
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[600],
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Reset Game'),
-            ),
-          ],
+        return GameDialog.confirmation(
+          title: 'Reset Game?',
+          content:
+              'This will permanently delete all your progress including:\n\n'
+              '• All money and materials\n'
+              '• All products and inventory\n'
+              '• Active productions and shipments\n'
+              '• All game history\n\n'
+              'This action cannot be undone!',
+          icon: Icons.warning,
+          iconColor: Colors.red[400] ?? Colors.red,
+          confirmText: 'Reset Game',
+          onConfirm: () async {
+            await gameService.resetGame();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🔄 Game has been reset!'),
+                  backgroundColor: Colors.orange,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+          },
         );
       },
     );
@@ -299,6 +274,14 @@ class SettingsScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      color: Colors.grey[400],
+                      iconSize: 28,
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Back',
+                    ),
+                    const SizedBox(width: 8),
                     Icon(Icons.settings, color: Colors.grey[400], size: 28),
                     const SizedBox(width: 12),
                     const Text(
@@ -447,7 +430,7 @@ class SettingsScreen extends StatelessWidget {
                                 const SizedBox(height: 16),
 
                                 // Notifications Toggle (Placeholder for future feature)
-                                Row(
+                                const Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
@@ -459,8 +442,8 @@ class SettingsScreen extends StatelessWidget {
                                             color: Colors.white70,
                                             size: 20,
                                           ),
-                                          const SizedBox(width: 8),
-                                          const Text(
+                                          SizedBox(width: 8),
+                                          Text(
                                             'Notifications',
                                             style: TextStyle(
                                               color: Colors.white70,
@@ -473,7 +456,7 @@ class SettingsScreen extends StatelessWidget {
                                       value:
                                           true, // Placeholder - would be from preferences
                                       onChanged: null, // Disabled for now
-                                      activeColor: Colors.green,
+                                      activeThumbColor: Colors.green,
                                     ),
                                   ],
                                 ),
@@ -481,7 +464,7 @@ class SettingsScreen extends StatelessWidget {
                                 const SizedBox(height: 12),
 
                                 // Sound Effects Toggle (Placeholder for future feature)
-                                Row(
+                                const Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
@@ -493,8 +476,8 @@ class SettingsScreen extends StatelessWidget {
                                             color: Colors.white70,
                                             size: 20,
                                           ),
-                                          const SizedBox(width: 8),
-                                          const Text(
+                                          SizedBox(width: 8),
+                                          Text(
                                             'Sound Effects',
                                             style: TextStyle(
                                               color: Colors.white70,
@@ -507,7 +490,7 @@ class SettingsScreen extends StatelessWidget {
                                       value:
                                           false, // Placeholder - would be from preferences
                                       onChanged: null, // Disabled for now
-                                      activeColor: Colors.green,
+                                      activeThumbColor: Colors.green,
                                     ),
                                   ],
                                 ),
@@ -515,7 +498,7 @@ class SettingsScreen extends StatelessWidget {
                                 const SizedBox(height: 12),
 
                                 // Performance Mode Toggle
-                                Row(
+                                const Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
@@ -527,8 +510,8 @@ class SettingsScreen extends StatelessWidget {
                                             color: Colors.white70,
                                             size: 20,
                                           ),
-                                          const SizedBox(width: 8),
-                                          const Text(
+                                          SizedBox(width: 8),
+                                          Text(
                                             'Performance Mode',
                                             style: TextStyle(
                                               color: Colors.white70,
@@ -544,8 +527,8 @@ class SettingsScreen extends StatelessWidget {
                                           color: Colors.green,
                                           size: 16,
                                         ),
-                                        const SizedBox(width: 4),
-                                        const Text(
+                                        SizedBox(width: 4),
+                                        Text(
                                           'Enabled',
                                           style: TextStyle(
                                             color: Colors.green,

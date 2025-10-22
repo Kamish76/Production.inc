@@ -1,0 +1,74 @@
+Integration with Existing Systems
+Auto-Buy Machine — Specification
+=================================
+
+Purpose
+-------
+Provide a simple, predictable automation that periodically builds parts for the player, per tier. 
+NOTE: the configured "cap" described below is not a hard inventory maximum — the player's inventory 
+is effectively unlimited. The cap describes the machines' per-item target/capability 
+(how much the machines will aim to regulate per item), and it is player controlled. 
+Machines should use their full per-tick purchase capacity so ticks are not wasted.
+
+Summary of behavior
+-------------------
+- Players may own one or more Auto-Buy Machines. Machines are stackable and identical in base behavior.
+- Machines can be toggled On/Off as a group by the player in the build screen by tier. When toggled Off, all auto-build machines stop enqueueing completely until re-enabled.
+- Machines operate on a global tick that runs every 10 seconds (configurable). On each tick, enabled machines purchase materials up to the configured caps and throughput.
+
+Configurable parameters (default values)
+----------------------------------------
+- buysPerMachinePerTick: 1 — the number of items one machine attempts to build per tick (default 5).
+- baseLimitPerItem: player determined starting at 10 - adjustable increments by 10;
+- tickIntervalSeconds: 1 — global tick frequency in seconds (DEV MODE: reduced to 1s for testing, production will be 10s).
+- resourceOrder: deterministic list/order of resources to service each tick (ordered by price, cheapest first):
+    - to be listed
+
+Algorithm (pooled-capacity buying rules)
+-----------------------------------------
+This section explains the deterministic algorithm used by all enabled Auto-Build Machines on 
+every global tick. All enabled machines pool their buying capacity and apply it as a single 
+batch per tick.
+
+Build Time Reduction (v1.5.0+)
+------------------------------
+Each auto-build machine provides a 1.1x speed multiplier for ALL production tasks in its tier.
+The multipliers stack multiplicatively:
+- 1 machine: 1.1x speed (production time / 1.1)
+- 2 machines: 1.21x speed (production time / 1.21)
+- 3 machines: 1.331x speed (production time / 1.331)
+- 5 machines: 1.61x speed (production time / 1.61)
+- 10 machines: 2.59x speed (production time / 2.59)
+- Formula: finalTime = baseTime / (1.1 ^ machineCount)
+
+This applies to:
+- Manual production of items in the tier
+- Auto-build queued production tasks
+- Any production task for products matching the tier's level
+
+Example: With 2 basicParts machines, building "wires" (base 5s) takes 5 / 1.21 ≈ 4.13 seconds
+
+example;
+
+Basic tier:
+    machine info:
+        machines: 2
+        build/tick: 2
+        cap: 10
+
+    products: 
+        box = 3
+        wires = 10
+
+    run down loop:
+        will run box till box amount >= 10 || till not enough items to build.
+            1st tick box = 5
+            2nd tick box = 7
+            3rd tick box = 9
+            4th tick box = 11
+        wires is at cap so will skip and move to the next.
+
+the same rules to all machines per tick.
+
+machines can be purchased on the tier unlock screen (to be implemented).
+

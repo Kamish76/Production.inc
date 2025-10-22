@@ -1,11 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../services/production_game_service.dart';
-import '../models/game_models.dart' as game;
+import '../widgets/screen_header.dart';
+import '../widgets/financial_status_display.dart';
+import '../widgets/item_card.dart';
 
-class BuyMaterialsScreen extends StatelessWidget {
+class BuyMaterialsScreen extends StatefulWidget {
   const BuyMaterialsScreen({super.key});
+
+  @override
+  State<BuyMaterialsScreen> createState() => _BuyMaterialsScreenState();
+}
+
+class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
+  Timer? _countdownTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start a timer to update countdown every second
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {}); // Trigger rebuild for countdown
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,60 +49,34 @@ class BuyMaterialsScreen extends StatelessWidget {
             child: Column(
               children: [
                 // Screen title
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.shopping_cart,
-                        color: Colors.green[400],
-                        size: 28,
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Buy Materials',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+                ScreenHeader(
+                  icon: Icons.shopping_cart,
+                  title: 'Buy Materials',
+                  iconColor: Colors.green[400]!,
                 ),
                 // Money display
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.green[800],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Money: \$${gameService.state.money.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                FinancialStatusDisplay(
+                  gameService: gameService,
+                  mode: FinancialDisplayMode.moneyOnly,
                 ),
+
+                // Auto-Buy Machine Status Info (v1.5.0) - Now includes controls
+                if (gameService.state.autoBuyMachinesOwned > 0)
+                  _buildAutoBuyStatusWithControls(gameService),
 
                 // Materials list with single-column layout for better readability
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(8),
                     itemCount: gameService.allMaterials.length,
                     itemBuilder: (context, index) {
                       final material = gameService.allMaterials[index];
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildEnhancedMaterialCard(
-                          context,
-                          material,
-                          gameService,
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: ItemCard(
+                          item: material,
+                          gameService: gameService,
+                          mode: ItemCardMode.buy,
                         ),
                       );
                     },
@@ -90,270 +90,243 @@ class BuyMaterialsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEnhancedMaterialCard(
-    BuildContext context,
-    game.Material material,
-    ProductionGameService gameService,
-  ) {
-    final owned = gameService.state.getMaterialCount(material.id);
-    final currentPreference = gameService.getBuyQuantityPreference(material.id);
-    final cost = material.buyPrice * currentPreference;
-    final canAfford = gameService.state.canAfford(cost);
+  /// Build auto-buy machine status with embedded controls (v1.5.0)
+  Widget _buildAutoBuyStatusWithControls(ProductionGameService gameService) {
+    final secondsRemaining = gameService.getSecondsUntilNextAutoBuyTick();
+    final nextMaterial = gameService.getNextMaterialToBuy();
+    final isActive = gameService.state.autoBuyEnabled;
 
-    return Card(
-      color: Colors.grey[850],
-      margin: const EdgeInsets.all(4),
-      elevation: 8,
-      shadowColor: Colors.black.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color:
-              canAfford
-                  ? Colors.green.withValues(alpha: 0.3)
-                  : Colors.red.withValues(alpha: 0.3),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isActive ? Colors.green.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
           width: 1,
         ),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // V1.4.11: Entire card is now clickable for buying
-          if (canAfford) {
-            HapticFeedback.mediumImpact();
-            gameService.buyMaterial(material.id, currentPreference);
-          } else {
-            HapticFeedback.lightImpact();
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with On/Off toggle
+          Row(
             children: [
-              // Material emoji and name with enhanced styling
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[700],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      material.emoji,
-                      style: const TextStyle(fontSize: 26),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          material.name,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '\$${material.buyPrice.toStringAsFixed(2)} each',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[400],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              Icon(
+                Icons.precision_manufacturing,
+                color: isActive ? Colors.green[300] : Colors.grey,
+                size: 20,
               ),
-              const SizedBox(height: 10),
-
-              // // Purchase capability indicator
-              // Container(
-              //   width: double.infinity,
-              //   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              //   decoration: BoxDecoration(
-              //     color: canAfford ? Colors.green[700] : Colors.red[700],
-              //     borderRadius: BorderRadius.circular(6),
-              //   ),
-              //   child: Row(
-              //     mainAxisSize: MainAxisSize.min,
-              //     mainAxisAlignment: MainAxisAlignment.center,
-              //     children: [
-              //       Icon(
-              //         canAfford ? Icons.check_circle : Icons.cancel,
-              //         size: 14,
-              //         color: Colors.white,
-              //       ),
-              //       const SizedBox(width: 4),
-              //       Flexible(
-              //         child: Text(
-              //           canAfford ? 'Can Afford' : 'Need More Money',
-              //           style: const TextStyle(
-              //             fontSize: 13,
-              //             color: Colors.white,
-              //             fontWeight: FontWeight.w500,
-              //           ),
-              //           overflow: TextOverflow.ellipsis,
-              //           textAlign: TextAlign.center,
-              //         ),
-              //       ),
-              //     ],
-              //   ),
-              // ),
-              // const SizedBox(height: 8),
-
-              // Owned quantity indicator
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.blue[700],
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'Owned: $owned',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Description with more space for better readability
+              const SizedBox(width: 8),
               Text(
-                material.description,
-                style: TextStyle(fontSize: 12, color: Colors.grey[400]),
-                maxLines:
-                    3, // Increased from 2 for better description visibility
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+                'AUTO-BUY MACHINE',
+                style: TextStyle(
+                  color: isActive ? Colors.green[300] : Colors.grey,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
               ),
-              const SizedBox(height: 12), // Slightly increased spacing
-              // Buy quantity selector buttons (V1.4.11: Dual-function) - Optimized for single-column
-              Row(
-                children: [
-                  Expanded(
-                    // Changed from Flexible to Expanded for better button sizing
-                    child: _buildQuantitySelectorButton(
-                      context,
-                      material,
-                      1,
-                      gameService,
-                    ),
+              const Spacer(),
+              // On/Off toggle
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? Colors.green.withOpacity(0.2)
+                      : Colors.red.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isActive ? Colors.green : Colors.red,
+                    width: 1.5,
                   ),
-                  const SizedBox(
-                    width: 8,
-                  ), // Increased spacing for better touch targets
-                  Expanded(
-                    // Changed from Flexible to Expanded for better button sizing
-                    child: _buildQuantitySelectorButton(
-                      context,
-                      material,
-                      5,
-                      gameService,
-                    ),
+                ),
+                child: InkWell(
+                  onTap: gameService.toggleAutoBuy,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isActive ? Icons.power_settings_new : Icons.power_off,
+                        color: isActive ? Colors.green : Colors.red,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isActive ? 'ON' : 'OFF',
+                        style: TextStyle(
+                          color: isActive ? Colors.green : Colors.red,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(
-                    width: 8,
-                  ), // Increased spacing for better touch targets
-                  Expanded(
-                    // Changed from Flexible to Expanded for better button sizing
-                    child: _buildQuantitySelectorButton(
-                      context,
-                      material,
-                      10,
-                      gameService,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 12),
+
+          // Status info grid
+          Row(
+            children: [
+              // Machines count
+              Expanded(
+                child: _buildStatusItem(
+                  icon: Icons.settings_input_component,
+                  label: 'Machines',
+                  value: '${gameService.state.autoBuyMachinesOwned}',
+                  valueColor: Colors.white,
+                ),
+              ),
+              
+              // Next tick countdown
+              Expanded(
+                child: _buildStatusItem(
+                  icon: Icons.timer_outlined,
+                  label: 'Next Tick',
+                  value: isActive
+                      ? (secondsRemaining != null ? '${secondsRemaining}s' : '--')
+                      : 'Paused',
+                  valueColor: isActive
+                      ? (secondsRemaining != null && secondsRemaining <= 2
+                          ? Colors.orange
+                          : Colors.green[300]!)
+                      : Colors.grey,
+                ),
+              ),
+              
+              // Current/next material
+              Expanded(
+                child: _buildStatusItem(
+                  icon: Icons.shopping_basket_outlined,
+                  label: 'Buying',
+                  value: isActive ? (nextMaterial ?? '--') : 'Paused',
+                  valueColor: isActive ? Colors.blue[300]! : Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          const Divider(color: Colors.white24, height: 1),
+          const SizedBox(height: 12),
+          
+          // Capacity controls embedded in status
+          Row(
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                color: Colors.cyan[300],
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Capacity per Resource:',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              
+              // Decrement button
+              IconButton(
+                onPressed: gameService.state.autoBuyResourceCapacity > 10
+                    ? gameService.decreaseAutoBuyCapacity
+                    : null,
+                icon: const Icon(Icons.remove_circle_outline),
+                color: Colors.red[400],
+                disabledColor: Colors.grey,
+                iconSize: 24,
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // Capacity display
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.cyan.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: Colors.cyan.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  '${gameService.state.autoBuyResourceCapacity}',
+                  style: TextStyle(
+                    color: Colors.cyan[300],
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // Increment button
+              IconButton(
+                onPressed: gameService.increaseAutoBuyCapacity,
+                icon: const Icon(Icons.add_circle_outline),
+                color: Colors.green[400],
+                iconSize: 24,
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+          
+          // Info text
+          const SizedBox(height: 8),
+          Text(
+            'Buying ${gameService.state.autoBuyMachinesOwned * 5} materials every 5s${isActive ? " (active)" : " (paused)"}',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildQuantitySelectorButton(
-    BuildContext context,
-    game.Material material,
-    int quantity,
-    ProductionGameService gameService,
-  ) {
-    final isSelected =
-        gameService.getBuyQuantityPreference(material.id) == quantity;
-    final cost = material.buyPrice * quantity;
-    final canAfford = gameService.state.canAfford(cost);
-
-    return SizedBox(
-      height: 40,
-      child: ElevatedButton(
-        onPressed: () {
-          // V1.4.11: Dual-function button
-          if (canAfford) {
-            HapticFeedback.mediumImpact();
-            // Direct buy action
-            gameService.buyMaterial(material.id, quantity);
-            // Also set as preference
-            gameService.setBuyQuantityPreference(material.id, quantity);
-          } else {
-            // Just set preference even if can't afford
-            HapticFeedback.lightImpact();
-            gameService.setBuyQuantityPreference(material.id, quantity);
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor:
-              isSelected
-                  ? (canAfford ? Colors.green[600] : Colors.orange[600])
-                  : (canAfford ? Colors.grey[700] : Colors.red[800]),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side:
-                isSelected
-                    ? BorderSide(color: Colors.blue[300]!, width: 2)
-                    : BorderSide.none,
-          ),
-          elevation: isSelected ? 6 : 2,
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Buy $quantity',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              Text(
-                '\$${cost.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 9),
-                textAlign: TextAlign.center,
-              ),
-            ],
+  /// Build a single status item
+  Widget _buildStatusItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white54, size: 20),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white54,
+            fontSize: 10,
           ),
         ),
-      ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }
