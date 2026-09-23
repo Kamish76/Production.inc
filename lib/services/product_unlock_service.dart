@@ -45,8 +45,11 @@ class ProductUnlockService {
     final materialsHash = gameState.materials.entries
         .map((e) => '${e.key}:${e.value}')
         .join(',');
+    final productsHash = gameState.products.entries
+        .map((e) => '${e.key}:${e.value}')
+        .join(',');
     final producedHash = gameState.unlockedProducts.join(',');
-    return '$materialsHash|$producedHash|tier:${gameState.factoryTier}';
+    return '$materialsHash|$productsHash|$producedHash|tier:${gameState.factoryTier}';
   }
 
   /// Check if cache is still valid for the current game state
@@ -115,7 +118,15 @@ class ProductUnlockService {
     }
 
     // Tier 4 Flagship product gating
-    if (productId == 'smartphone' && gameState.factoryTier < 4) {
+    if ((productId == 'smartphone' || productId == 'wind_turbine_generator') &&
+        gameState.factoryTier < 4) {
+      _unlockCache[productId] = false;
+      return false;
+    }
+
+    // Tier 3 Advanced retail gating
+    if ((productId == 'robotic_arm' || productId == 'home_powerwall') &&
+        gameState.factoryTier < 3) {
       _unlockCache[productId] = false;
       return false;
     }
@@ -234,6 +245,17 @@ class ProductUnlockService {
                 UnlockThresholds.soundDriverAdvancedMetalsThreshold &&
             gameState.getMaterialCount('basic_metals') >=
                 UnlockThresholds.soundDriverBasicMetalsThreshold;
+
+      case 'silicon_wafer':
+        return gameState.getMaterialCount('glass') >=
+                UnlockThresholds.siliconWaferGlassThreshold &&
+            gameState.getMaterialCount('advanced_metals') >=
+                UnlockThresholds.siliconWaferAdvancedMetalsThreshold;
+
+      case 'copper_coils':
+        return gameState.getMaterialCount('basic_metals') >=
+                UnlockThresholds.copperCoilsBasicMetalsThreshold &&
+            gameState.hasProduced('wires');
 
       default:
         return false;

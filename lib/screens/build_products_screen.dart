@@ -17,6 +17,7 @@ class BuildProductsScreen extends StatefulWidget {
 
 class _BuildProductsScreenState extends State<BuildProductsScreen> {
   Map<String, bool> _tierExpanded = {};
+  game.IndustryBranch? _selectedBranch;
 
   @override
   void initState() {
@@ -57,6 +58,101 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
 
   bool _areAllTiersExpanded() {
     return _tierExpanded.values.every((expanded) => expanded);
+  }
+
+  Widget _buildIndustryBranchFilterBar() {
+    return Container(
+      height: 42,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _buildFilterChip(
+            label: 'All Branches',
+            emoji: '🌐',
+            isSelected: _selectedBranch == null,
+            onTap: () => setState(() => _selectedBranch = null),
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(
+            label: 'Consumer Tech',
+            emoji: '📱',
+            isSelected: _selectedBranch == game.IndustryBranch.consumerTech,
+            onTap: () => setState(
+              () => _selectedBranch = game.IndustryBranch.consumerTech,
+            ),
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(
+            label: 'Robotics',
+            emoji: '🤖',
+            isSelected: _selectedBranch == game.IndustryBranch.robotics,
+            onTap: () => setState(
+              () => _selectedBranch = game.IndustryBranch.robotics,
+            ),
+          ),
+          const SizedBox(width: 8),
+          _buildFilterChip(
+            label: 'Clean Energy',
+            emoji: '⚡',
+            isSelected: _selectedBranch == game.IndustryBranch.cleanEnergy,
+            onTap: () => setState(
+              () => _selectedBranch = game.IndustryBranch.cleanEnergy,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required String emoji,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.blue.withValues(alpha: 0.25)
+              : const Color(0xFF1E2638),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.blue[400]! : Colors.white24,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.blue.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? Colors.white : Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -109,10 +205,15 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                   ),
                 ),
 
+                // Phase 3: Industry Branch Filter Bar
+                _buildIndustryBranchFilterBar(),
+
+                const SizedBox(height: 8),
+
                 // Production status
                 ProductionStatusPanel(gameService: gameService),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
                 // Products list - organized by tiers with unlock filtering
                 Expanded(
@@ -134,7 +235,8 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                               gameService,
                               tierLevel: entry.key,
                             ),
-                          ),
+                          )
+                          .whereType<Widget>(),
                     ],
                   ),
                 ),
@@ -146,15 +248,27 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     );
   }
 
-  Widget _buildTierSection(
+  Widget? _buildTierSection(
     BuildContext context,
     String tierName,
     List<game.Product> products,
     ProductionGameService gameService, {
     game.ProductLevel? tierLevel,
   }) {
+    // Phase 3: Filter products by selected industry branch if active
+    final branchFilteredProducts = _selectedBranch == null
+        ? products
+        : products
+            .where((product) => product.industryBranch == _selectedBranch)
+            .toList();
+
+    // If filtering by branch and this tier has no items in that branch, omit section
+    if (_selectedBranch != null && branchFilteredProducts.isEmpty) {
+      return null;
+    }
+
     // Filter products to only show unlocked ones (v1.4.18)
-    final unlockedProducts = products
+    final unlockedProducts = branchFilteredProducts
         .where((product) => gameService.isProductUnlocked(product.id))
         .toList();
 
@@ -197,7 +311,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
             _saveTierPreference(tierName, expanded);
           },
           child: TierContentWidget(
-            products: products,
+            products: branchFilteredProducts,
             gameService: gameService,
             tierName: tierName,
           ),
@@ -238,7 +352,9 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
         color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: enabled ? Colors.blue.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
+          color: enabled
+              ? Colors.blue.withValues(alpha: 0.3)
+              : Colors.grey.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -269,8 +385,8 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: enabled
-                      ? Colors.blue.withOpacity(0.2)
-                      : Colors.red.withOpacity(0.2),
+                      ? Colors.blue.withValues(alpha: 0.2)
+                      : Colors.red.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: enabled ? Colors.blue : Colors.red,
@@ -389,10 +505,10 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.cyan.withOpacity(0.15),
+                  color: Colors.cyan.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: Colors.cyan.withOpacity(0.3),
+                    color: Colors.cyan.withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                 ),
@@ -425,7 +541,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           Text(
             'Building ${machineCount * 2} products every 5s${enabled ? " (active)" : " (paused)"}',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               fontSize: 11,
               fontStyle: FontStyle.italic,
             ),

@@ -26,6 +26,48 @@ enum ProductLevel {
   retail, // Final products for selling only
 }
 
+// Industry branch specialization for production lines (Phase 3)
+enum IndustryBranch {
+  consumerTech, // Phones, cameras, speakers, foundation electronics
+  robotics,     // Automation, mechatronics, drones, robotic arms
+  cleanEnergy,  // Solar, power storage, renewable generators
+}
+
+extension IndustryBranchExtension on IndustryBranch {
+  String get displayName {
+    switch (this) {
+      case IndustryBranch.consumerTech:
+        return 'Consumer Tech';
+      case IndustryBranch.robotics:
+        return 'Robotics & Automation';
+      case IndustryBranch.cleanEnergy:
+        return 'Renewable Energy';
+    }
+  }
+
+  String get shortName {
+    switch (this) {
+      case IndustryBranch.consumerTech:
+        return 'Consumer';
+      case IndustryBranch.robotics:
+        return 'Robotics';
+      case IndustryBranch.cleanEnergy:
+        return 'Clean Energy';
+    }
+  }
+
+  String get emoji {
+    switch (this) {
+      case IndustryBranch.consumerTech:
+        return '📱';
+      case IndustryBranch.robotics:
+        return '🤖';
+      case IndustryBranch.cleanEnergy:
+        return '⚡';
+    }
+  }
+}
+
 // Product that can be produced and sold
 class Product {
   final String id;
@@ -40,6 +82,7 @@ class Product {
   final double
   shippingScalingFactor; // Per-item scaling factor (fixed at 0.9 for now)
   final ProductLevel levelId; // What tier/level this product belongs to
+  final IndustryBranch industryBranch; // Phase 3: industry branch categorization
 
   const Product({
     required this.id,
@@ -52,6 +95,7 @@ class Product {
     required this.baseShippingTimeSeconds,
     required this.levelId,
     this.shippingScalingFactor = 0.9, // Fixed scaling factor
+    this.industryBranch = IndustryBranch.consumerTech,
   });
 
   // Calculate total shipping time for a given quantity

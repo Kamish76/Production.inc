@@ -140,6 +140,7 @@ class GameData {
       productionTimeSeconds: 12.0,
       baseShippingTimeSeconds: 5.0,
       levelId: ProductLevel.basicParts,
+      industryBranch: IndustryBranch.cleanEnergy,
     ),
 
     // v1.4.0 Phase 1: New intermediate parts
@@ -213,6 +214,7 @@ class GameData {
       productionTimeSeconds: 35.0,
       baseShippingTimeSeconds: 12.0,
       levelId: ProductLevel.retail,
+      industryBranch: IndustryBranch.cleanEnergy,
     ),
 
     // v1.4.1 Phase 2: New basic parts - Advanced Components
@@ -226,6 +228,7 @@ class GameData {
       productionTimeSeconds: 15.0,
       baseShippingTimeSeconds: 6.0,
       levelId: ProductLevel.basicParts,
+      industryBranch: IndustryBranch.cleanEnergy,
     ),
 
     // v1.4.17: New basic part - Mechanical Systems
@@ -239,6 +242,7 @@ class GameData {
       productionTimeSeconds: 2.0,
       baseShippingTimeSeconds: 1.0,
       levelId: ProductLevel.basicParts,
+      industryBranch: IndustryBranch.robotics,
     ),
 
     // v1.4.1 Phase 2: New intermediate parts
@@ -270,6 +274,7 @@ class GameData {
       productionTimeSeconds: 15.0,
       baseShippingTimeSeconds: 6.0,
       levelId: ProductLevel.intermediate,
+      industryBranch: IndustryBranch.robotics,
     ),
 
     // v1.4.1 Phase 2: New retail products
@@ -290,6 +295,7 @@ class GameData {
       productionTimeSeconds: 45.0,
       baseShippingTimeSeconds: 15.0,
       levelId: ProductLevel.retail,
+      industryBranch: IndustryBranch.cleanEnergy,
     ),
 
     // v1.4.2 Phase 3: New complex parts
@@ -395,6 +401,207 @@ class GameData {
       productionTimeSeconds: 54.0,
       baseShippingTimeSeconds: 22.0,
       levelId: ProductLevel.retail,
+      industryBranch: IndustryBranch.robotics,
+    ),
+
+    // =========================================================================
+    // Phase 3: Robotics & Smart Automation Branch
+    // =========================================================================
+
+    // Basic Parts (Base Feedstocks)
+    Product(
+      id: 'silicon_wafer',
+      name: 'Silicon Wafer',
+      description: 'Ultra-pure crystallized silicon disc sliced for microchips',
+      sellPrice: 32.0,
+      emoji: '💿',
+      requiredMaterials: {'glass': 2, 'advanced_metals': 1},
+      productionTimeSeconds: 12.0,
+      baseShippingTimeSeconds: 5.0,
+      levelId: ProductLevel.basicParts,
+      industryBranch: IndustryBranch.robotics,
+    ),
+
+    Product(
+      id: 'copper_coils',
+      name: 'Copper Coils',
+      description: 'High-conductivity electromagnetic copper windings',
+      sellPrice: 12.0,
+      emoji: '🧲',
+      requiredMaterials: {'basic_metals': 2},
+      productionTimeSeconds: 4.0,
+      baseShippingTimeSeconds: 2.0,
+      levelId: ProductLevel.basicParts,
+      industryBranch: IndustryBranch.robotics,
+    ),
+
+    // Intermediate Mechatronic Parts
+    Product(
+      id: 'servo_motor',
+      name: 'Servo Motor',
+      description: 'High-torque precision motorized actuator for robotic joints',
+      sellPrice: 78.0,
+      emoji: '🦾',
+      requiredMaterials: {
+        'copper_coils': 2,
+        'gears': 2,
+        'circuits': 1,
+      },
+      productionTimeSeconds: 18.0,
+      baseShippingTimeSeconds: 7.0,
+      levelId: ProductLevel.intermediate,
+      industryBranch: IndustryBranch.robotics,
+    ),
+
+    Product(
+      id: 'microcontroller',
+      name: 'Microcontroller',
+      description: 'Embedded computing unit with logic gates and integrated flash',
+      sellPrice: 115.0,
+      emoji: '🔲',
+      requiredMaterials: {
+        'silicon_wafer': 1,
+        'circuits': 2,
+        'wires': 2,
+      },
+      productionTimeSeconds: 22.0,
+      baseShippingTimeSeconds: 8.0,
+      levelId: ProductLevel.intermediate,
+      industryBranch: IndustryBranch.robotics,
+    ),
+
+    Product(
+      id: 'chassis_alloy',
+      name: 'Chassis Alloy',
+      description: 'Lightweight reinforced structural alloy frame',
+      sellPrice: 65.0,
+      emoji: '🛡️',
+      requiredMaterials: {
+        'metal_enclosure': 1,
+        'advanced_metals': 2,
+        'basic_metals': 2,
+      },
+      productionTimeSeconds: 20.0,
+      baseShippingTimeSeconds: 8.0,
+      levelId: ProductLevel.intermediate,
+      industryBranch: IndustryBranch.robotics,
+    ),
+
+    // Robotics Retail Products
+    Product(
+      id: 'cleaning_drone',
+      name: 'Cleaning Drone',
+      description: 'Autonomous smart vacuum drone with lidar mapping',
+      sellPrice: 480.0,
+      emoji: '🛸',
+      requiredMaterials: {
+        'chassis_alloy': 1,
+        'microcontroller': 1,
+        'servo_motor': 2,
+        'battery': 1,
+        'box': 2,
+      },
+      productionTimeSeconds: 65.0,
+      baseShippingTimeSeconds: 25.0,
+      levelId: ProductLevel.retail,
+      industryBranch: IndustryBranch.robotics,
+    ),
+
+    Product(
+      id: 'robotic_arm',
+      name: 'Robotic Arm',
+      description: 'Multi-axis precision industrial manipulator for automated assembly',
+      sellPrice: 1250.0,
+      emoji: '🤖',
+      requiredMaterials: {
+        'chassis_alloy': 2,
+        'servo_motor': 4,
+        'microcontroller': 2,
+        'gear_mechanism': 1,
+        'box': 4,
+      },
+      productionTimeSeconds: 110.0,
+      baseShippingTimeSeconds: 45.0,
+      levelId: ProductLevel.retail,
+      industryBranch: IndustryBranch.robotics,
+    ),
+
+    // =========================================================================
+    // Phase 3: Renewable Energy & Grid Storage Branch
+    // =========================================================================
+
+    // Intermediate Power Hardware
+    Product(
+      id: 'inverter_unit',
+      name: 'Inverter Unit',
+      description: 'High-efficiency DC-to-AC pure sine power converter',
+      sellPrice: 92.0,
+      emoji: '⚡',
+      requiredMaterials: {
+        'copper_coils': 2,
+        'circuits': 2,
+        'wires': 2,
+        'metal_enclosure': 1,
+      },
+      productionTimeSeconds: 24.0,
+      baseShippingTimeSeconds: 9.0,
+      levelId: ProductLevel.intermediate,
+      industryBranch: IndustryBranch.cleanEnergy,
+    ),
+
+    Product(
+      id: 'storage_cell',
+      name: 'Storage Cell',
+      description: 'High-density solid-state electrochemical energy cell',
+      sellPrice: 120.0,
+      emoji: '🪫',
+      requiredMaterials: {
+        'battery': 2,
+        'advanced_metals': 2,
+        'enclosure_plastic': 1,
+      },
+      productionTimeSeconds: 28.0,
+      baseShippingTimeSeconds: 10.0,
+      levelId: ProductLevel.intermediate,
+      industryBranch: IndustryBranch.cleanEnergy,
+    ),
+
+    // Renewable Energy Retail Products
+    Product(
+      id: 'home_powerwall',
+      name: 'Home Powerwall',
+      description: 'Whole-home smart backup battery and energy management system',
+      sellPrice: 850.0,
+      emoji: '🔋',
+      requiredMaterials: {
+        'storage_cell': 3,
+        'inverter_unit': 1,
+        'metal_enclosure': 2,
+        'box': 3,
+      },
+      productionTimeSeconds: 80.0,
+      baseShippingTimeSeconds: 32.0,
+      levelId: ProductLevel.retail,
+      industryBranch: IndustryBranch.cleanEnergy,
+    ),
+
+    Product(
+      id: 'wind_turbine_generator',
+      name: 'Wind Turbine Generator',
+      description: 'Commercial clean energy wind generator with variable pitch blades',
+      sellPrice: 2100.0,
+      emoji: '💨',
+      requiredMaterials: {
+        'copper_coils': 4,
+        'inverter_unit': 2,
+        'gear_mechanism': 2,
+        'chassis_alloy': 2,
+        'box': 5,
+      },
+      productionTimeSeconds: 140.0,
+      baseShippingTimeSeconds: 55.0,
+      levelId: ProductLevel.retail,
+      industryBranch: IndustryBranch.cleanEnergy,
     ),
   ];
 
@@ -457,6 +664,11 @@ class GameData {
     return products.where((p) => p.levelId == level).toList();
   }
 
+  // Phase 3: Helper methods to filter products by industry branch
+  static List<Product> getProductsByBranch(IndustryBranch branch) {
+    return products.where((p) => p.industryBranch == branch).toList();
+  }
+
   static List<Product> getMaterialProducts() =>
       getProductsByLevel(ProductLevel.material);
   static List<Product> getBasicPartsProducts() =>
@@ -515,8 +727,8 @@ class GameData {
       },
       autoBuyCapacityLimit: 50,
       perkHighlights: [
-        'Unlocks Intermediate Parts (Displays, Sound Drivers, Processors)',
-        'Unlocks entry Retail items (Speaker, Power Bank, Wall Clock)',
+        'Unlocks Intermediate Parts (Displays, Processors, Motors, Inverters)',
+        'Unlocks entry Retail items (Speaker, Power Bank, Wall Clock, Cleaning Drone)',
         'Auto-buy capacity increased to 50 units',
       ],
       allowedProductLevels: {
@@ -539,7 +751,7 @@ class GameData {
       autoBuyCapacityLimit: 100,
       perkHighlights: [
         'Unlocks Complex Parts (Camera Modules)',
-        'Unlocks advanced Retail items (Cameras, Solar Panels, Toy Robots)',
+        'Unlocks advanced Retail items (Cameras, Solar Panels, Powerwalls, Robotic Arms)',
         'Tier 2 Auto-build supported',
         'Auto-buy capacity increased to 100 units',
       ],
@@ -563,7 +775,7 @@ class GameData {
       },
       autoBuyCapacityLimit: 250,
       perkHighlights: [
-        'Unlocks Flagship Retail items (Smartphone)',
+        'Unlocks Flagship Retail items (Smartphone, Wind Turbine Generator)',
         'Tier 3 Auto-build supported',
         'Auto-buy capacity increased to 250 units',
         'Maximum automation throughput',
@@ -608,10 +820,12 @@ class GameData {
         'wires',
         'circuits',
         'display_screen',
-        'processor_chip',
+        'processor',
         'power_bank',
         'smartphone',
         'speaker',
+        'silicon_wafer',
+        'microcontroller',
       ],
     ),
     CorporateClient(
@@ -625,10 +839,13 @@ class GameData {
       discountMaterialIds: ['glass', 'basic_metals'],
       demandedProductIds: [
         'battery',
-        'power_supply',
-        'solar_cell',
+        'solar_cells',
         'solar_panel',
         'circuits',
+        'inverter_unit',
+        'storage_cell',
+        'home_powerwall',
+        'wind_turbine_generator',
       ],
     ),
     CorporateClient(
@@ -641,14 +858,17 @@ class GameData {
       primaryColorHex: 0xFFB388FF,
       discountMaterialIds: ['basic_metals', 'cardboard'],
       demandedProductIds: [
-        'gear_assembly',
-        'motor_small',
-        'optical_sensor',
+        'gears',
+        'gear_mechanism',
         'camera_module',
         'toy_robot',
-        'smart_lock',
-        'hydraulic_cylinder',
         'lens',
+        'copper_coils',
+        'servo_motor',
+        'microcontroller',
+        'chassis_alloy',
+        'cleaning_drone',
+        'robotic_arm',
       ],
     ),
   ];

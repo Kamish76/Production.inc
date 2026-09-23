@@ -103,7 +103,9 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
         color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isActive ? Colors.green.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
+          color: isActive
+              ? Colors.green.withValues(alpha: 0.3)
+              : Colors.grey.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -134,8 +136,8 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: isActive
-                      ? Colors.green.withOpacity(0.2)
-                      : Colors.red.withOpacity(0.2),
+                      ? Colors.green.withValues(alpha: 0.2)
+                      : Colors.red.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isActive ? Colors.green : Colors.red,
@@ -252,10 +254,10 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.cyan.withOpacity(0.15),
+                  color: Colors.cyan.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: Colors.cyan.withOpacity(0.3),
+                    color: Colors.cyan.withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                 ),
@@ -288,7 +290,7 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
           Text(
             'Buying ${gameService.state.autoBuyMachinesOwned * 5} materials every 5s${isActive ? " (active)" : " (paused)"}',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               fontSize: 11,
               fontStyle: FontStyle.italic,
             ),

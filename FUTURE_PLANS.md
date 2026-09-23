@@ -7,11 +7,11 @@
 ## 🗺️ Roadmap At-A-Glance
 
 | Phase | System / Feature | Target Area | Status | Impact |
-| :---: | :--- | :--- | :---: | :--- |
+| :---: | :--- | :--- | :--- | :--- |
 | **1** | **Factory Tiers & Expansion Licensing** | Control Screen (`Tiers` Tab) | ✅ **Completed** | Solves early-game rushing; gates progress with rewarding factory milestones. |
 | **2** | **B2B Corporate Contracts & Dynamic Shipping** | Shipping Screen | ✅ **Completed** | Transforms passive shipping into an active, high-margin logistics game. |
-| **3** | **New Industry Branches (Robotics & Clean Energy)** | `game_data.dart`, Build Screen | 🎯 **Next Priority** | Expands product catalog with modern, high-tech manufacturing chains. |
-| **4** | **R&D Lab & Technology Tree** | New Screen / Control Center | 💡 Concept | Gives utility to surplus inventory through permanent efficiency perks. |
+| **3** | **New Industry Branches (Robotics & Clean Energy)** | `game_data.dart`, Build & Sell Screens | ✅ **Completed** | Expands product catalog with 11 high-tech components, flagships, and branch filters. |
+| **4** | **R&D Lab & Technology Tree** | New Screen / Control Center | 🎯 **Next Priority** | Gives utility to surplus inventory through permanent efficiency perks. |
 | **5** | **Prestige / IPO (Initial Public Offering)** | Endgame System | 💡 Concept | Infinite replayability with Golden Shares and global multipliers. |
 
 ---
@@ -56,27 +56,40 @@ Elevated [`lib/screens/shipping_screen.dart`](file:///Users/Kamish/Desktop/JEBZ%
 
 ---
 
-## 🔬 Phase 3: New Industry Branches & Complex Recipes
+## 🔬 Phase 3: New Industry Branches & Complex Recipes (✅ Completed)
 
-### 🎯 Objective
-Diversify production beyond standard smartphones and speakers into specialized manufacturing paths in [`lib/models/game_data.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_data.dart).
+### 🎯 Objective & Outcome
+Expanded Production.INC's manufacturing ecosystem with two complete technological branches: **Robotics & Smart Automation** and **Renewable Energy & Grid Storage**, adding 11 new products with interconnected crafting trees, progressive unlock logic, corporate demand synergy, and responsive industry branch filtering in the Build and Sell screens.
 
-### 1. Robotics & Smart Automation Branch
-* **New Materials**: Silicon Wafer (from Glass + Metals), Copper Coils.
-* **New Intermediate Parts**:
-  * `servo_motor`: Precision electric motor.
-  * `microcontroller`: Programmable logic chip.
-  * `chassis_alloy`: Lightweight reinforced frame.
-* **New Retail Products**:
-  * `cleaning_drone`: Automated household drone ($480).
-  * `robotic_arm`: Industrial factory manipulator ($1,250).
-
-### 2. Renewable Energy & Grid Storage Branch
-* **New Intermediate Parts**:
-  * `inverter_unit`: Power conversion electronics.
-  * `storage_cell`: High-density power storage.
-* **New Retail Products**:
-  * `home_powerwall`: Residential battery storage unit ($850).
+### 📦 Delivered Features & Architecture
+- **Industry Branch Architecture**: Added [`IndustryBranch`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_models.dart) enum (`consumerTech`, `robotics`, `cleanEnergy`) with extension helpers for display names, emojis, and styling, non-breaking with default `consumerTech`.
+- **Robotics & Automation Branch (`IndustryBranch.robotics`)**:
+  1. **Silicon Wafer (`silicon_wafer`)**: Basic part ($32.00) crafted from 2 Glass + 1 Advanced Metals. Unlocks when player gathers required glass and metals.
+  2. **Copper Coils (`copper_coils`)**: Basic part ($12.00) crafted from 2 Basic Metals. Unlocks once wires are produced.
+  3. **Servo Motor (`servo_motor`)**: Intermediate part ($78.00) crafted from 2 Copper Coils + 2 Gears + 1 Circuits.
+  4. **Microcontroller (`microcontroller`)**: Intermediate part ($115.00) crafted from 1 Silicon Wafer + 2 Circuits + 2 Wires.
+  5. **Chassis Alloy (`chassis_alloy`)**: Intermediate part ($65.00) crafted from 1 Metal Enclosure + 2 Advanced Metals + 2 Basic Metals.
+  6. **Cleaning Drone (`cleaning_drone`)**: Retail consumer robot ($480.00) crafted from 1 Chassis Alloy + 1 Microcontroller + 2 Servo Motors + 1 Battery + 2 Boxes.
+  7. **Robotic Arm (`robotic_arm`)**: Tier 3+ Retail industrial manipulator ($1,250.00) crafted from 2 Chassis Alloys + 4 Servo Motors + 2 Microcontrollers + 1 Gear Mechanism + 4 Boxes.
+- **Renewable Energy & Grid Storage Branch (`IndustryBranch.cleanEnergy`)**:
+  1. **Inverter Unit (`inverter_unit`)**: Intermediate part ($92.00) crafted from 2 Copper Coils + 2 Circuits + 2 Wires + 1 Metal Enclosure.
+  2. **Storage Cell (`storage_cell`)**: Intermediate part ($120.00) crafted from 2 Batteries + 2 Advanced Metals + 1 Plastic Enclosure.
+  3. **Home Powerwall (`home_powerwall`)**: Tier 3+ Retail storage unit ($850.00) crafted from 3 Storage Cells + 1 Inverter Unit + 2 Metal Enclosures + 3 Boxes.
+  4. **Wind Turbine Generator (`wind_turbine_generator`)**: Tier 4 Megafactory Flagship ($2,100.00) crafted from 4 Copper Coils + 2 Inverter Units + 2 Gear Mechanisms + 2 Chassis Alloys + 5 Boxes.
+- **Tier Gating & Unlock System**:
+  - `ProductUnlockService` extended to support `silicon_wafer` and `copper_coils` material thresholds.
+  - Tier 4 Megafactory Cleanroom gates `wind_turbine_generator` along with `smartphone`.
+  - Tier 3 Precision Tech Plant gates `robotic_arm` and `home_powerwall`.
+  - Upgraded `_generateGameStateHash` to track product inventory changes for cache invalidation.
+- **Auto-Build Automation**: Integrated all new basic and intermediate parts into [`AutoBuildConstants.productOrderByTier`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/constants/game_constants.dart), ordered smoothly by cycle times.
+- **B2B Corporate Client Synergy**:
+  - **Nova Robotics**: Now demands precision robotics products (`copper_coils`, `servo_motor`, `microcontroller`, `chassis_alloy`, `cleaning_drone`, `robotic_arm`, `gears`, `gear_mechanism`, `toy_robot`).
+  - **Solaria Energy**: Now demands clean power products (`inverter_unit`, `storage_cell`, `home_powerwall`, `wind_turbine_generator`, `battery`, `solar_cells`, `solar_panel`).
+  - **Apex Telecom**: Now demands microelectronics (`silicon_wafer`, `microcontroller`, `processor`, `smartphone`).
+- **Interactive UI Filtering**:
+  - Added horizontal Industry Branch filter chips (`All Branches 🌐`, `Consumer Tech 📱`, `Robotics 🤖`, `Clean Energy ⚡`) to [`BuildProductsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/build_products_screen.dart) and [`SellProductsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/sell_products_screen.dart).
+  - Resolved all deprecated `withOpacity()` occurrences with modern `.withValues(alpha: ...)`.
+- **Test Suite**: Created [`test/phase3_industry_branches_test.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/test/phase3_industry_branches_test.dart) (9/9 tests passing; 46/46 combined regression test pass; 0 analyzer warnings).t ($850).
   * `wind_turbine_generator`: Clean energy generator ($2,100).
 
 ---

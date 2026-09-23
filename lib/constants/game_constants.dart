@@ -106,6 +106,11 @@ class UnlockThresholds {
   static const int gearsBasicMetalsThreshold = 1;
   static const int soundDriverAdvancedMetalsThreshold = 2;
   static const int soundDriverBasicMetalsThreshold = 1;
+
+  // Phase 3 Basic Parts unlock thresholds
+  static const int siliconWaferGlassThreshold = 2;
+  static const int siliconWaferAdvancedMetalsThreshold = 1;
+  static const int copperCoilsBasicMetalsThreshold = 2;
 }
 
 // ==================================================
@@ -291,21 +296,28 @@ class AutoBuildConstants {
   static const Map<String, List<String>> productOrderByTier = {
     'basicParts': [
       'box', // Box - 3 seconds (simplest)
+      'gears', // Gears - 2 seconds
+      'copper_coils', // Copper Coils - 4 seconds
       'wires', // Wires - 5 seconds
       'enclosure_plastic', // Plastic Enclosure - 6 seconds
       'metal_enclosure', // Metal Enclosure - 7 seconds
       'circuits', // Circuits - 8 seconds
       'lens', // Lens - 10 seconds
+      'silicon_wafer', // Silicon Wafer - 12 seconds
       'battery', // Battery - 12 seconds
       'sound_driver', // Sound Driver - 15 seconds
       'solar_cells', // Solar Cells - 15 seconds
-      'gears', // Gears - 2 seconds
     ],
     'intermediate': [
-      'display_screen', // 20 seconds
-      'processor', // 25 seconds
-      'image_sensor', // 30 seconds
       'gear_mechanism', // 15 seconds
+      'servo_motor', // 18 seconds
+      'display_screen', // 20 seconds
+      'chassis_alloy', // 20 seconds
+      'microcontroller', // 22 seconds
+      'inverter_unit', // 24 seconds
+      'processor', // 25 seconds
+      'storage_cell', // 28 seconds
+      'image_sensor', // 30 seconds
     ],
     'complex': [
       'camera_module', // 50 seconds
