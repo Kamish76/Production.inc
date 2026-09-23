@@ -1530,26 +1530,31 @@ class ProductionGameService extends ChangeNotifier {
         tierKey = 'complex';
         break;
       default:
-        // Materials and retail products don't get speed bonus
-        return baseTime;
+        // Materials don't get speed bonus
+        if (product.levelId == ProductLevel.material) {
+          return baseTime;
+        }
+        tierKey = null;
+        break;
     }
 
     // Get machine count for this tier
-    final machineCount = _state.autoBuildMachinesOwned[tierKey] ?? 0;
-    final overclockMultiplier = _state.overclockSpeedMultiplier;
+    final machineCount = tierKey != null ? (_state.autoBuildMachinesOwned[tierKey] ?? 0) : 0;
+    final overclockMultiplier = tierKey != null ? _state.overclockSpeedMultiplier : 1.0;
+    final prestigeMultiplier = _state.prestigeSpeedMultiplier;
     
-    if (machineCount <= 0 && overclockMultiplier <= 1.0) {
+    if (machineCount <= 0 && overclockMultiplier <= 1.0 && prestigeMultiplier <= 1.0) {
       return baseTime;
     }
 
-    // Calculate speed multiplier: (1.1 ^ machineCount) * overclockMultiplier
+    // Calculate speed multiplier: (1.1 ^ machineCount) * overclockMultiplier * prestigeMultiplier
     final machineMultiplier = machineCount > 0
         ? math.pow(
             AutoBuildConstants.buildSpeedMultiplierPerMachine,
             machineCount,
           ).toDouble()
         : 1.0;
-    final speedMultiplier = machineMultiplier * overclockMultiplier;
+    final speedMultiplier = machineMultiplier * overclockMultiplier * prestigeMultiplier;
 
     // Apply speed bonus: time / multiplier
     final adjustedTime = baseTime / speedMultiplier;
@@ -2898,6 +2903,175 @@ class ProductionGameService extends ChangeNotifier {
     _state = _state.copyWith(money: amount);
     notifyListeners();
     _saveGameStateOptimized();
+  }
+
+  /// Initiate Initial Public Offering (IPO / Prestige)
+  /// Requires Net Worth >= $1,000,000.
+  /// Converts valuation into Golden Shares, resets run data, and begins next corporate chapter.
+  Future<bool> initiateIPO() async {
+    if (!_state.canInitiateIPO) {
+      if (kDebugMode) {
+        GameLogger.warning(
+          'Cannot initiate IPO: Net worth \$${_state.netWorth.toStringAsFixed(2)} < \$${PrestigeConstants.ipoNetWorthThreshold}',
+        );
+      }
+      return false;
+    }
+
+    final awardedShares = _state.pendingGoldenShares;
+    final newGoldenShares = _state.goldenShares + awardedShares;
+    final newLifetimeShares = _state.lifetimeGoldenShares + awardedShares;
+    final newPrestigeCount = _state.prestigeCount + 1;
+    final newLifetimeUnits = _state.lifetimeUnitsShipped + _state.currentRunUnitsShipped;
+    final newLifetimeRev = _state.lifetimeRevenue + _state.currentRunRevenue;
+    final startingCash = _state.hasPrestigePerk(PrestigeConstants.perkAngelSeedCapital)
+        ? PrestigeConstants.angelSeedCapitalAmount
+        : 100.0;
+
+    // Build the reset game state preserving persistent prestige stats and unlocked perks
+    var newState = GameState(
+      money: startingCash,
+      materials: const {},
+      products: const {},
+      activeProductions: const [],
+      activeShippingOrders: const [],
+      shippingHistory: const [],
+      machines: const {},
+      buildQuantityPreferences: _state.buildQuantityPreferences,
+      buyQuantityPreferences: _state.buyQuantityPreferences,
+      sellQuantityPreferences: _state.sellQuantityPreferences,
+      unlockedProducts: const {},
+      productUnlockStatus: const {},
+      autoBuyMachinesOwned: 0,
+      autoBuyEnabled: false,
+      lastAutoBuyTick: null,
+      autoBuyResourceCapacity: 10,
+      autoBuildMachinesOwned: const {},
+      autoBuildEnabled: const {},
+      lastAutoBuildTick: const {},
+      autoBuildProductCapacity: const {},
+      factoryTier: 1,
+      fleetTier: 1,
+      clientReputation: _state.clientReputation,
+      corporateContracts: const [],
+      researchPoints: 0,
+      techLevels: const {},
+      overclockActive: false,
+      maintenanceWear: 1.0,
+      prestigeCount: newPrestigeCount,
+      goldenShares: newGoldenShares,
+      lifetimeGoldenShares: newLifetimeShares,
+      lifetimeRevenue: newLifetimeRev,
+      lifetimeUnitsShipped: newLifetimeUnits,
+      unlockedPrestigePerks: Set<String>.from(_state.unlockedPrestigePerks),
+    );
+
+    // Recompute unlocked products based on new reset state (tier 1, no research, but may have prototype blueprints if perk owned)
+    ProductUnlockService.clearCache();
+    final initialUnlocked = ProductUnlockService.getAllUnlockedProducts(newState);
+    newState = newState.copyWith(unlockedProducts: initialUnlocked);
+
+    _state = newState;
+
+    // Reset persistence
+    if (!_isTestMode) {
+      await _persistenceService.resetRunDataForPrestige(_state);
+    }
+
+    notifyListeners();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        '🔔 IPO Complete! Awarded $awardedShares Golden Shares. Total: $newGoldenShares. Starting Cash: \$$startingCash.',
+      );
+    }
+
+    return true;
+  }
+
+  /// Unlock a Prestige / Venture Perk using Golden Shares
+  Future<bool> unlockPrestigePerk(String perkId) async {
+    if (_state.hasPrestigePerk(perkId)) {
+      if (kDebugMode) {
+        GameLogger.warning('Prestige perk $perkId already unlocked');
+      }
+      return false;
+    }
+
+    final perk = GameData.getPrestigePerk(perkId);
+    if (perk == null) {
+      if (kDebugMode) {
+        GameLogger.warning('Prestige perk $perkId not found');
+      }
+      return false;
+    }
+
+    if (_state.goldenShares < perk.goldenShareCost) {
+      if (kDebugMode) {
+        GameLogger.warning(
+          'Insufficient Golden Shares for perk $perkId: need ${perk.goldenShareCost}, have ${_state.goldenShares}',
+        );
+      }
+      return false;
+    }
+
+    final newUnlockedPerks = Set<String>.from(_state.unlockedPrestigePerks)..add(perkId);
+    final newShares = _state.goldenShares - perk.goldenShareCost;
+
+    // If prototype blueprints unlocked, immediately recalculate unlocked products
+    _state = _state.copyWith(
+      goldenShares: newShares,
+      unlockedPrestigePerks: newUnlockedPerks,
+    );
+    ProductUnlockService.clearCache();
+    final newUnlockedProducts = ProductUnlockService.getAllUnlockedProducts(_state);
+
+    _state = _state.copyWith(
+      unlockedProducts: newUnlockedProducts,
+    );
+
+    _persistenceService.markDirty('prestige');
+    notifyListeners();
+    await _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info('🌟 Prestige perk ${perk.name} unlocked! Remaining Golden Shares: $newShares');
+    }
+
+    return true;
+  }
+
+  /// Developer / Test helpers for Phase 5
+  void devAddGoldenShares(int amount) {
+    final newShares = math.max(0, _state.goldenShares + amount);
+    final newLifetime = math.max(_state.lifetimeGoldenShares, _state.lifetimeGoldenShares + amount);
+    _state = _state.copyWith(
+      goldenShares: newShares,
+      lifetimeGoldenShares: newLifetime,
+    );
+    _persistenceService.markDirty('prestige');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  void devUnlockPrestigePerk(String perkId) {
+    final newUnlocked = Set<String>.from(_state.unlockedPrestigePerks)..add(perkId);
+    _state = _state.copyWith(
+      unlockedPrestigePerks: newUnlocked,
+    );
+    ProductUnlockService.clearCache();
+    final newUnlockedProducts = ProductUnlockService.getAllUnlockedProducts(_state);
+    _state = _state.copyWith(
+      unlockedProducts: newUnlockedProducts,
+    );
+    _persistenceService.markDirty('prestige');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  void devSetShippingHistory(List<ShippingHistory> history) {
+    _state = _state.copyWith(shippingHistory: history);
+    notifyListeners();
   }
 }
 

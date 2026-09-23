@@ -83,6 +83,7 @@ class Product {
   shippingScalingFactor; // Per-item scaling factor (fixed at 0.9 for now)
   final ProductLevel levelId; // What tier/level this product belongs to
   final IndustryBranch industryBranch; // Phase 3: industry branch categorization
+  final bool isPrototype; // Phase 5: Prestige Prototype blueprint
 
   const Product({
     required this.id,
@@ -96,6 +97,7 @@ class Product {
     required this.levelId,
     this.shippingScalingFactor = 0.9, // Fixed scaling factor
     this.industryBranch = IndustryBranch.consumerTech,
+    this.isPrototype = false,
   });
 
   // Calculate total shipping time for a given quantity
@@ -476,5 +478,24 @@ class TechNode {
     if (currentLevel >= levels.length) return null;
     return levels[currentLevel];
   }
+}
+
+// Phase 5: Prestige / Initial Public Offering (IPO) Models
+class PrestigePerk {
+  final String id;
+  final String name;
+  final String description;
+  final String emoji;
+  final int goldenShareCost;
+  final List<String> perkHighlights;
+
+  const PrestigePerk({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.emoji,
+    required this.goldenShareCost,
+    required this.perkHighlights,
+  });
 }
 

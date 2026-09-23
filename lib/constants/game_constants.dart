@@ -408,3 +408,34 @@ class ResearchConstants {
   static const double wearPerAutoBuildTick = 0.02;
 }
 
+// ==================================================
+// PRESTIGE & INITIAL PUBLIC OFFERING (PHASE 5)
+// ==================================================
+
+/// Configuration for Prestige / IPO progression and perks
+class PrestigeConstants {
+  /// Net Worth threshold required to take Production.INC public
+  static const double ipoNetWorthThreshold = 1000000.0;
+
+  /// Dollars of Net Worth per Golden Share earned upon IPO ($100,000 per share)
+  static const double goldenShareNetWorthUnit = 100000.0;
+
+  /// Units of products shipped per bonus Golden Share (1 share per 100 units)
+  static const int goldenShareUnitsShippedUnit = 100;
+
+  /// Global production speed multiplier boost per Golden Share (+10% per share)
+  static const double speedBoostPerGoldenShare = 0.10;
+
+  /// Startup cash granted when Angel Seed Capital perk is active
+  static const double angelSeedCapitalAmount = 2500.0;
+
+  /// Shipping speed multiplier applied when Quantum Warp Dispatch perk is active
+  static const double quantumWarpSpeedBonus = 1.25;
+
+  // Perk IDs
+  static const String perkInstantMachines = 'instant_machines';
+  static const String perkPrototypeBlueprints = 'prototype_blueprints';
+  static const String perkAngelSeedCapital = 'angel_seed_capital';
+  static const String perkQuantumWarpDispatch = 'quantum_warp_dispatch';
+}
+

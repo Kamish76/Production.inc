@@ -12,7 +12,7 @@ class GamePersistenceService {
     static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      9; // Updated for Phase 4: R&D Lab & Technology Tree
+      10; // Updated for Phase 5: Prestige / Initial Public Offering (IPO)
 
   Database? _database;
 
@@ -164,6 +164,10 @@ class GamePersistenceService {
       case 9:
         // Phase 4 migrations - R&D Lab & Technology Tree
         await _migrateToVersion9(db);
+        break;
+      case 10:
+        // Phase 5 migrations - Prestige & Initial Public Offering (IPO)
+        await _migrateToVersion10(db);
         break;
       default:
         if (kDebugMode) {
@@ -583,6 +587,50 @@ class GamePersistenceService {
     ''');
   }
 
+  /// Migration to version 10 (Phase 5: Prestige / IPO System)
+  Future<void> _migrateToVersion10(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 10 (Prestige / IPO System)');
+    }
+
+    final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+    final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+
+    final columnsToAdd = {
+      'prestige_count': 'INTEGER NOT NULL DEFAULT 0',
+      'golden_shares': 'INTEGER NOT NULL DEFAULT 0',
+      'lifetime_golden_shares': 'INTEGER NOT NULL DEFAULT 0',
+      'lifetime_revenue': 'REAL NOT NULL DEFAULT 0.0',
+      'lifetime_units_shipped': 'INTEGER NOT NULL DEFAULT 0',
+    };
+
+    for (final entry in columnsToAdd.entries) {
+      if (!existingColumns.contains(entry.key)) {
+        try {
+          await db.execute('''
+            ALTER TABLE game_state ADD COLUMN 
+            ${entry.key} ${entry.value}
+          ''');
+          if (kDebugMode) {
+            print('Added column: ${entry.key}');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('Migration warning (${entry.key}): $e');
+          }
+        }
+      }
+    }
+
+    // Prestige Perks table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS prestige_perks (
+        perk_id TEXT PRIMARY KEY,
+        unlocked_at INTEGER NOT NULL
+      )
+    ''');
+  }
+
   /// Create backup of existing database before major operations
   Future<void> _createDatabaseBackup() async {
     if (_database == null) return;
@@ -731,7 +779,12 @@ class GamePersistenceService {
         fleet_tier INTEGER NOT NULL DEFAULT 1,
         research_points INTEGER NOT NULL DEFAULT 0,
         overclock_active INTEGER NOT NULL DEFAULT 0,
-        maintenance_wear REAL NOT NULL DEFAULT 1.0
+        maintenance_wear REAL NOT NULL DEFAULT 1.0,
+        prestige_count INTEGER NOT NULL DEFAULT 0,
+        golden_shares INTEGER NOT NULL DEFAULT 0,
+        lifetime_golden_shares INTEGER NOT NULL DEFAULT 0,
+        lifetime_revenue REAL NOT NULL DEFAULT 0.0,
+        lifetime_units_shipped INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -900,6 +953,14 @@ class GamePersistenceService {
       )
     ''');
 
+    // Prestige perks table (Phase 5)
+    await db.execute('''
+      CREATE TABLE prestige_perks (
+        perk_id TEXT PRIMARY KEY,
+        unlocked_at INTEGER NOT NULL
+      )
+    ''');
+
     // Insert initial game state record
     await db.insert('game_state', {
       'id': 1,
@@ -910,6 +971,11 @@ class GamePersistenceService {
       'research_points': 0,
       'overclock_active': 0,
       'maintenance_wear': 1.0,
+      'prestige_count': 0,
+      'golden_shares': 0,
+      'lifetime_golden_shares': 0,
+      'lifetime_revenue': 0.0,
+      'lifetime_units_shipped': 0,
     });
   }
 
@@ -929,10 +995,11 @@ class GamePersistenceService {
       await _saveContracts(txn, state);
       await _saveReputation(txn, state);
       await _saveTechnologies(txn, state);
+      await _savePrestigePerks(txn, state);
     });
   }
 
-  /// Save core game state (money, last saved time, auto-buy state, fleet tier, research)
+  /// Save core game state (money, last saved time, auto-buy state, fleet tier, research, prestige)
   Future<void> _saveCoreGameState(DatabaseExecutor txn, GameState state) async {
     await txn.update(
       'game_state',
@@ -948,6 +1015,11 @@ class GamePersistenceService {
         'research_points': state.researchPoints,
         'overclock_active': state.overclockActive ? 1 : 0,
         'maintenance_wear': state.maintenanceWear,
+        'prestige_count': state.prestigeCount,
+        'golden_shares': state.goldenShares,
+        'lifetime_golden_shares': state.lifetimeGoldenShares,
+        'lifetime_revenue': state.lifetimeRevenue,
+        'lifetime_units_shipped': state.lifetimeUnitsShipped,
       },
       where: 'id = ?',
       whereArgs: [1],
@@ -1191,6 +1263,11 @@ class GamePersistenceService {
     final researchPoints = (row['research_points'] as int?) ?? 0;
     final overclockActive = ((row['overclock_active'] as int?) ?? 0) == 1;
     final maintenanceWear = (row['maintenance_wear'] as num?)?.toDouble() ?? 1.0;
+    final prestigeCount = (row['prestige_count'] as int?) ?? 0;
+    final goldenShares = (row['golden_shares'] as int?) ?? 0;
+    final lifetimeGoldenShares = (row['lifetime_golden_shares'] as int?) ?? 0;
+    final lifetimeRevenue = (row['lifetime_revenue'] as num?)?.toDouble() ?? 0.0;
+    final lifetimeUnitsShipped = (row['lifetime_units_shipped'] as int?) ?? 0;
 
     // Load all game components in parallel where possible
     final materials = await _loadMaterials(db);
@@ -1204,6 +1281,7 @@ class GamePersistenceService {
     final corporateContracts = await _loadContracts(db);
     final clientReputation = await _loadReputation(db);
     final techLevels = await _loadTechnologies(db);
+    final unlockedPrestigePerks = await _loadPrestigePerks(db);
 
     return GameState(
       money: money,
@@ -1232,6 +1310,12 @@ class GamePersistenceService {
       techLevels: techLevels,
       overclockActive: overclockActive,
       maintenanceWear: maintenanceWear,
+      prestigeCount: prestigeCount,
+      goldenShares: goldenShares,
+      lifetimeGoldenShares: lifetimeGoldenShares,
+      lifetimeRevenue: lifetimeRevenue,
+      lifetimeUnitsShipped: lifetimeUnitsShipped,
+      unlockedPrestigePerks: unlockedPrestigePerks,
     );
   }
 
@@ -1506,6 +1590,38 @@ class GamePersistenceService {
     return map;
   }
 
+  /// Save prestige perks (Phase 5)
+  Future<void> _savePrestigePerks(DatabaseExecutor txn, GameState state) async {
+    try {
+      await txn.delete('prestige_perks');
+      final now = DateTime.now().millisecondsSinceEpoch;
+      for (final perkId in state.unlockedPrestigePerks) {
+        await txn.insert('prestige_perks', {
+          'perk_id': perkId,
+          'unlocked_at': now,
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error saving prestige perks: $e');
+      }
+    }
+  }
+
+  /// Load prestige perks from database (Phase 5)
+  Future<Set<String>> _loadPrestigePerks(Database db) async {
+    try {
+      final result = await db.query('prestige_perks');
+      final set = <String>{};
+      for (final row in result) {
+        set.add(row['perk_id'] as String);
+      }
+      return set;
+    } catch (_) {
+      return {};
+    }
+  }
+
   /// Check if a save file exists
   Future<bool> hasSaveData() async {
     final db = await database;
@@ -1547,6 +1663,7 @@ class GamePersistenceService {
       await txn.delete('corporate_contracts');
       await txn.delete('client_reputation');
       await txn.delete('researched_technologies');
+      await txn.delete('prestige_perks');
 
       // Reset game state to defaults
       await txn.update(
@@ -1559,10 +1676,61 @@ class GamePersistenceService {
           'research_points': 0,
           'overclock_active': 0,
           'maintenance_wear': 1.0,
+          'prestige_count': 0,
+          'golden_shares': 0,
+          'lifetime_golden_shares': 0,
+          'lifetime_revenue': 0.0,
+          'lifetime_units_shipped': 0,
         },
         where: 'id = ?',
         whereArgs: [1],
       );
+    });
+  }
+
+  /// Reset run data for prestige (IPO) while preserving lifetime stats and unlocked perks
+  Future<void> resetRunDataForPrestige(GameState state) async {
+    final db = await database;
+
+    await db.transaction((txn) async {
+      // Clear run-specific inventories and operations
+      await txn.delete('materials');
+      await txn.delete('products');
+      await txn.delete('active_productions');
+      await txn.delete('shipping_order_items');
+      await txn.delete('active_shipping_orders');
+      await txn.delete('shipping_history_items');
+      await txn.delete('shipping_history');
+      await txn.delete('auto_build_machines');
+      await txn.delete('researched_technologies');
+
+      // Update core game state with reset run values and updated persistent prestige data
+      await txn.update(
+        'game_state',
+        {
+          'money': state.money,
+          'last_saved': DateTime.now().millisecondsSinceEpoch,
+          'auto_buy_machines_owned': 0,
+          'auto_buy_enabled': 0,
+          'auto_buy_last_tick': null,
+          'auto_buy_resource_capacity': 10,
+          'factory_tier': 1,
+          'fleet_tier': 1,
+          'research_points': 0,
+          'overclock_active': 0,
+          'maintenance_wear': 1.0,
+          'prestige_count': state.prestigeCount,
+          'golden_shares': state.goldenShares,
+          'lifetime_golden_shares': state.lifetimeGoldenShares,
+          'lifetime_revenue': state.lifetimeRevenue,
+          'lifetime_units_shipped': state.lifetimeUnitsShipped,
+        },
+        where: 'id = ?',
+        whereArgs: [1],
+      );
+
+      // Re-save prestige perks to ensure persisted
+      await _savePrestigePerks(txn, state);
     });
   }
 
@@ -1625,6 +1793,11 @@ class GamePersistenceService {
           'research_points': state.researchPoints,
           'overclock_active': state.overclockActive ? 1 : 0,
           'maintenance_wear': state.maintenanceWear,
+          'prestige_count': state.prestigeCount,
+          'golden_shares': state.goldenShares,
+          'lifetime_golden_shares': state.lifetimeGoldenShares,
+          'lifetime_revenue': state.lifetimeRevenue,
+          'lifetime_units_shipped': state.lifetimeUnitsShipped,
         },
         where: 'id = ?',
         whereArgs: [1],
@@ -1676,6 +1849,10 @@ class GamePersistenceService {
       if (_dirtyTables.contains('technologies')) {
         await _saveTechnologies(txn, state);
       }
+
+      if (_dirtyTables.contains('prestige')) {
+        await _savePrestigePerks(txn, state);
+      }
     });
 
     if (kDebugMode) {
@@ -1699,6 +1876,11 @@ class GamePersistenceService {
           'research_points': state.researchPoints,
           'overclock_active': state.overclockActive ? 1 : 0,
           'maintenance_wear': state.maintenanceWear,
+          'prestige_count': state.prestigeCount,
+          'golden_shares': state.goldenShares,
+          'lifetime_golden_shares': state.lifetimeGoldenShares,
+          'lifetime_revenue': state.lifetimeRevenue,
+          'lifetime_units_shipped': state.lifetimeUnitsShipped,
         },
         where: 'id = ?',
         whereArgs: [1],
@@ -1722,6 +1904,7 @@ class GamePersistenceService {
       await _saveContracts(txn, state);
       await _saveReputation(txn, state);
       await _saveTechnologies(txn, state);
+      await _savePrestigePerks(txn, state);
     });
   }
 

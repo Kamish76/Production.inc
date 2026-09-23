@@ -49,7 +49,8 @@ class ProductUnlockService {
         .map((e) => '${e.key}:${e.value}')
         .join(',');
     final producedHash = gameState.unlockedProducts.join(',');
-    return '$materialsHash|$productsHash|$producedHash|tier:${gameState.factoryTier}';
+    final perksHash = gameState.unlockedPrestigePerks.join(',');
+    return '$materialsHash|$productsHash|$producedHash|tier:${gameState.factoryTier}|prestige:${gameState.prestigeCount}|perks:$perksHash';
   }
 
   /// Check if cache is still valid for the current game state
@@ -104,6 +105,13 @@ class ProductUnlockService {
       orElse: () => throw Exception('Product not found: $productId'),
     );
 
+    // Phase 5: Prototype products require Prototype Blueprints prestige perk
+    if (product.isPrototype &&
+        !gameState.hasPrestigePerk(PrestigeConstants.perkPrototypeBlueprints)) {
+      _unlockCache[productId] = false;
+      return false;
+    }
+
     // Honor previously unlocked products even if current requirements are not met
     if (gameState.unlockedProducts.contains(productId)) {
       _unlockCache[productId] = true;
@@ -118,7 +126,9 @@ class ProductUnlockService {
     }
 
     // Tier 4 Flagship product gating
-    if ((productId == 'smartphone' || productId == 'wind_turbine_generator') &&
+    if ((productId == 'smartphone' ||
+            productId == 'wind_turbine_generator' ||
+            productId == 'orbital_satellite') &&
         gameState.factoryTier < 4) {
       _unlockCache[productId] = false;
       return false;
@@ -129,6 +139,12 @@ class ProductUnlockService {
         gameState.factoryTier < 3) {
       _unlockCache[productId] = false;
       return false;
+    }
+
+    // Prototype products are directly unlocked by owning the Prototype Blueprints perk (subject to tier checks above)
+    if (product.isPrototype) {
+      _unlockCache[productId] = true;
+      return true;
     }
 
     // Calculate unlock condition based on product tier

@@ -100,6 +100,14 @@ class GameState {
   final bool overclockActive; // Overclocking toggle state
   final double maintenanceWear; // 1.0 (100% pristine) down to 0.0 (overclock paused until checkup)
 
+  // Phase 5: Prestige / Initial Public Offering (IPO) state
+  final int prestigeCount; // Number of IPOs completed
+  final int goldenShares; // Current Golden Shares held
+  final int lifetimeGoldenShares; // All-time Golden Shares earned
+  final double lifetimeRevenue; // All-time revenue accrued across all prestiges
+  final int lifetimeUnitsShipped; // All-time units shipped across all prestiges
+  final Set<String> unlockedPrestigePerks; // Unlocked perk IDs
+
   const GameState({
     this.money = 100.0, // Starting money
     this.materials = const {},
@@ -129,6 +137,12 @@ class GameState {
     this.techLevels = const {},
     this.overclockActive = false,
     this.maintenanceWear = 1.0,
+    this.prestigeCount = 0,
+    this.goldenShares = 0,
+    this.lifetimeGoldenShares = 0,
+    this.lifetimeRevenue = 0.0,
+    this.lifetimeUnitsShipped = 0,
+    this.unlockedPrestigePerks = const {},
   });
 
   GameState copyWith({
@@ -160,6 +174,12 @@ class GameState {
     Map<String, int>? techLevels,
     bool? overclockActive,
     double? maintenanceWear,
+    int? prestigeCount,
+    int? goldenShares,
+    int? lifetimeGoldenShares,
+    double? lifetimeRevenue,
+    int? lifetimeUnitsShipped,
+    Set<String>? unlockedPrestigePerks,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -193,6 +213,12 @@ class GameState {
       techLevels: techLevels ?? this.techLevels,
       overclockActive: overclockActive ?? this.overclockActive,
       maintenanceWear: maintenanceWear ?? this.maintenanceWear,
+      prestigeCount: prestigeCount ?? this.prestigeCount,
+      goldenShares: goldenShares ?? this.goldenShares,
+      lifetimeGoldenShares: lifetimeGoldenShares ?? this.lifetimeGoldenShares,
+      lifetimeRevenue: lifetimeRevenue ?? this.lifetimeRevenue,
+      lifetimeUnitsShipped: lifetimeUnitsShipped ?? this.lifetimeUnitsShipped,
+      unlockedPrestigePerks: unlockedPrestigePerks ?? this.unlockedPrestigePerks,
     );
   }
 
@@ -303,6 +329,10 @@ class GameState {
     if (getTechLevel('logistics_optimization') >= 3) {
       maxShipments += 1;
     }
+    // Phase 5: Quantum Warp Dispatch grants +1 concurrent dispatch slot
+    if (hasPrestigePerk(PrestigeConstants.perkQuantumWarpDispatch)) {
+      maxShipments += 1;
+    }
     return maxShipments;
   }
 
@@ -349,15 +379,127 @@ class GameState {
 
   double get logisticsSpeedMultiplier {
     final level = getTechLevel('logistics_optimization');
-    if (level <= 0) return 1.0;
-    if (level >= ResearchConstants.logisticsSpeedMultipliers.length) {
-      return ResearchConstants.logisticsSpeedMultipliers.last;
+    double mult = 1.0;
+    if (level > 0) {
+      if (level >= ResearchConstants.logisticsSpeedMultipliers.length) {
+        mult = ResearchConstants.logisticsSpeedMultipliers.last;
+      } else {
+        mult = ResearchConstants.logisticsSpeedMultipliers[level];
+      }
     }
-    return ResearchConstants.logisticsSpeedMultipliers[level];
+    // Phase 5: Quantum Warp Dispatch grants 1.25x speed bonus
+    if (hasPrestigePerk(PrestigeConstants.perkQuantumWarpDispatch)) {
+      mult *= PrestigeConstants.quantumWarpSpeedBonus;
+    }
+    return mult;
   }
 
   bool get hasCorporateContractFastTrack =>
       getTechLevel('logistics_optimization') >= 2;
+
+  // =========================================================================
+  // Phase 5: Prestige / Initial Public Offering (IPO) Helpers & Valuations
+  // =========================================================================
+
+  bool hasPrestigePerk(String perkId) => unlockedPrestigePerks.contains(perkId);
+
+  /// Global production speed multiplier boosted by Golden Shares (+10% per share)
+  double get prestigeSpeedMultiplier =>
+      1.0 + (goldenShares * PrestigeConstants.speedBoostPerGoldenShare);
+
+  /// Total market value of all materials currently held in inventory
+  double get totalMaterialsMarketValue {
+    double total = 0.0;
+    for (final entry in materials.entries) {
+      if (entry.value <= 0) continue;
+      final mat = GameData.materials.firstWhere(
+        (m) => m.id == entry.key,
+        orElse: () => Material(
+          id: entry.key,
+          name: entry.key,
+          description: '',
+          buyPrice: 1.0,
+          emoji: '📦',
+        ),
+      );
+      total += entry.value * mat.buyPrice;
+    }
+    return total;
+  }
+
+  /// Total market value of all finished manufactured products held in inventory
+  double get totalProductsMarketValue {
+    double total = 0.0;
+    for (final entry in products.entries) {
+      if (entry.value <= 0) continue;
+      final prod = GameData.products.firstWhere(
+        (p) => p.id == entry.key,
+        orElse: () => Product(
+          id: entry.key,
+          name: entry.key,
+          description: '',
+          sellPrice: 4.0,
+          emoji: '📦',
+          requiredMaterials: const {},
+          productionTimeSeconds: 1.0,
+          baseShippingTimeSeconds: 1.0,
+          levelId: ProductLevel.basicParts,
+        ),
+      );
+      total += entry.value * prod.sellPrice;
+    }
+    return total;
+  }
+
+  /// Total capital value invested in manufacturing automation machines
+  double get totalMachineCapitalValue {
+    double total = autoBuyMachinesOwned * AutoBuyConstants.machineCost;
+    for (final count in autoBuildMachinesOwned.values) {
+      total += count * AutoBuildConstants.machineCost;
+    }
+    return total;
+  }
+
+  /// Comprehensive Net Worth: Cash + Materials + Products + Automation Capital
+  double get netWorth =>
+      money +
+      totalMaterialsMarketValue +
+      totalProductsMarketValue +
+      totalMachineCapitalValue;
+
+  /// Player qualifies for IPO once total net worth exceeds $1,000,000
+  bool get canInitiateIPO =>
+      netWorth >= PrestigeConstants.ipoNetWorthThreshold;
+
+  /// Total units shipped in current run
+  int get currentRunUnitsShipped {
+    int total = 0;
+    for (final history in shippingHistory) {
+      for (final item in history.items) {
+        total += item.quantity;
+      }
+    }
+    return total;
+  }
+
+  /// Total revenue generated in current run
+  double get currentRunRevenue {
+    double total = 0.0;
+    for (final history in shippingHistory) {
+      total += history.totalRevenue;
+    }
+    return total;
+  }
+
+  /// Projected Golden Shares earned upon conducting an IPO
+  int get pendingGoldenShares {
+    if (!canInitiateIPO) return 0;
+    final fromNetWorth =
+        (netWorth / PrestigeConstants.goldenShareNetWorthUnit).floor();
+    final fromShipping =
+        (currentRunUnitsShipped / PrestigeConstants.goldenShareUnitsShippedUnit).floor();
+    return fromNetWorth + fromShipping;
+  }
 }
 
 

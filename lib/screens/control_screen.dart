@@ -5,6 +5,7 @@ import '../models/game_data.dart';
 import '../widgets/factory_tier_card.dart';
 import '../widgets/tech_tree_card.dart';
 import '../widgets/deconstruction_bay_card.dart';
+import '../widgets/prestige_card.dart';
 import 'settings_screen.dart';
 
 class ControlScreen extends StatefulWidget {
@@ -15,13 +16,16 @@ class ControlScreen extends StatefulWidget {
 }
 
 class _ControlScreenState extends State<ControlScreen> {
-  // Toggle between 0 (Machines), 1 (Tiers), and 2 (R&D Lab)
+  // Toggle between 0 (Machines), 1 (Tiers), 2 (R&D Lab), and 3 (Prestige)
   int _selectedSection = 0;
   // Sub-tab for R&D Lab: 0 (Tech Tree), 1 (Deconstruction Bay)
   int _selectedRnDTab = 0;
 
   @override
   Widget build(BuildContext context) {
+    final gameService = Provider.of<ProductionGameService>(context);
+    final canIPO = gameService.state.canInitiateIPO;
+
     return Material(
       child: Container(
         decoration: const BoxDecoration(
@@ -89,6 +93,16 @@ class _ControlScreenState extends State<ControlScreen> {
                               onTap: () => setState(() => _selectedSection = 2),
                             ),
                           ),
+                          Expanded(
+                            child: _buildSectionButton(
+                              icon: Icons.auto_awesome,
+                              label: 'Prestige',
+                              isSelected: _selectedSection == 3,
+                              activeColor: const Color(0xFFFFB300),
+                              showBadge: canIPO,
+                              onTap: () => setState(() => _selectedSection = 3),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -97,18 +111,16 @@ class _ControlScreenState extends State<ControlScreen> {
               ),
               // Content area
               Expanded(
-                child: Consumer<ProductionGameService>(
-                  builder: (context, gameService, child) {
-                    return AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child:
-                          _selectedSection == 0
-                              ? _buildMachinesSection(context, gameService)
-                              : _selectedSection == 1
-                                  ? _buildTiersSection(context, gameService)
-                                  : _buildRnDLabSection(context, gameService),
-                    );
-                  },
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child:
+                      _selectedSection == 0
+                          ? _buildMachinesSection(context, gameService)
+                          : _selectedSection == 1
+                              ? _buildTiersSection(context, gameService)
+                              : _selectedSection == 2
+                                  ? _buildRnDLabSection(context, gameService)
+                                  : _buildPrestigeSection(context, gameService),
                 ),
               ),
             ],
@@ -124,36 +136,51 @@ class _ControlScreenState extends State<ControlScreen> {
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
+    Color? activeColor,
+    bool showBadge = false,
   }) {
+    final effectiveColor = activeColor ?? Colors.cyan;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color:
               isSelected
-                  ? Colors.cyan.withValues(alpha: 0.3)
+                  ? effectiveColor.withValues(alpha: 0.3)
                   : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              color: isSelected ? Colors.cyan[300] : Colors.grey[400],
-              size: 20,
+              color: isSelected ? (activeColor ?? Colors.cyan[300]) : Colors.grey[400],
+              size: 16,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Text(
               label,
               style: TextStyle(
                 color: isSelected ? Colors.white : Colors.grey[400],
-                fontSize: 16,
+                fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
+            if (showBadge) ...[
+              const SizedBox(width: 3),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFD54F),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -396,6 +423,24 @@ class _ControlScreenState extends State<ControlScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Build Prestige Section (Phase 5)
+  Widget _buildPrestigeSection(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    return SingleChildScrollView(
+      key: const ValueKey('prestige_section'),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PrestigeCard(gameService: gameService),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }
@@ -1060,6 +1105,28 @@ class _ControlScreenState extends State<ControlScreen> {
 
           const SizedBox(height: 12),
 
+          // Add Golden Shares (Dev Tool - Phase 5)
+          _buildDevControl(
+            icon: Icons.star,
+            title: 'Add Golden Shares (+10)',
+            subtitle: 'Dev: Instantly grant 10 Golden Shares (+100% speed)',
+            color: const Color(0xFFFFB300),
+            onPressed: () => _addDevGoldenShares(context, gameService, 10),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Add $1,000,000 Cash for IPO Testing (Dev Tool - Phase 5)
+          _buildDevControl(
+            icon: Icons.account_balance,
+            title: 'Add \$1,000,000 Cash',
+            subtitle: 'Dev: Instantly qualify for Initial Public Offering',
+            color: Colors.amberAccent,
+            onPressed: () => _addDevMoney(context, gameService, 1000000),
+          ),
+
+          const SizedBox(height: 12),
+
           // Add Money (Dev Tool)
           _buildDevControl(
             icon: Icons.add_circle_outline,
@@ -1365,6 +1432,23 @@ class _ControlScreenState extends State<ControlScreen> {
       SnackBar(
         content: Text('💰 Added \$${amount.toStringAsFixed(0)} (Dev)'),
         backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Dev tool: Add Golden Shares (Phase 5)
+  void _addDevGoldenShares(
+    BuildContext context,
+    ProductionGameService gameService,
+    int amount,
+  ) {
+    gameService.devAddGoldenShares(amount);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🌟 Added $amount Golden Shares (Dev)'),
+        backgroundColor: const Color(0xFFFFB300),
         duration: const Duration(seconds: 2),
       ),
     );

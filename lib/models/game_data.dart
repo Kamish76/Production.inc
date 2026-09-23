@@ -603,6 +603,65 @@ class GameData {
       levelId: ProductLevel.retail,
       industryBranch: IndustryBranch.cleanEnergy,
     ),
+
+    // =========================================================================
+    // Phase 5: Prestige Prototype Product Line
+    // =========================================================================
+    Product(
+      id: 'quantum_processor',
+      name: 'Quantum Processor',
+      description: 'Superconducting qubit processing unit operating near absolute zero',
+      sellPrice: 1800.0,
+      emoji: '💠',
+      requiredMaterials: {
+        'microcontroller': 2,
+        'silicon_wafer': 2,
+        'advanced_metals': 3,
+      },
+      productionTimeSeconds: 24.0,
+      baseShippingTimeSeconds: 10.0,
+      levelId: ProductLevel.intermediate,
+      industryBranch: IndustryBranch.consumerTech,
+      isPrototype: true,
+    ),
+
+    Product(
+      id: 'quantum_core',
+      name: 'Quantum Core',
+      description: 'Zero-point magnetic confinement clean energy reactor cell',
+      sellPrice: 4200.0,
+      emoji: '⚛️',
+      requiredMaterials: {
+        'quantum_processor': 1,
+        'storage_cell': 3,
+        'copper_coils': 2,
+      },
+      productionTimeSeconds: 32.0,
+      baseShippingTimeSeconds: 14.0,
+      levelId: ProductLevel.complex,
+      industryBranch: IndustryBranch.cleanEnergy,
+      isPrototype: true,
+    ),
+
+    Product(
+      id: 'orbital_satellite',
+      name: 'Orbital Satellite',
+      description: 'Commercial micro-satellite payload with quantum communications array',
+      sellPrice: 18500.0,
+      emoji: '🛰️',
+      requiredMaterials: {
+        'quantum_processor': 1,
+        'quantum_core': 1,
+        'chassis_alloy': 2,
+        'solar_panel': 2,
+        'box': 5,
+      },
+      productionTimeSeconds: 55.0,
+      baseShippingTimeSeconds: 25.0,
+      levelId: ProductLevel.retail,
+      industryBranch: IndustryBranch.robotics,
+      isPrototype: true,
+    ),
   ];
 
   // Future machines for automation
@@ -1116,10 +1175,76 @@ class GameData {
     'robotic_arm': 130,
     'smartphone': 180,
     'wind_turbine_generator': 250,
+    // Phase 5: Prototypes
+    'quantum_processor': 120,
+    'quantum_core': 260,
+    'orbital_satellite': 600,
   };
 
   static int getResearchPointsForProduct(String productId) {
     return productResearchPoints[productId] ?? 1;
+  }
+
+  // =========================================================================
+  // Phase 5: Prestige / Venture Capital Perks Catalog
+  // =========================================================================
+  static const List<PrestigePerk> prestigePerks = [
+    PrestigePerk(
+      id: 'instant_machines',
+      name: 'Instant Machine Licensing',
+      description: 'Acquire auto-buy and auto-build machinery immediately without tier prerequisites.',
+      emoji: '⚙️',
+      goldenShareCost: 5,
+      perkHighlights: [
+        'Immediate auto-buy machine purchases',
+        'Immediate auto-build machine assembly',
+        'Bypass factory tier machine gating',
+      ],
+    ),
+    PrestigePerk(
+      id: 'prototype_blueprints',
+      name: 'Prototype Tech Blueprints',
+      description: 'Unlock exclusive high-margin prototype line: Quantum Processor, Quantum Core, and Orbital Satellite.',
+      emoji: '🔬',
+      goldenShareCost: 10,
+      perkHighlights: [
+        'Unlocks 3 cutting-edge prototype products',
+        'Industry-leading profit margins',
+        'Orbital Satellite sells for \$18,500/unit',
+      ],
+    ),
+    PrestigePerk(
+      id: 'angel_seed_capital',
+      name: 'Angel Investor Seed Capital',
+      description: 'Begin all post-IPO production runs with \$2,500.00 cash instead of \$100.00.',
+      emoji: '💼',
+      goldenShareCost: 8,
+      perkHighlights: [
+        '\$2,500.00 starting cash per run',
+        'Instant early-game bootstrapping',
+        'Rapid first-hour expansion',
+      ],
+    ),
+    PrestigePerk(
+      id: 'quantum_warp_dispatch',
+      name: 'Quantum Warp Logistics',
+      description: 'Global 25% shipping transit speed reduction and +1 additional simultaneous shipment dispatch slot.',
+      emoji: '🌌',
+      goldenShareCost: 12,
+      perkHighlights: [
+        '+25% global shipping speed',
+        '+1 concurrent shipment dispatch slot',
+        'Stacks with fleet and tech tree bonuses',
+      ],
+    ),
+  ];
+
+  static PrestigePerk? getPrestigePerk(String perkId) {
+    try {
+      return prestigePerks.firstWhere((p) => p.id == perkId);
+    } catch (_) {
+      return null;
+    }
   }
 }
 
