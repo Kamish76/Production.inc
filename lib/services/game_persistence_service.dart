@@ -12,7 +12,7 @@ class GamePersistenceService {
     static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      7; // Updated for v1.5.0 Phase 1 Factory Tiers system
+      8; // Updated for v1.5.0 Phase 2 B2B Contracts & Fleet system
 
   Database? _database;
 
@@ -156,6 +156,10 @@ class GamePersistenceService {
       case 7:
         // v1.5.0 Phase 1 migrations - factory tier progression system
         await _migrateToVersion7(db);
+        break;
+      case 8:
+        // v1.5.0 Phase 2 migrations - B2B corporate contracts & fleet system
+        await _migrateToVersion8(db);
         break;
       default:
         if (kDebugMode) {
@@ -457,6 +461,58 @@ class GamePersistenceService {
     }
   }
 
+  /// Migration to version 8 (v1.5.0 Phase 2: B2B Corporate Contracts & Logistics Fleet)
+  Future<void> _migrateToVersion8(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 8 (B2B corporate contracts & fleet system)');
+    }
+
+    final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+    final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+
+    if (!existingColumns.contains('fleet_tier')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          fleet_tier INTEGER NOT NULL DEFAULT 1
+        ''');
+        if (kDebugMode) {
+          print('Added column: fleet_tier');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (fleet_tier): $e');
+        }
+      }
+    }
+
+    // Corporate contracts table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS corporate_contracts (
+        id TEXT PRIMARY KEY,
+        client_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        target_product_id TEXT NOT NULL,
+        required_quantity INTEGER NOT NULL,
+        delivered_quantity INTEGER NOT NULL DEFAULT 0,
+        cash_reward REAL NOT NULL,
+        rep_reward INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+
+    // Corporate client reputation table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS client_reputation (
+        client_id TEXT PRIMARY KEY,
+        reputation INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+  }
+
   /// Create backup of existing database before major operations
   Future<void> _createDatabaseBackup() async {
     if (_database == null) return;
@@ -601,7 +657,8 @@ class GamePersistenceService {
         auto_buy_enabled INTEGER DEFAULT 0,
         auto_buy_last_tick INTEGER,
         auto_buy_resource_capacity INTEGER DEFAULT 10,
-        factory_tier INTEGER NOT NULL DEFAULT 1
+        factory_tier INTEGER NOT NULL DEFAULT 1,
+        fleet_tier INTEGER NOT NULL DEFAULT 1
       )
     ''');
 
@@ -736,12 +793,39 @@ class GamePersistenceService {
       )
     ''');
 
+    // Corporate contracts table (Phase 2)
+    await db.execute('''
+      CREATE TABLE corporate_contracts (
+        id TEXT PRIMARY KEY,
+        client_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        target_product_id TEXT NOT NULL,
+        required_quantity INTEGER NOT NULL,
+        delivered_quantity INTEGER NOT NULL DEFAULT 0,
+        cash_reward REAL NOT NULL,
+        rep_reward INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+
+    // Corporate client reputation table (Phase 2)
+    await db.execute('''
+      CREATE TABLE client_reputation (
+        client_id TEXT PRIMARY KEY,
+        reputation INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
     // Insert initial game state record
     await db.insert('game_state', {
       'id': 1,
       'money': 100.0, // Starting money
       'last_saved': DateTime.now().millisecondsSinceEpoch,
       'factory_tier': 1,
+      'fleet_tier': 1,
     });
   }
 
@@ -758,10 +842,12 @@ class GamePersistenceService {
       await _saveUnlockedProducts(txn, state);
       await _saveAutoBuildData(txn, state);
       await _saveShippingData(txn, state);
+      await _saveContracts(txn, state);
+      await _saveReputation(txn, state);
     });
   }
 
-  /// Save core game state (money, last saved time, auto-buy state)
+  /// Save core game state (money, last saved time, auto-buy state, fleet tier)
   Future<void> _saveCoreGameState(DatabaseExecutor txn, GameState state) async {
     await txn.update(
       'game_state',
@@ -773,6 +859,7 @@ class GamePersistenceService {
         'auto_buy_last_tick': state.lastAutoBuyTick?.millisecondsSinceEpoch,
         'auto_buy_resource_capacity': state.autoBuyResourceCapacity,
         'factory_tier': state.factoryTier,
+        'fleet_tier': state.fleetTier,
       },
       where: 'id = ?',
       whereArgs: [1],
@@ -1012,6 +1099,7 @@ class GamePersistenceService {
         : null;
     final autoBuyResourceCapacity = (row['auto_buy_resource_capacity'] as int?) ?? 10;
     final factoryTier = (row['factory_tier'] as int?) ?? 1;
+    final fleetTier = (row['fleet_tier'] as int?) ?? 1;
 
     // Load all game components in parallel where possible
     final materials = await _loadMaterials(db);
@@ -1022,6 +1110,8 @@ class GamePersistenceService {
     final activeShippingOrders = await _loadActiveShippingOrders(db);
     final shippingHistory = await _loadShippingHistory(db);
     final autoBuildData = await _loadAutoBuildData(db);
+    final corporateContracts = await _loadContracts(db);
+    final clientReputation = await _loadReputation(db);
 
     return GameState(
       money: money,
@@ -1043,6 +1133,9 @@ class GamePersistenceService {
       lastAutoBuildTick: autoBuildData.lastTick,
       autoBuildProductCapacity: autoBuildData.capacity,
       factoryTier: factoryTier,
+      fleetTier: fleetTier,
+      corporateContracts: corporateContracts,
+      clientReputation: clientReputation,
     );
   }
 
@@ -1261,6 +1354,41 @@ class GamePersistenceService {
     return shippingHistory;
   }
 
+  /// Save corporate contracts
+  Future<void> _saveContracts(DatabaseExecutor txn, GameState state) async {
+    await txn.delete('corporate_contracts');
+    for (final contract in state.corporateContracts) {
+      await txn.insert('corporate_contracts', contract.toMap());
+    }
+  }
+
+  /// Save client reputation
+  Future<void> _saveReputation(DatabaseExecutor txn, GameState state) async {
+    await txn.delete('client_reputation');
+    for (final entry in state.clientReputation.entries) {
+      await txn.insert('client_reputation', {
+        'client_id': entry.key,
+        'reputation': entry.value,
+      });
+    }
+  }
+
+  /// Load corporate contracts from database
+  Future<List<CorporateContract>> _loadContracts(Database db) async {
+    final result = await db.query('corporate_contracts');
+    return result.map((row) => CorporateContract.fromMap(row)).toList();
+  }
+
+  /// Load client reputation from database
+  Future<Map<String, int>> _loadReputation(Database db) async {
+    final result = await db.query('client_reputation');
+    final map = <String, int>{};
+    for (final row in result) {
+      map[row['client_id'] as String] = (row['reputation'] as int?) ?? 0;
+    }
+    return map;
+  }
+
   /// Check if a save file exists
   Future<bool> hasSaveData() async {
     final db = await database;
@@ -1299,6 +1427,8 @@ class GamePersistenceService {
       await txn.delete('active_shipping_orders');
       await txn.delete('shipping_history_items');
       await txn.delete('shipping_history');
+      await txn.delete('corporate_contracts');
+      await txn.delete('client_reputation');
 
       // Reset game state to defaults
       await txn.update(
@@ -1306,6 +1436,8 @@ class GamePersistenceService {
         {
           'money': 100.0, // Starting money
           'last_saved': DateTime.now().millisecondsSinceEpoch,
+          'factory_tier': 1,
+          'fleet_tier': 1,
         },
         where: 'id = ?',
         whereArgs: [1],
@@ -1367,6 +1499,8 @@ class GamePersistenceService {
         {
           'money': state.money,
           'last_saved': DateTime.now().millisecondsSinceEpoch,
+          'factory_tier': state.factoryTier,
+          'fleet_tier': state.fleetTier,
         },
         where: 'id = ?',
         whereArgs: [1],
@@ -1406,6 +1540,14 @@ class GamePersistenceService {
       if (_dirtyTables.contains('automation')) {
         await _saveAutomationDataOptimized(txn, state);
       }
+
+      if (_dirtyTables.contains('contracts')) {
+        await _saveContracts(txn, state);
+      }
+
+      if (_dirtyTables.contains('reputation')) {
+        await _saveReputation(txn, state);
+      }
     });
 
     if (kDebugMode) {
@@ -1424,6 +1566,8 @@ class GamePersistenceService {
         {
           'money': state.money,
           'last_saved': DateTime.now().millisecondsSinceEpoch,
+          'factory_tier': state.factoryTier,
+          'fleet_tier': state.fleetTier,
         },
         where: 'id = ?',
         whereArgs: [1],
@@ -1444,6 +1588,8 @@ class GamePersistenceService {
         state.sellQuantityPreferences,
       );
       await _saveAutomationDataOptimized(txn, state); // v1.5.0 - Save automation data
+      await _saveContracts(txn, state);
+      await _saveReputation(txn, state);
     });
   }
 

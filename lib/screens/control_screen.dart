@@ -784,6 +784,39 @@ class _ControlScreenState extends State<ControlScreen> {
 
           const SizedBox(height: 12),
 
+          // Cycle Logistics Fleet Tier (Dev Tool - Phase 2)
+          _buildDevControl(
+            icon: Icons.local_shipping,
+            title: 'Cycle Fleet Tier (Current: T${gameService.state.fleetTier})',
+            subtitle: 'Dev: Cycle Logistics Fleet Tiers 1-4 for testing',
+            color: Colors.cyan,
+            onPressed: () => _cycleDevFleetTier(context, gameService),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Boost Corporate Rep (Dev Tool - Phase 2)
+          _buildDevControl(
+            icon: Icons.handshake,
+            title: 'Boost Corporate Reputation (+100)',
+            subtitle: 'Dev: Add 100 reputation points to all clients',
+            color: Colors.indigo,
+            onPressed: () => _boostDevReputation(context, gameService),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Refresh Contracts (Dev Tool - Phase 2)
+          _buildDevControl(
+            icon: Icons.assignment,
+            title: 'Refresh Corporate Contracts',
+            subtitle: 'Dev: Force regenerate 3 active B2B contracts',
+            color: Colors.teal,
+            onPressed: () => _refreshDevContracts(context, gameService),
+          ),
+
+          const SizedBox(height: 12),
+
           // Add Money (Dev Tool)
           _buildDevControl(
             icon: Icons.add_circle_outline,
@@ -970,6 +1003,60 @@ class _ControlScreenState extends State<ControlScreen> {
         ),
         backgroundColor: Colors.purple,
         duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Dev tool: Cycle logistics fleet tier (Phase 2)
+  void _cycleDevFleetTier(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    final current = gameService.state.fleetTier;
+    final next = current >= 4 ? 1 : current + 1;
+    gameService.setFleetTierForDev(next);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '🚚 Set Fleet Tier to $next: ${GameData.getFleetTier(next).name} (Dev)',
+        ),
+        backgroundColor: Colors.cyan,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Dev tool: Boost corporate reputation (Phase 2)
+  void _boostDevReputation(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    for (final client in GameData.corporateClients) {
+      gameService.devAddReputation(client.id, 100);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🤝 Added +100 reputation to all corporate clients (Dev)'),
+        backgroundColor: Colors.indigo,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Dev tool: Refresh contracts (Phase 2)
+  void _refreshDevContracts(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    gameService.devRefreshContracts();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('📋 Generated 3 new corporate B2B contracts (Dev)'),
+        backgroundColor: Colors.teal,
+        duration: Duration(seconds: 2),
       ),
     );
   }

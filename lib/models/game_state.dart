@@ -1,6 +1,7 @@
 // Production.INC Game State
 
 import 'game_models.dart';
+import 'game_data.dart';
 
 // Represents a production task in progress
 class ProductionTask {
@@ -87,6 +88,11 @@ class GameState {
   // Factory Tier progression state (Phase 1)
   final int factoryTier; // Current factory license tier (1: Garage, 2: Light Assembly, 3: Precision, 4: Megafactory)
 
+  // Phase 2: B2B Corporate Contracts & Dynamic Logistics state
+  final int fleetTier; // Logistics Fleet Tier (1: Bikes, 2: Vans, 3: Trucks, 4: Planes)
+  final Map<String, int> clientReputation; // clientId -> reputation points
+  final List<CorporateContract> corporateContracts; // Active/available corporate contracts
+
   const GameState({
     this.money = 100.0, // Starting money
     this.materials = const {},
@@ -109,6 +115,9 @@ class GameState {
     required this.lastAutoBuildTick, // Required - default to empty map
     required this.autoBuildProductCapacity, // Required - default to empty map
     this.factoryTier = 1, // Default to Tier 1: Garage Workshop
+    this.fleetTier = 1, // Default to Tier 1: Courier Bikes
+    this.clientReputation = const {},
+    this.corporateContracts = const [],
   });
 
   GameState copyWith({
@@ -133,6 +142,9 @@ class GameState {
     Map<String, DateTime?>? lastAutoBuildTick,
     Map<String, int>? autoBuildProductCapacity,
     int? factoryTier,
+    int? fleetTier,
+    Map<String, int>? clientReputation,
+    List<CorporateContract>? corporateContracts,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -159,6 +171,9 @@ class GameState {
       lastAutoBuildTick: lastAutoBuildTick ?? this.lastAutoBuildTick,
       autoBuildProductCapacity: autoBuildProductCapacity ?? this.autoBuildProductCapacity,
       factoryTier: factoryTier ?? this.factoryTier,
+      fleetTier: fleetTier ?? this.fleetTier,
+      clientReputation: clientReputation ?? this.clientReputation,
+      corporateContracts: corporateContracts ?? this.corporateContracts,
     );
   }
 
@@ -211,6 +226,67 @@ class GameState {
       }
     }
     return true;
+  }
+
+  // Phase 2: Reputation and Logistics Helper Methods
+  int getReputation(String clientId) => clientReputation[clientId] ?? 0;
+
+  int getReputationLevel(String clientId) {
+    final rep = getReputation(clientId);
+    if (rep >= 1500) return 4;
+    if (rep >= 700) return 3;
+    if (rep >= 300) return 2;
+    if (rep >= 100) return 1;
+    return 0;
+  }
+
+  String getReputationTitle(String clientId) {
+    switch (getReputationLevel(clientId)) {
+      case 4:
+        return 'Executive Partner';
+      case 3:
+        return 'Strategic Alliance';
+      case 2:
+        return 'Preferred Vendor';
+      case 1:
+        return 'Partner';
+      default:
+        return 'Neutral';
+    }
+  }
+
+  double getMaterialDiscount(String materialId) {
+    double bestDiscount = 0.0;
+    for (final client in GameData.corporateClients) {
+      if (client.discountMaterialIds.contains(materialId)) {
+        final level = getReputationLevel(client.id);
+        final discount = level * 0.05; // 0%, 5%, 10%, 15%, 20%
+        if (discount > bestDiscount) {
+          bestDiscount = discount;
+        }
+      }
+    }
+    return bestDiscount;
+  }
+
+  double getContractBonusMultiplier(String clientId) {
+    final level = getReputationLevel(clientId);
+    if (level >= 4) return 0.15;
+    if (level == 3) return 0.10;
+    if (level == 2) return 0.05;
+    return 0.0;
+  }
+
+  int get maxSimultaneousShipments {
+    return GameData.getFleetTier(fleetTier).maxSimultaneousShipments;
+  }
+
+  bool canShipMore(int currentActiveOrders) {
+    return currentActiveOrders < maxSimultaneousShipments;
+  }
+
+  bool canUpgradeFleet(LogisticsFleetTier nextTier) {
+    return money >= nextTier.upgradeCost;
   }
 }
 

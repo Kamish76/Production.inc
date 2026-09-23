@@ -110,6 +110,9 @@ class ProductionGameService extends ChangeNotifier {
       // Initialize unlock state after loading (v1.4.18)
       _initializeUnlockState();
 
+      // Ensure corporate contracts exist (Phase 2)
+      _checkAndGenerateInitialContracts();
+
       _isLoaded = true;
       notifyListeners();
 
@@ -134,6 +137,9 @@ class ProductionGameService extends ChangeNotifier {
 
       // Initialize unlock state for error fallback (v1.4.18)
       _initializeUnlockState();
+
+      // Ensure corporate contracts exist (Phase 2)
+      _checkAndGenerateInitialContracts();
 
       _isLoaded = true;
       notifyListeners();
@@ -327,7 +333,9 @@ class ProductionGameService extends ChangeNotifier {
         return false;
       }
 
-      final totalCost = material.buyPrice * quantity;
+      final discount = _state.getMaterialDiscount(materialId);
+      final effectivePrice = material.buyPrice * (1.0 - discount);
+      final totalCost = effectivePrice * quantity;
       if (!_state.canAfford(totalCost)) {
         if (kDebugMode) {
           GameLogger.warning('Insufficient funds: need \$${totalCost.toStringAsFixed(2)}, have \$${_state.money.toStringAsFixed(2)}');
@@ -615,8 +623,21 @@ class ProductionGameService extends ChangeNotifier {
         return false;
       }
 
-      // Calculate shipping time using the new formula from Product model
-      final totalShippingTime = product.calculateShippingTime(quantity);
+      // Check for active shipping order limit based on fleet tier (Phase 2)
+      if (!_state.canShipMore(_state.activeShippingOrders.length)) {
+        if (kDebugMode) {
+          GameLogger.warning(
+            'Logistics fleet at capacity: ${_state.activeShippingOrders.length} / ${_state.maxSimultaneousShipments}',
+          );
+        }
+        return false;
+      }
+
+      // Calculate shipping time using the formula scaled by fleet speed multiplier
+      final fleet = GameData.getFleetTier(_state.fleetTier);
+      final rawShippingTime = product.calculateShippingTime(quantity);
+      final totalShippingTime =
+          (rawShippingTime / fleet.speedMultiplier).clamp(1.0, 86400.0);
 
       // Validate shipping time
       if (totalShippingTime <= 0 || totalShippingTime > 86400) {
@@ -633,15 +654,6 @@ class ProductionGameService extends ChangeNotifier {
       if (totalRevenue <= 0) {
         if (kDebugMode) {
           GameLogger.warning('Invalid revenue calculation: $totalRevenue');
-        }
-        return false;
-      }
-
-      // Check for active shipping order limit (prevent spam)
-      const maxActiveOrders = 100;
-      if (_state.activeShippingOrders.length >= maxActiveOrders) {
-        if (kDebugMode) {
-          GameLogger.warning('Too many active shipping orders: ${_state.activeShippingOrders.length}');
         }
         return false;
       }
@@ -697,6 +709,9 @@ class ProductionGameService extends ChangeNotifier {
       
       // Check and process auto-build ticks for all tiers (v1.5.0 Phase 2)
       _processAutoBuildTicks();
+
+      // Check and process corporate contracts expiry and refills (Phase 2)
+      _processContractsTick();
       
       // Early return if no active operations (battery optimization)
       if (!_hasActiveOperations()) {
@@ -838,10 +853,11 @@ class ProductionGameService extends ChangeNotifier {
       }
     }
 
-    // Build material prices map from game data
+    // Build material prices map from game data (with client reputation discounts)
     final materialPrices = <String, double>{};
     for (final material in GameData.materials) {
-      materialPrices[material.id] = material.buyPrice;
+      final discount = _state.getMaterialDiscount(material.id);
+      materialPrices[material.id] = material.buyPrice * (1.0 - discount);
     }
 
     // Perform auto-buy tick using pooled-capacity model with money constraints
@@ -2230,6 +2246,390 @@ class ProductionGameService extends ChangeNotifier {
     if (kDebugMode) {
       GameLogger.info('Dev: Set factory tier to $tier');
     }
+  }
+
+  // ==========================================
+  // Logistics Fleet Methods (Phase 2)
+  // ==========================================
+
+  /// Current fleet tier configuration
+  LogisticsFleetTier get currentFleetTier =>
+      GameData.getFleetTier(_state.fleetTier);
+
+  /// Next fleet tier configuration (null if at max tier)
+  LogisticsFleetTier? get nextFleetTier =>
+      GameData.getNextFleetTier(_state.fleetTier);
+
+  /// Checks if player can afford next fleet tier
+  bool get canUpgradeFleet {
+    final next = nextFleetTier;
+    if (next == null) return false;
+    return _state.canUpgradeFleet(next);
+  }
+
+  /// Upgrades fleet to next tier
+  Future<bool> upgradeFleet() async {
+    final next = nextFleetTier;
+    if (next == null) return false;
+    if (!_state.canUpgradeFleet(next)) return false;
+
+    final newMoney = _state.money - next.upgradeCost;
+    _state = _state.copyWith(
+      money: newMoney,
+      fleetTier: next.tierNumber,
+    );
+
+    _persistenceService.markDirty('fleet');
+    notifyListeners();
+    await _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Successfully upgraded Logistics Fleet to Tier ${next.tierNumber}: ${next.name}',
+      );
+    }
+    return true;
+  }
+
+  /// Dev method: Set fleet tier directly
+  Future<void> setFleetTierForDev(int tier) async {
+    if (tier < 1 || tier > GameData.fleetTiers.length) return;
+    _state = _state.copyWith(fleetTier: tier);
+    _persistenceService.markDirty('fleet');
+    notifyListeners();
+    await _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info('Dev: Set fleet tier to $tier');
+    }
+  }
+
+  // ==========================================
+  // Corporate Contracts & Reputation Methods (Phase 2)
+  // ==========================================
+
+  /// Get effective price of a material taking client reputation discounts into account
+  double getEffectiveMaterialPrice(String materialId) {
+    final material = GameData.getMaterial(materialId);
+    if (material == null) return 0.0;
+    final discount = _state.getMaterialDiscount(materialId);
+    return material.buyPrice * (1.0 - discount);
+  }
+
+  /// Check and refresh corporate contracts (maintains 3 active/available contracts)
+  void _processContractsTick() {
+    bool stateChanged = false;
+    final now = DateTime.now();
+    final updatedContracts = <CorporateContract>[];
+
+    // Check existing contracts for expiration
+    for (final contract in _state.corporateContracts) {
+      if (contract.status == ContractStatus.available ||
+          contract.status == ContractStatus.active) {
+        if (now.isAfter(contract.expiresAt)) {
+          // Expired contracts get purged to open up slots for new contracts
+          stateChanged = true;
+          continue;
+        }
+      }
+      // Retain completed contracts up to 5 minutes
+      if (contract.status == ContractStatus.completed) {
+        if (now.difference(contract.expiresAt).inMinutes > 5) {
+          stateChanged = true;
+          continue;
+        }
+      }
+      updatedContracts.add(contract);
+    }
+
+    // Refill contracts if less than 3 active/available
+    final openCount = updatedContracts
+        .where((c) =>
+            c.status == ContractStatus.available ||
+            c.status == ContractStatus.active)
+        .length;
+
+    if (openCount < 3) {
+      final needed = 3 - openCount;
+      for (int i = 0; i < needed; i++) {
+        final newContract = _generateNewContract(updatedContracts);
+        if (newContract != null) {
+          updatedContracts.add(newContract);
+          stateChanged = true;
+        }
+      }
+    }
+
+    if (stateChanged) {
+      _state = _state.copyWith(corporateContracts: updatedContracts);
+      _persistenceService.markDirty('contracts');
+      notifyListeners();
+    }
+  }
+
+  /// Initial contracts generation helper
+  void _checkAndGenerateInitialContracts() {
+    final openCount = _state.corporateContracts
+        .where((c) =>
+            c.status == ContractStatus.available ||
+            c.status == ContractStatus.active)
+        .length;
+
+    if (openCount < 3) {
+      final list = List<CorporateContract>.from(_state.corporateContracts);
+      final needed = 3 - openCount;
+      for (int i = 0; i < needed; i++) {
+        final c = _generateNewContract(list);
+        if (c != null) list.add(c);
+      }
+      _state = _state.copyWith(corporateContracts: list);
+      _persistenceService.markDirty('contracts');
+    }
+  }
+
+  /// Generates a single contract matched to the player's tier and unlocked items
+  CorporateContract? _generateNewContract(List<CorporateContract> existing) {
+    if (GameData.corporateClients.isEmpty) return null;
+
+    final client = _pickClientForNewContract(existing);
+
+    // Filter demanded products to those currently unlocked
+    final availableProducts = client.demandedProductIds
+        .where((id) => _state.isProductUnlocked(id))
+        .toList();
+
+    String targetProductId;
+    if (availableProducts.isNotEmpty) {
+      targetProductId = availableProducts[
+          DateTime.now().microsecondsSinceEpoch % availableProducts.length];
+    } else {
+      final allUnlocked = _state.unlockedProducts.toList();
+      targetProductId = allUnlocked.isNotEmpty
+          ? allUnlocked[
+              DateTime.now().microsecondsSinceEpoch % allUnlocked.length]
+          : 'box';
+    }
+
+    final product = GameData.getProduct(targetProductId);
+    if (product == null) return null;
+
+    int qty = 10;
+    switch (product.levelId) {
+      case ProductLevel.basicParts:
+        qty = 15 + (DateTime.now().microsecondsSinceEpoch % 15);
+        break;
+      case ProductLevel.intermediate:
+        qty = 5 + (DateTime.now().microsecondsSinceEpoch % 8);
+        break;
+      case ProductLevel.complex:
+      case ProductLevel.retail:
+        qty = 2 + (DateTime.now().microsecondsSinceEpoch % 4);
+        break;
+      default:
+        qty = 10;
+    }
+
+    final baseMarketPrice = product.sellPrice * qty;
+    final clientBonusMultiplier =
+        _state.getContractBonusMultiplier(client.id);
+    final cashReward =
+        (baseMarketPrice * 1.4 * (1.0 + clientBonusMultiplier)).roundToDouble();
+
+    int repReward = 30;
+    if (product.levelId == ProductLevel.retail ||
+        product.levelId == ProductLevel.complex) {
+      repReward = 75;
+    } else if (product.levelId == ProductLevel.intermediate) {
+      repReward = 50;
+    }
+
+    final durationMinutes = 20 + (_state.factoryTier * 5);
+    final now = DateTime.now();
+
+    return CorporateContract(
+      id: '${now.microsecondsSinceEpoch}_${client.id}',
+      clientId: client.id,
+      title: '${client.name} Bulk Requisition',
+      description:
+          'Urgent bulk fulfillment request for ${product.name} units.',
+      targetProductId: targetProductId,
+      requiredQuantity: qty,
+      deliveredQuantity: 0,
+      cashReward: cashReward,
+      repReward: repReward,
+      expiresAt: now.add(Duration(minutes: durationMinutes)),
+      status: ContractStatus.available,
+      createdAt: now,
+    );
+  }
+
+  CorporateClient _pickClientForNewContract(List<CorporateContract> existing) {
+    final counts = <String, int>{};
+    for (final c in GameData.corporateClients) {
+      counts[c.id] = 0;
+    }
+    for (final contract in existing) {
+      if (contract.status == ContractStatus.available ||
+          contract.status == ContractStatus.active) {
+        counts[contract.clientId] = (counts[contract.clientId] ?? 0) + 1;
+      }
+    }
+    CorporateClient best = GameData.corporateClients.first;
+    int min = counts[best.id] ?? 0;
+    for (final c in GameData.corporateClients) {
+      final count = counts[c.id] ?? 0;
+      if (count < min) {
+        min = count;
+        best = c;
+      }
+    }
+    return best;
+  }
+
+  /// Accept a corporate contract
+  bool acceptContract(String contractId) {
+    final index =
+        _state.corporateContracts.indexWhere((c) => c.id == contractId);
+    if (index == -1) return false;
+
+    final contract = _state.corporateContracts[index];
+    if (contract.status != ContractStatus.available || contract.isExpired) {
+      return false;
+    }
+
+    final updated = List<CorporateContract>.from(_state.corporateContracts);
+    updated[index] = contract.copyWith(status: ContractStatus.active);
+    _state = _state.copyWith(corporateContracts: updated);
+    _persistenceService.markDirty('contracts');
+    notifyListeners();
+    return true;
+  }
+
+  /// Deliver items to contract (or fulfill)
+  bool deliverToContract(String contractId, int quantity) {
+    if (quantity <= 0) return false;
+
+    final index =
+        _state.corporateContracts.indexWhere((c) => c.id == contractId);
+    if (index == -1) return false;
+
+    final contract = _state.corporateContracts[index];
+    if ((contract.status != ContractStatus.available &&
+            contract.status != ContractStatus.active) ||
+        contract.isExpired) {
+      return false;
+    }
+
+    final owned = _state.getProductCount(contract.targetProductId);
+    if (owned <= 0) return false;
+
+    final remainingNeeded =
+        contract.requiredQuantity - contract.deliveredQuantity;
+    final toDeliver = math.min(quantity, math.min(owned, remainingNeeded));
+    if (toDeliver <= 0) return false;
+
+    // Deduct products from inventory
+    final newProducts = Map<String, int>.from(_state.products);
+    newProducts[contract.targetProductId] = owned - toDeliver;
+    if (newProducts[contract.targetProductId]! <= 0) {
+      newProducts.remove(contract.targetProductId);
+    }
+
+    final newDelivered = contract.deliveredQuantity + toDeliver;
+    final isCompleted = newDelivered >= contract.requiredQuantity;
+
+    final updatedContracts =
+        List<CorporateContract>.from(_state.corporateContracts);
+    var newMoney = _state.money;
+    final newReputation = Map<String, int>.from(_state.clientReputation);
+
+    if (isCompleted) {
+      // Award cash reward
+      newMoney =
+          _addRevenueWithOverflowProtection(newMoney, contract.cashReward);
+      // Award reputation points
+      final currentRep = newReputation[contract.clientId] ?? 0;
+      newReputation[contract.clientId] = currentRep + contract.repReward;
+
+      updatedContracts[index] = contract.copyWith(
+        deliveredQuantity: newDelivered,
+        status: ContractStatus.completed,
+      );
+
+      // Record to shipping history
+      final historyEntry = ShippingHistory(
+        id: 'contract_${contract.id}',
+        items: [
+          ShippingItem(
+            productId: contract.targetProductId,
+            quantity: contract.requiredQuantity,
+          ),
+        ],
+        completedTime: DateTime.now(),
+        totalRevenue: contract.cashReward,
+      );
+      final newHistory = List<ShippingHistory>.from(_state.shippingHistory)
+        ..add(historyEntry);
+
+      _state = _state.copyWith(
+        products: newProducts,
+        money: newMoney,
+        corporateContracts: updatedContracts,
+        clientReputation: newReputation,
+        shippingHistory: newHistory,
+      );
+
+      _persistenceService.markDirty('shipping');
+      _persistenceService.markDirty('reputation');
+    } else {
+      updatedContracts[index] = contract.copyWith(
+        deliveredQuantity: newDelivered,
+        status: ContractStatus.active,
+      );
+      _state = _state.copyWith(
+        products: newProducts,
+        corporateContracts: updatedContracts,
+      );
+    }
+
+    _persistenceService.markDirty('products');
+    _persistenceService.markDirty('contracts');
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    return true;
+  }
+
+  /// Fulfill contract completely in one click if player has enough goods
+  bool fulfillContract(String contractId) {
+    final index =
+        _state.corporateContracts.indexWhere((c) => c.id == contractId);
+    if (index == -1) return false;
+    final contract = _state.corporateContracts[index];
+    final remaining = contract.requiredQuantity - contract.deliveredQuantity;
+    return deliverToContract(contractId, remaining);
+  }
+
+  /// Dev controls for contracts & rep
+  void devAddReputation(String clientId, int amount) {
+    final rep = Map<String, int>.from(_state.clientReputation);
+    rep[clientId] = (rep[clientId] ?? 0) + amount;
+    _state = _state.copyWith(clientReputation: rep);
+    _persistenceService.markDirty('reputation');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  void devRefreshContracts() {
+    final list = <CorporateContract>[];
+    for (int i = 0; i < 3; i++) {
+      final c = _generateNewContract(list);
+      if (c != null) list.add(c);
+    }
+    _state = _state.copyWith(corporateContracts: list);
+    _persistenceService.markDirty('contracts');
+    notifyListeners();
+    _saveGameStateOptimized();
   }
 }
 

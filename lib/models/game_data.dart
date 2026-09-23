@@ -592,4 +592,145 @@ class GameData {
       return null;
     }
   }
+
+  // Phase 2: Corporate Clients Catalog
+  static const List<CorporateClient> corporateClients = [
+    CorporateClient(
+      id: 'apex_telecom',
+      name: 'Apex Telecom',
+      tagline: 'Global Mobile & Connectivity Infrastructure',
+      description:
+          'Apex supplies worldwide network communications and seeks bulk consumer electronic units.',
+      emoji: '📡',
+      primaryColorHex: 0xFF00E5FF,
+      discountMaterialIds: ['plastic', 'advanced_metals'],
+      demandedProductIds: [
+        'wires',
+        'circuits',
+        'display_screen',
+        'processor_chip',
+        'power_bank',
+        'smartphone',
+        'speaker',
+      ],
+    ),
+    CorporateClient(
+      id: 'solaria_energy',
+      name: 'Solaria Energy',
+      tagline: 'Clean Energy & Smart Grid Solutions',
+      description:
+          'Solaria leads the transition to sustainable energy, contracting for battery units and solar hardware.',
+      emoji: '☀️',
+      primaryColorHex: 0xFFFFB300,
+      discountMaterialIds: ['glass', 'basic_metals'],
+      demandedProductIds: [
+        'battery',
+        'power_supply',
+        'solar_cell',
+        'solar_panel',
+        'circuits',
+      ],
+    ),
+    CorporateClient(
+      id: 'nova_robotics',
+      name: 'Nova Robotics',
+      tagline: 'Industrial Automation & Mechatronics',
+      description:
+          'Nova engineers cutting-edge robotics and requires precision sensors, gears, and smart actuators.',
+      emoji: '🤖',
+      primaryColorHex: 0xFFB388FF,
+      discountMaterialIds: ['basic_metals', 'cardboard'],
+      demandedProductIds: [
+        'gear_assembly',
+        'motor_small',
+        'optical_sensor',
+        'camera_module',
+        'toy_robot',
+        'smart_lock',
+        'hydraulic_cylinder',
+        'lens',
+      ],
+    ),
+  ];
+
+  static CorporateClient? getCorporateClient(String id) {
+    try {
+      return corporateClients.firstWhere((c) => c.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Phase 2: Logistics Fleet Tiers Catalog
+  static const List<LogisticsFleetTier> fleetTiers = [
+    LogisticsFleetTier(
+      tierNumber: 1,
+      name: 'Courier Bikes',
+      description: 'Nimble city bicycle couriers for rapid local parcels',
+      emoji: '🚲',
+      upgradeCost: 0.0,
+      speedMultiplier: 1.0,
+      maxSimultaneousShipments: 2,
+      perkHighlights: [
+        'Starting delivery fleet',
+        '2 concurrent shipping dispatches',
+      ],
+    ),
+    LogisticsFleetTier(
+      tierNumber: 2,
+      name: 'Delivery Vans',
+      description: 'Commercial cargo vans equipped for express suburban delivery',
+      emoji: '🚐',
+      upgradeCost: 1500.0,
+      speedMultiplier: 1.25,
+      maxSimultaneousShipments: 4,
+      perkHighlights: [
+        '+25% shipping speed',
+        '4 concurrent shipping dispatches',
+      ],
+    ),
+    LogisticsFleetTier(
+      tierNumber: 3,
+      name: 'Freight Trucks',
+      description:
+          'Heavy-duty commercial semi-trucks for high-volume regional transport',
+      emoji: '🚚',
+      upgradeCost: 12500.0,
+      speedMultiplier: 1.6,
+      maxSimultaneousShipments: 7,
+      perkHighlights: [
+        '+60% shipping speed',
+        '7 concurrent shipping dispatches',
+      ],
+    ),
+    LogisticsFleetTier(
+      tierNumber: 4,
+      name: 'Cargo Planes',
+      description:
+          'Dedicated air freight logistics network for instant mass shipping',
+      emoji: '✈️',
+      upgradeCost: 75000.0,
+      speedMultiplier: 2.5,
+      maxSimultaneousShipments: 12,
+      perkHighlights: [
+        '+150% shipping speed',
+        '12 concurrent shipping dispatches',
+      ],
+    ),
+  ];
+
+  static LogisticsFleetTier getFleetTier(int tierNumber) {
+    return fleetTiers.firstWhere(
+      (f) => f.tierNumber == tierNumber,
+      orElse: () => fleetTiers.first,
+    );
+  }
+
+  static LogisticsFleetTier? getNextFleetTier(int currentTierNumber) {
+    try {
+      return fleetTiers.firstWhere((f) => f.tierNumber == currentTierNumber + 1);
+    } catch (_) {
+      return null;
+    }
+  }
 }

@@ -9,8 +9,8 @@
 | Phase | System / Feature | Target Area | Status | Impact |
 | :---: | :--- | :--- | :---: | :--- |
 | **1** | **Factory Tiers & Expansion Licensing** | Control Screen (`Tiers` Tab) | ✅ **Completed** | Solves early-game rushing; gates progress with rewarding factory milestones. |
-| **2** | **B2B Corporate Contracts & Dynamic Shipping** | Shipping Screen | 🎯 **Next Priority** | Transforms passive shipping into an active, high-margin logistics game. |
-| **3** | **New Industry Branches (Robotics & Clean Energy)** | `game_data.dart`, Build Screen | 📋 Planned | Expands product catalog with modern, high-tech manufacturing chains. |
+| **2** | **B2B Corporate Contracts & Dynamic Shipping** | Shipping Screen | ✅ **Completed** | Transforms passive shipping into an active, high-margin logistics game. |
+| **3** | **New Industry Branches (Robotics & Clean Energy)** | `game_data.dart`, Build Screen | 🎯 **Next Priority** | Expands product catalog with modern, high-tech manufacturing chains. |
 | **4** | **R&D Lab & Technology Tree** | New Screen / Control Center | 💡 Concept | Gives utility to surplus inventory through permanent efficiency perks. |
 | **5** | **Prestige / IPO (Initial Public Offering)** | Endgame System | 💡 Concept | Infinite replayability with Golden Shares and global multipliers. |
 
@@ -34,21 +34,25 @@ Replaced the placeholder in [`lib/screens/control_screen.dart`](file:///Users/Ka
 
 ---
 
-## 🚚 Phase 2: B2B Corporate Contracts & Dynamic Logistics
+## 🚚 Phase 2: B2B Corporate Contracts & Dynamic Logistics (✅ Completed)
 
-### 🎯 Objective
-Elevate [`lib/screens/shipping_screen.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/shipping_screen.dart) from a passive order timer into an engaging commercial dispatch center.
+### 🎯 Objective & Outcome
+Elevated [`lib/screens/shipping_screen.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/shipping_screen.dart) from a basic order timer into a full 3-tab **Commercial Dispatch & Corporate Logistics Center**.
 
-### 🧩 Core Mechanics
-1. **Corporate Client Contracts**:
-   * AI corporations (e.g. *Apex Telecom*, *Solaria Energy*, *Nova Robotics*) post timed bulk requests.
-   * *Example*: *"Apex Telecom needs 30 Power Banks within 25 minutes. Reward: $7,500 (1.4x standard sell price) + 50 Apex Rep."*
-2. **Reputation Levels**:
-   * Fulfilling contracts builds standing with specific clients.
-   * Higher reputation unlocks permanent discounts on client-supplied raw materials or exclusive high-tier assembly blueprints.
-3. **Logistics Fleet Upgrades**:
-   * Upgrade your fleet from **Courier Bikes** $\to$ **Delivery Vans** $\to$ **Freight Trucks** $\to$ **Cargo Planes**.
-   * Reduces `baseShippingTimeSeconds` and increases maximum simultaneous shipments.
+### 📦 Delivered Features & Architecture
+- **Corporate Clients Catalog**: Added 3 distinct AI corporations in [`lib/models/game_data.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_data.dart):
+  1. **Apex Telecom (📡)**: Demands telecom and mobile goods (wires, circuits, power banks, smartphones). Sells `plastic` and `advanced_metals` at discounted rates.
+  2. **Solaria Energy (☀️)**: Demands clean power hardware (batteries, solar cells, power supplies). Sells `glass` and `basic_metals` at discounted rates.
+  3. **Nova Robotics (🤖)**: Demands robotics mechatronics (gears, motors, sensors, robot kits). Sells `basic_metals` and `cardboard` at discounted rates.
+- **Standing & Reputation System**: Standing progression from *Neutral* (0) $\to$ *Partner* (Level 1: 5% material discount) $\to$ *Preferred Vendor* (Level 2: 10% discount, +5% contract cash bonus) $\to$ *Strategic Alliance* (Level 3: 15% discount, +10% bonus) $\to$ *Executive Partner* (Level 4: 20% discount, +15% bonus). Integrated into manual purchase and auto-buy loops.
+- **Dynamic B2B Contracts**: Autonomously generated timed bulk contracts tailored to player's factory tier and unlocked products. Supports single-click partial deliveries or complete fulfillment, with cash payouts, reputation awards, and automatic shipment history logging.
+- **Logistics Fleet Upgrades**: Upgradeable 4-tier fleet (*Courier Bikes* $\to$ *Delivery Vans* $\to$ *Freight Trucks* $\to$ *Cargo Planes*) scaling shipping speeds up to +150% (2.5x speed) and expanding concurrent dispatch slots from 2 up to 12.
+- **Commercial Dispatch UI**: Transformed [`shipping_screen.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/shipping_screen.dart) into a responsive 3-tab layout:
+  - **Contracts Tab**: Live corporate contracts feed, countdown timers, delivery actions, and client standing breakdown.
+  - **Fleet & Dispatch Tab**: Active fleet overview, upgrade purchasing card, and real-time shipment dispatch slots.
+  - **History Tab**: Filterable completed shipping logs distinguishing B2B contracts from direct market shipments.
+- **Database v8 Migration**: Added `_migrateToVersion8` in [`GamePersistenceService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/game_persistence_service.dart), creating `corporate_contracts` and `client_reputation` tables and persisting `fleet_tier` with incremental saving.
+- **Test Suite**: Created [`test/phase2_b2b_logistics_test.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/test/phase2_b2b_logistics_test.dart) covering fleet tiers, reputation discounts, contract life cycles, and DB roundtrips (10/10 tests passing).
 
 ---
 

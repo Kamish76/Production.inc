@@ -183,3 +183,174 @@ class FactoryTier {
     required this.allowedProductLevels,
   });
 }
+
+// Phase 2: Corporate Client definition
+class CorporateClient {
+  final String id;
+  final String name;
+  final String tagline;
+  final String description;
+  final String emoji;
+  final int primaryColorHex;
+  final List<String> discountMaterialIds;
+  final List<String> demandedProductIds;
+
+  const CorporateClient({
+    required this.id,
+    required this.name,
+    required this.tagline,
+    required this.description,
+    required this.emoji,
+    required this.primaryColorHex,
+    required this.discountMaterialIds,
+    required this.demandedProductIds,
+  });
+}
+
+// Status of a corporate contract
+enum ContractStatus {
+  available, // Offered to player, countdown to accept/fulfill
+  active,    // Player accepted, active delivery timer running
+  completed, // Fulfilled and rewards claimed
+  expired,   // Time ran out
+}
+
+// Corporate contract model
+class CorporateContract {
+  final String id;
+  final String clientId;
+  final String title;
+  final String description;
+  final String targetProductId;
+  final int requiredQuantity;
+  final int deliveredQuantity;
+  final double cashReward;
+  final int repReward;
+  final DateTime expiresAt;
+  final ContractStatus status;
+  final DateTime createdAt;
+
+  const CorporateContract({
+    required this.id,
+    required this.clientId,
+    required this.title,
+    required this.description,
+    required this.targetProductId,
+    required this.requiredQuantity,
+    this.deliveredQuantity = 0,
+    required this.cashReward,
+    required this.repReward,
+    required this.expiresAt,
+    this.status = ContractStatus.available,
+    required this.createdAt,
+  });
+
+  bool get isExpired => DateTime.now().isAfter(expiresAt);
+
+  Duration get remainingDuration {
+    final diff = expiresAt.difference(DateTime.now());
+    return diff.isNegative ? Duration.zero : diff;
+  }
+
+  double get progress => requiredQuantity > 0
+      ? (deliveredQuantity / requiredQuantity).clamp(0.0, 1.0)
+      : 0.0;
+
+  bool get isReadyToComplete => deliveredQuantity >= requiredQuantity;
+
+  CorporateContract copyWith({
+    String? id,
+    String? clientId,
+    String? title,
+    String? description,
+    String? targetProductId,
+    int? requiredQuantity,
+    int? deliveredQuantity,
+    double? cashReward,
+    int? repReward,
+    DateTime? expiresAt,
+    ContractStatus? status,
+    DateTime? createdAt,
+  }) {
+    return CorporateContract(
+      id: id ?? this.id,
+      clientId: clientId ?? this.clientId,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      targetProductId: targetProductId ?? this.targetProductId,
+      requiredQuantity: requiredQuantity ?? this.requiredQuantity,
+      deliveredQuantity: deliveredQuantity ?? this.deliveredQuantity,
+      cashReward: cashReward ?? this.cashReward,
+      repReward: repReward ?? this.repReward,
+      expiresAt: expiresAt ?? this.expiresAt,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'client_id': clientId,
+      'title': title,
+      'description': description,
+      'target_product_id': targetProductId,
+      'required_quantity': requiredQuantity,
+      'delivered_quantity': deliveredQuantity,
+      'cash_reward': cashReward,
+      'rep_reward': repReward,
+      'expires_at': expiresAt.millisecondsSinceEpoch,
+      'status': status.name,
+      'created_at': createdAt.millisecondsSinceEpoch,
+    };
+  }
+
+  factory CorporateContract.fromMap(Map<String, dynamic> map) {
+    ContractStatus parseStatus(String? name) {
+      for (final s in ContractStatus.values) {
+        if (s.name == name) return s;
+      }
+      return ContractStatus.available;
+    }
+
+    return CorporateContract(
+      id: map['id'] as String,
+      clientId: map['client_id'] as String,
+      title: map['title'] as String,
+      description: map['description'] as String,
+      targetProductId: map['target_product_id'] as String,
+      requiredQuantity: map['required_quantity'] as int,
+      deliveredQuantity: (map['delivered_quantity'] as int?) ?? 0,
+      cashReward: (map['cash_reward'] as num).toDouble(),
+      repReward: map['rep_reward'] as int,
+      expiresAt: DateTime.fromMillisecondsSinceEpoch(map['expires_at'] as int),
+      status: parseStatus(map['status'] as String?),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+        (map['created_at'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+  }
+}
+
+// Logistics Fleet Tier model for Phase 2 dynamic shipping
+class LogisticsFleetTier {
+  final int tierNumber;
+  final String name;
+  final String description;
+  final String emoji;
+  final double upgradeCost;
+  final double speedMultiplier; // e.g. 1.0, 1.25, 1.6, 2.5
+  final int maxSimultaneousShipments; // e.g. 2, 4, 7, 12
+  final List<String> perkHighlights;
+
+  const LogisticsFleetTier({
+    required this.tierNumber,
+    required this.name,
+    required this.description,
+    required this.emoji,
+    required this.upgradeCost,
+    required this.speedMultiplier,
+    required this.maxSimultaneousShipments,
+    required this.perkHighlights,
+  });
+}
