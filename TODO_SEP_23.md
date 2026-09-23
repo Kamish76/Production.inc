@@ -2,7 +2,7 @@
 
 > **Document Purpose**: This file serves as the active, granular task backlog and implementation tracker for finalizing the **Version 2.0 (v2.0 Major Update)** of **Production.INC**.
 >
-> 🚀 **Version 2.0 Context**: While core **Phases 1 through 5** are fully implemented (see [`FUTURE_PLANS.md`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/FUTURE_PLANS.md)), this tracker drives the finalization of the v2.0 release: **Phase 6** (Testing, Ergonomics & Memory Polish) and **Phase 7** (Machine & Automation Overhaul).
+> 🚀 **Version 2.0 Context**: Core **Phases 1 through 5** are fully implemented (see [`FUTURE_PLANS.md`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/FUTURE_PLANS.md)). To guarantee rapid, agile, and modular delivery, remaining features and fixes are partitioned into bite-sized, single-responsibility phases: **Phase 6** (Immediate Priority: Usability & Fixes), **Phase 7** (Machine Caps & Dynamic Pricing), **Phase 8** (Batch Throughput & Bulk Procurement), **Phase 9** (Auto-Sell Dispatchers), **Phase 10** (Logistics Fleet Payload Limits), and **Phase 11** (Multi-Product Manifest Cart).
 
 ---
 
@@ -10,18 +10,22 @@
 
 | Phase | System / Feature | Target Area | Status | Impact in v2.0 |
 | :---: | :--- | :--- | :---: | :--- |
-| **6** | **Final Testing, Ergonomics & Systems Polish** | All Screens & Controls | ⏳ **In Exploration & Checklist** | Unifies machine UI, uncaps autobuy, adds fleet visibility, and optimizes memory with lazy loading. |
-| **7** | **Machine & Automation Overhaul: Dynamic Scaling & Upgrades** | Control Screen (`Machines` Tab) & Engine | 📋 **Planned & Approved** | Implements tier-based machine caps, exponential price scaling (1.15x–1.2x), batch build throughput, bulk autobuy intake multipliers, and machine salvage. |
+| **6** | **Current Priority: Usability, Ergonomics & Critical Fixes** | All Screens & Controls | ⏳ **Active Focus** | Resolves identified friction points: fleet counter on sell screen, lazy-loaded contracts archive, auto-buy buffer uncapping, unified machine cards, and RAM optimization. |
+| **7** | **Machine Economy & Dynamic Pricing: Tier Limits & Salvage** | Control Screen (`Machines` Tab) & Engine | 📋 **Planned** | Implements tier-based machine ownership caps (10/20/30/40), exponential price scaling ($1,000 base, 1.18x–1.20x curve), and 50% machine salvage refund. |
+| **8** | **High-Throughput Automation: Batch Crafting & Bulk Procurement** | Crafting Engine & Procurement Loop | 📋 **Planned** | Symmetrical production rate upgrades: Auto-Build Batch Throughput (items crafted/tick) and Auto-Buy Intake Multipliers (materials purchased/tick). |
+| **9** | **Automated Outbound Distribution: Auto-Sell Dispatchers** | Machines Tab & Storefront Loop | 📋 **Planned** | Unlocks timid Tier 1 Auto-Sell (1 unit/tick baseline), batch fulfillment upgrades, and direct storefront retail sales (0 fleet slots consumed). |
+| **10** | **Logistics Fleet Overhaul: Payload Capacities & Variety Caps** | Shipping Screen & Fleet Engine | 📋 **Planned** | Adds physical payload capacity (20 $\to$ 600 units) and variety limits (2 $\to$ 12 types) across Bikes, Vans, Trucks, and Planes so carrier tiers truly matter. |
+| **11** | **Commercial Dispatch Manifest: Multi-Product Bulk Selling UI** | Sell Products Screen | 📋 **Planned** | Adds docked manifest staging tray, interactive review drawer, multi-product selection, and consolidated single-carrier dispatches. |
 
 ---
 
-## 🛠️ Phase 6: Final Testing, Ergonomics & Systems Polish (⏳ Exploration & Checklist)
+## 🛠️ Phase 6: Usability, Ergonomics & Critical System Fixes (⏳ Active Priority)
 
 ### 🎯 Objective & Overview
-Phase 6 represents the comprehensive refinement, ergonomic tuning, and memory optimization pass for **Production.INC**. While new features from Phases 1–5 are active and undergoing end-to-end playtesting, this phase addresses UI friction points, streamlines machine automation, improves real-time operational feedback, and implements lazy rendering for performance.
+Phase 6 is the immediate active implementation priority for **Production.INC**, directly addressing player-reported friction points, UI ergonomics, and performance bottlenecks identified during gameplay testing. It focuses on resolving critical usability issues before adding further machine economy layers.
 
-> [!NOTE]
-> **Status**: Specification and exploration stage. No code modifications are applied yet while user verification and AI gameplay testing exploration are ongoing.
+> [!IMPORTANT]
+> **Active Focus**: This phase is prioritized for current implementation. All tasks below represent high-leverage fixes and ergonomics improvements that stabilize the existing core loop.
 
 ---
 
@@ -93,159 +97,207 @@ Phase 6 represents the comprehensive refinement, ergonomic tuning, and memory op
 
 ---
 
-## ⚙️ Phase 7: Machine & Automation Overhaul: Tier Limits, Dynamic Scaling & Batch Upgrades (📋 Planned)
+## ⚙️ Phase 7: Machine Economy & Dynamic Pricing: Tier Limits & Salvage (📋 Planned)
 
 ### 🎯 Objective & Overview
-Phase 7 delivers a comprehensive game-economy overhaul to the machinery and automation systems. While the current automated loops operate reliably, flat static pricing ($1,000.00 forever) and unlimited machine scaling allow players to easily out-scale the early-to-mid game economy. Phase 7 introduces **Tier-Gated Machine Limits**, **Compounding Dynamic Price Scaling**, and symmetrical automation upgrades: **Batch Build Throughput** (items crafted per tick) and **Auto-Buy Intake Multiplier** (bulk procurement per tick) to make factory automation deeply strategic and proportional to player progression.
+Phase 7 establishes healthy economic fundamentals for factory machinery. Currently, machines cost a flat $1,000 forever with no caps, allowing players to out-scale the early game easily. Phase 7 implements **Tier-Gated Machine Caps**, **Compounding Dynamic Price Scaling**, and a **50% Machine Salvage Refund**.
 
 > [!NOTE]
-> **Status**: Design and specification phase. No code modifications are implemented yet until review and approval.
+> **Status**: Planned and specified. Pure economy, pricing, and salvage pass—does not modify crafting rates or add new machine types.
 
 ---
 
 ### 📋 Phase 7 Core Features & Specifications
 
 #### 1. 🏭 Tier-Gated Machine Ownership Limits
-To align machinery scaling with factory expansion milestones, machine purchasing is restricted by the current **Factory Tier** (`FactoryTier.id`):
+Restricts maximum machine purchasing based on current Factory Tier (`FactoryTier.id`):
 
 | Factory Tier | Tier Name | Machine Limit (per category) | Progression Focus |
 | :---: | :--- | :---: | :--- |
 | **Tier 1** | Garage Workshop 🏚️ | **10 Machines** | Early manual bootstrapping & basic parts |
 | **Tier 2** | Light Assembly Facility 🏭 | **20 Machines** | Intermediate automation & retail shipping |
 | **Tier 3** | Precision Manufacturing Plant 🔬 | **30 Machines** | Complex mechatronics & B2B contracts |
-| **Tier 4** | Megafactory Cleanroom 🚀 | **40 Machines** *(or 50)* | Mass production flagships & R&D lab |
+| **Tier 4** | Megafactory Cleanroom 🚀 | **40 Machines** | Mass production flagships & R&D lab |
 
-- **Scope of Limit**:
-  - The cap applies per machine category:
-    - Auto-Buy Machines: Up to the tier limit (e.g., 10 in Tier 1, 20 in Tier 2).
-    - Auto-Build Machines: Up to the tier limit per crafting tier category (`basicParts`, `intermediate`, `complex`).
-- **UI Feedback**:
-  - Machine count badges display tier limits: `Machines: 7 / 10 (Tier Limit)`.
-  - Once capped, the "Buy Machine" button safely disables with tooltip: *"Factory Tier Limit Reached — Upgrade Tier to expand machine capacity"*.
+- Cap applies per machine category (`Auto-Buy`, `Auto-Build Basic`, `Auto-Build Intermediate`, `Auto-Build Complex`).
+- UI feedback: Machine badge displays `Machines: 7 / 10 (Tier Limit)`. Once reached, the Buy button disables with an informative tooltip.
 
----
+#### 2. 📈 Compounding Dynamic Price Scaling (1.20x Curve)
+Replaces flat $1,000.00 pricing with an exponential scaling formula:
+$$\text{Purchase Cost}(N) = \$1,000.00 \times (1.20)^N$$
+*Where $N$ is the number of machines already owned in that category.*
 
-#### 2. 📈 Compounding Dynamic Price Scaling (Exponential Multiplier)
-Replacing the flat $1,000.00 cost with an exponential curve so machine pricing naturally matches the player's escalating revenue.
+| Owned ($N$) | Base Price | 1.20x Cost (Next Machine) | Total Capital Invested |
+| :---: | :---: | :---: | :---: |
+| **#1** | $1,000 | $1,000 | $1,000 |
+| **#2** | $1,000 | $1,200 | $2,200 |
+| **#3** | $1,000 | $1,440 | $3,640 |
+| **#5** | $1,000 | $2,074 | $7,442 |
+| **#10** | $1,000 | $5,160 | $25,959 |
+| **#20** | $1,000 | $31,948 | $186,688 |
 
-- **Pricing Formula**:
-  $$\text{Purchase Cost}(N) = \text{Base Price} \times (\text{Multiplier})^N$$
-  *Where $N$ is the number of machines already owned (or current upgrade level), and $\text{Base Price} = \$1,000.00$.*
-
-- **Multiplier Analysis & Value Comparison**:
-  Below is a comparison of price progression across different multiplier options:
-
-  | Owned ($N$) | Flat (Current) | **1.15x (Smooth)** | **1.18x (Balanced)** | **1.20x (Standard)** | **1.25x (Steep)** |
-  | :---: | :---: | :---: | :---: | :---: | :---: |
-  | **#1** | $1,000 | $1,000 | $1,000 | $1,000 | $1,000 |
-  | **#2** | $1,000 | $1,150 | $1,180 | $1,200 | $1,250 |
-  | **#3** | $1,000 | $1,323 | $1,392 | $1,440 | $1,563 |
-  | **#5** | $1,000 | $1,749 | $1,939 | $2,074 | $2,441 |
-  | **#8** | $1,000 | $2,660 | $3,185 | $3,583 | $4,768 |
-  | **#10** | $1,000 | $3,518 | $4,436 | $5,160 | $7,451 |
-  | **#15** | $1,000 | $7,076 | $10,147 | $12,839 | $22,737 |
-  | **#20** | $1,000 | $14,232 | $23,212 | $31,948 | $69,389 |
-
-  > [!TIP]
-  > **Recommendation**: 
-  > - **1.18x – 1.20x** provides an ideal balance. At machine #10 ($4,436–$5,160), it demands genuine investment from Tier 1 revenue without feeling impossible, while machine #20 ($23k–$31k) aligns smoothly with Tier 2/3 profit margins.
+#### 3. ♻️ Machine Decommission & Salvage System (50% Refund)
+Allows players to scrap owned machines to reclaim capital and free up tier capacity slots:
+$$\text{Salvage Value}(N) = \left\lfloor 0.50 \times \left( \$1,000.00 \times (1.20)^{N - 1} \right) \right\rfloor$$
+- Protective confirmation dialog: `"Salvage 1 Machine for +$X.XX?"`.
+- Immediately restores tier capacity headroom and updates state atomically.
 
 ---
 
-#### 3. ⚡ New Machine Upgrade: Batch Build Throughput (Items Built Per Tick)
-Currently, an auto-build machine produces 1 unit per cycle tick regardless of queue size. This upgrade allows machines to multi-process items in batches.
-
-- **How It Works**:
-  - **Base Level 1**: 1 item built per cycle tick.
-  - **Level 2**: 2 items built per cycle tick.
-  - **Level 3**: 3 items built per cycle tick.
-  - **Level $K$**: $K$ items built per cycle tick.
-- **Example Scenario**:
-  - A player queues **20 Wires**.
-  - At **Level 1** (1 item/tick): Requires **20 ticks** to complete.
-  - Upgraded to **Level 5** (5 items/tick): Requires only **4 ticks** to complete all 20 Wires!
-- **Material Consumption & Constraints**:
-  - Each tick consumes materials for as many items as the machine can craft up to its batch limit.
-  - If a player has materials for only 3 items but throughput is 5, the machine cleanly builds 3 items and consumes available materials without stalling.
-- **Upgrade Pricing & Gating**:
-  - **Base Upgrade Price**: $\$1,000.00$ (equal to base machine cost).
-  - **Price Scaling**: Follows the identical price multiplier formula:
-    $$\text{Upgrade Cost} = \$1,000.00 \times (\text{Multiplier})^{\text{Level} - 1}$$
-  - **Tier Limit**: Max throughput level is capped by the current Factory Tier limit (e.g., Level 10 max at Tier 1, Level 20 at Tier 2).
+### 📋 Phase 7 Implementation Checklist
+- [ ] Add tier machine cap validation in [`ProductionGameService.buyAutoBuyMachine`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) and auto-build purchasing methods.
+- [ ] Implement exponential price calculation helper `getMachinePrice(category, currentCount)`.
+- [ ] Implement `salvageMachine(category)` awarding 50% refund.
+- [ ] Update UI cards in [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart) with tier limit counters and salvage action buttons.
+- [ ] Unit tests covering tier cap enforcement, price escalation, and salvage refunds.
 
 ---
 
-#### 4. 🛒 New Machine Upgrade: Auto-Buy Intake Multiplier (Bulk Procurement Logistics) (✅ Approved)
-Symmetric to the Auto-Build batch throughput upgrade, this upgrade amplifies raw material intake volume per tick so automated buying keeps up with accelerated manufacturing lines without requiring machine counts beyond factory tier limits.
+## ⚡ Phase 8: High-Throughput Automation: Batch Crafting & Bulk Procurement (📋 Planned)
 
-- **Current Baseline**:
-  $$\text{Total Items Per Tick} = \text{Machines Owned} \times \text{Base Intake (5 items)}$$
-  *Example: 10 machines buy 50 items/tick; 20 machines buy 100 items/tick.*
-  Materials are allocated in priority order (`cardboard` $\to$ `plastic` $\to$ `basic_metals` $\to$ `glass` $\to$ `advanced_metals`) up to configured capacity limits.
-- **The Upgraded Formula**:
-  $$\text{Total Purchases Per Tick} = \left\lfloor \text{Machines Owned} \times \text{Base Rate (5)} \times \text{Intake Multiplier}(\text{Level}) \right\rfloor$$
-  *(Equivalently: $\text{Effective Rate Per Machine} = 5 \times \text{Multiplier}$)*
-- **Approved Progression Model (Additive +25% / +0.25x per level)**:
-
-  | Upgrade Level | Multiplier Rate | Effective Yield per Machine | 10 Machines Yield |
-  | :---: | :---: | :---: | :---: |
-  | **Level 1** *(Base)* | **1.00x** | 5.0 items / machine | **50 items / tick** |
-  | **Level 2** | **1.25x** | 6.25 $\approx$ 6 items / machine | **62 items / tick** |
-  | **Level 3** | **1.50x** | 7.5 $\approx$ 7 items / machine | **75 items / tick** |
-  | **Level 4** | **1.75x** | 8.75 $\approx$ 8 items / machine | **87 items / tick** |
-  | **Level 5** | **2.00x** | 10.0 items / machine | **100 items / tick** |
-  | **Level 10** | **3.25x** | 16.25 $\approx$ 16 items / machine | **162 items / tick** |
-
-- **Upgrade Economics & Gating**:
-  - **Base Upgrade Cost**: $\$1,000.00$ (equal to base machine cost).
-  - **Price Scaling**: Follows the identical $1.20\times$ compounding multiplier:
-    $$\text{Upgrade Cost} = \$1,000.00 \times (1.20)^{\text{Level} - 1}$$
-  - **Tier Limit**: Maximum upgrade level is capped by the current Factory Tier limit (Tier 1 = Level 10, Tier 2 = Level 20).
-- **Distinction from Capacity & Cash Safety**:
-  - *Intake Multiplier* controls **throughput speed** (materials arriving per tick).
-  - *Resource Capacity* controls **warehouse storage limits** (buffer ceiling before pausing).
-  - *Cash Protection*: Auto-buy respects the player's wallet balance; if total cost exceeds available funds, it buys proportionally without debt or stalling.
-- **UI Integration**:
-  - Auto-Buy card displays live throughput telemetry:
-    `⚡ Intake Rate: 75 items/tick (10 machines × 5 × 1.50x Lv 3)`
-  - Clear upgrade action button: `Upgrade Procurement (Lv 4: 1.75x) — $1,728`.
+### 🎯 Objective & Overview
+Phase 8 scales factory output speed without violating the machine caps introduced in Phase 7. It adds symmetrical throughput upgrades to existing machinery: **Batch Build Throughput** (crafting multiple items per cycle tick) and **Auto-Buy Intake Multipliers** (purchasing raw materials in bulk bursts).
 
 ---
 
-#### 5. ♻️ Machine Decommission & Salvage System (50% Refund) (✅ Approved)
-Allows players to decommission and scrap owned machinery in exchange for liquid capital, giving players full flexibility to rebalance their factory floors across progression tiers.
+### 📋 Phase 8 Core Features & Specifications
 
-- **Refund Mechanics**:
-  - Selling back an Auto-Buy or Auto-Build machine awards a **50% cash refund** calculated from the last purchase price:
-    $$\text{Salvage Value}(N) = \left\lfloor 0.50 \times \left( \$1,000.00 \times (1.20)^{N - 1} \right) \right\rfloor$$
-    *Where $N$ is the current count of machines owned in that category.*
-- **Strategic Impact**:
-  - Frees up valuable machine capacity within factory tier limits when retooling production lines (e.g., selling Tier 1 Basic auto-builders to make room for Tier 3 Complex auto-builders).
-  - Provides emergency liquidity during capital-intensive contract deadlines or tier licensing upgrades.
-- **Safety Modal & UI Feedback**:
-  - Decommission action button located in the machine controls card header with a protective confirmation dialog (`"Salvage 1 Machine for +$X.XX?"`).
-  - Immediately restores available tier capacity headroom, updates live production rates, and persists state atomically.
+#### 1. 🔨 Auto-Build Batch Throughput (Items Built Per Tick)
+Allows an auto-build machine to process items in batches rather than 1 unit per cycle:
+- **Level 1 (Base)**: 1 item built per cycle tick.
+- **Level 2**: 2 items built per cycle tick.
+- **Level $K$**: $K$ items built per cycle tick (Capped by Factory Tier limit).
+- **Consumption Safety**: If resources only cover 3 items but throughput is 5, machine crafts 3 items cleanly without stalling.
+- **Upgrade Cost**: $\$1,000.00 \times (1.20)^{\text{Level} - 1}$.
+
+#### 2. 🛒 Auto-Buy Intake Multiplier (Bulk Material Procurement Logistics)
+Amplifies raw material intake volume per tick so buying keeps up with accelerated crafting:
+$$\text{Purchases Per Tick} = \left\lfloor \text{Machines Owned} \times 5 \times \text{Multiplier}(\text{Level}) \right\rfloor$$
+- Progression: **Level 1 (1.00x / 50 items for 10 machines)** $\to$ **Level 2 (1.25x / 62 items)** $\to$ **Level 3 (1.50x / 75 items)** $\to$ **Level 5 (2.00x / 100 items)**.
+- Upgrade Cost: Follows identical compounding curve: $\$1,000.00 \times (1.20)^{\text{Level} - 1}$.
+- Respects player cash balance and stops buying when warehouses reach capacity limits.
 
 ---
 
-### 💡 Suggested Additions to the Feature (Awaiting User Approval)
+### 📋 Phase 8 Implementation Checklist
+- [ ] Add `autoBuildThroughputLevel` and `autoBuyIntakeLevel` state variables in [`GameState`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_state.dart).
+- [ ] Update `_processAutoBuildQueue` to process items up to the batch throughput limit.
+- [ ] Update `_processAutoBuy` to multiply raw material purchase volume by the intake multiplier.
+- [ ] Add upgrade action buttons with live throughput telemetry pills to machine cards.
+- [ ] Unit tests for batch production, partial material consumption, and intake multipliers.
 
-> [!IMPORTANT]
-> The items in this section are design proposals. None of these items will be scheduled or implemented until explicitly reviewed and approved by the user.
+---
 
-- [ ] **Proposal A: Compounding Bulk Machine Purchase (`Buy +5`, `Buy Max`)**:
-  - With exponential pricing, buying multiple machines manually requires repeatedly clicking through escalating prices.
-  - Implementation: Add `+5` and `Max` buttons calculating total cost via geometric series summation:
-    $$S_n = \text{Base} \times r^k \times \frac{r^n - 1}{r - 1}$$
-  - *Status*: ⏳ **Awaiting Approval**
+## 📦 Phase 9: Automated Outbound Distribution: Auto-Sell Dispatchers (📋 Planned)
 
-- [ ] **Proposal B: Operational Maintenance Overhead (Running Cost per Tick)**:
-  - Add small operational costs ($1.00 – $2.50 per active machine per tick) deducted from cash flow.
-  - Gives tactical meaning to turning machines on/off when idling or unoptimized.
-  - *Status*: ⏳ **Awaiting Approval**
+### 🎯 Objective & Overview
+Phase 9 completes the industrial automation loop (**Auto-Buy $\to$ Auto-Build $\to$ Auto-Sell**). It introduces **Auto-Sell Dispatchers** to automate finished goods sales, featuring an early Tier 1 unlock with a gentle, timid baseline.
 
-- [ ] **Proposal C: Prestige Perk Synergy ("Industrial Discount" & "Modular Robotics")**:
-  - Introduce Golden Share perks in the Wall Street Prestige Store:
-    1. *Modular Standard (🌟 6 Shares)*: Reduces machine price compounding multiplier by -0.04 (e.g., 1.20x $\to$ 1.16x).
-    2. *Factory Over-Licensing (🌟 8 Shares)*: Increases the machine limit of every tier by +10.
-  - *Status*: ⏳ **Awaiting Approval**
+---
+
+### 📋 Phase 9 Core Features & Specifications
+
+#### 1. 🏪 Early Tier 1 Timid Baseline (Hands-Free Early Game)
+- **Unlocked at Tier 1 (Garage Workshop)**: Provides immediate passive income early on.
+- **Timid Starting Baseline**: Deliberately small—**each machine automatically sells only 1 product unit per cycle tick** (e.g. 1 unit every 5s).
+- *Example*: 3 Auto-Sell machines sell only 3 units total per tick. Generates steady cash flow to feed raw material purchases without draining manual wholesale stocks.
+
+#### 2. 📈 Auto-Sell Batch Fulfillment Throughput Upgrades
+- **Throughput Formula**: $\text{Units Sold Per Tick} = \text{Machines Owned} \times \text{Fulfillment Level}$.
+- Level 1: 1 unit / machine / tick $\to$ Level 2: 2 units / machine / tick $\to$ Level $K$.
+- Machine cost and upgrade costs follow the standard $1,000 base with $1.20\times$ compounding curve.
+
+#### 3. 🚚 Zero-Fleet-Slot Storefront Pipeline (Fleet Protection)
+- Auto-Sell operates as **direct local storefront walk-in sales** (**0 fleet slots consumed**).
+- *Critical Game Balance*: Guarantees that Auto-Sell never jams the player's 2 bike slots, preserving fleet carriers for strategic B2B corporate contracts and manual wholesale dispatches.
+
+#### 4. 🛡️ Inventory Reserve Protections
+- Auto-Sell only targets finished manufactured products (never raw materials or items below configured reserve thresholds).
+- Prioritizes lowest-tier products first to protect high-tier goods.
+
+---
+
+### 📋 Phase 9 Implementation Checklist
+- [ ] Add `autoSellMachines` and `autoSellThroughputLevel` to [`GameState`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_state.dart).
+- [ ] Add `_processAutoSell` loop in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) selling eligible inventory per cycle tick.
+- [ ] Create `AutoSellMachineCard` in `Machines` tab of [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart).
+- [ ] Unit tests verifying auto-sell execution, zero-fleet-slot isolation, and inventory reserve safety.
+
+---
+
+## 🚚 Phase 10: Logistics Fleet Overhaul: Payload Capacities & Variety Caps (📋 Planned)
+
+### 🎯 Objective & Overview
+Phase 10 gives physical meaning to carrier fleet tiers (**Courier Bikes $\to$ Delivery Vans $\to$ Freight Trucks $\to$ Cargo Planes**). It implements **Carrier Payload Capacity** and **Product Variety Caps**, preventing early-game mass dumping and making fleet upgrades essential for moving high-volume factory output.
+
+---
+
+### 📋 Phase 10 Core Features & Specifications
+
+#### 1. 📦 Carrier Fleet Payload & Variety Matrix
+
+| Fleet Tier | Carrier Name | Max Product Varieties | Max Units / Type | Total Payload Capacity | Speed Multiplier | Concurrent Slots | Progression Role |
+| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Tier 1** | **Courier Bikes 🚲** | **2 Types** | **10 Units** | **20 Units Max** | 1.0x (Base) | 2 Slots | Early-game small parcel runs; strictly limited payloads |
+| **Tier 2** | **Delivery Vans 🚐** | **4 Types** | **20 Units** | **60 Units Max** | 1.25x (+25%) | 4 Slots | Suburban retail distribution; handles mixed intermediate batches |
+| **Tier 3** | **Freight Trucks 🚚** | **7 Types** | **50 Units** | **200 Units Max** | 1.60x (+60%) | 7 Slots | Regional industrial transport; bulk clears whole factory branches |
+| **Tier 4** | **Cargo Planes ✈️** | **12 Types** *(All)* | **100 Units** | **600 Units Max** | 2.50x (+150%) | 12 Slots | Global air freight; heavy mass liquidation for Megafactory runs |
+
+- **Why This Matters**: A starter bike can no longer ship 100 items. To move 60+ items, players must upgrade to Delivery Vans; to move 200+ items across diverse product lines, players must acquire Freight Trucks.
+
+#### 2. 📋 Fleet UI & Payload Enforcement
+- Update [`FleetUpgradeCard`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/widgets/fleet_upgrade_card.dart) to display payload capacity and max product variety badges.
+- Enforce per-shipment payload and variety constraints in [`ProductionGameService.sellProduct`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart).
+
+---
+
+### 📋 Phase 10 Implementation Checklist
+- [ ] Add `maxPayloadUnits`, `maxProductVarieties`, and `maxUnitsPerType` fields to [`LogisticsFleetTier`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_models.dart).
+- [ ] Update `GameData.fleetTiers` with calibrated payload limits.
+- [ ] Update `FleetUpgradeCard` UI with visual payload badges.
+- [ ] Enforce payload limits in `sellProduct` validation logic.
+- [ ] Unit tests for fleet payload limits and upgrade transitions.
+
+---
+
+## 🛒 Phase 11: Commercial Dispatch Manifest: Multi-Product Bulk Selling UI (📋 Planned)
+
+### 🎯 Objective & Overview
+Phase 11 delivers the user-facing **Shipping Manifest Builder (Bulk Sell Cart)** on the Sell Products Screen. Players can stage multiple product varieties into a single shipment, adjust quantities, review projected revenue, and dispatch a consolidated carrier.
+
+---
+
+### 📋 Phase 11 Core Features & Specifications
+
+#### 1. 🛒 Staged Shipping Manifest State Engine
+- Staging state in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart):
+  - `addToManifest(productId, quantity)`
+  - `removeFromManifest(productId)`
+  - `updateManifestQuantity(productId, quantity)`
+  - `clearManifest()`
+  - `dispatchManifest()` — validates fleet payload limits, creates a consolidated `ShippingOrder`, and initiates transit.
+
+#### 2. 🎨 Docked Manifest Tray & Review Drawer UI
+- **Docked Manifest Tray**: Renders above bottom navigation on [`SellProductsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/sell_products_screen.dart):
+  - Live summary: `📦 3 Varieties • 18 / 60 Units • Total: $1,420.00`.
+  - Action buttons: `Review Manifest` and `🚚 Dispatch Carrier`.
+- **Interactive Review Drawer**:
+  - Itemized rows with product thumbnail, unit price, and subtotal.
+  - Stepper controls: `[-]` decrement, `[+]` increment, `[Max]` fill, `[🗑️]` remove.
+  - Carrier payload visual progress bar.
+
+#### 3. ⏱️ Consolidated Multi-Item Transit Calculation
+Mixed-cargo transit time formula:
+$$\text{Base Transit Time} = \max_{p \in \text{Manifest}}(\text{baseTime}(p)) \times \left(1 + 0.04 \times (\text{Total Units} - 1)\right)^{0.5}$$
+$$\text{Actual Shipping Time} = \frac{\text{Base Transit Time}}{\text{Fleet Speed Multiplier} \times \text{Tech Multipliers}}$$
+- Dispatches as **1 consolidated carrier run taking 1 fleet slot**, rather than dozens of separate runs.
+
+---
+
+### 📋 Phase 11 Implementation Checklist
+- [ ] Implement manifest state and methods in `ProductionGameService`.
+- [ ] Build `ShippingManifestTray` widget for `SellProductsScreen`.
+- [ ] Build `ShippingManifestDrawer` bottom sheet with stepper controls.
+- [ ] Update `ItemCard` in Sell mode with "Add to Manifest" chips and staged count pills.
+- [ ] Create `test/phase11_bulk_manifest_test.dart` validating staging, dispatch, and settlement.
+
