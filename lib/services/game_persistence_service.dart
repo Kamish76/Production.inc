@@ -12,7 +12,7 @@ class GamePersistenceService {
     static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      8; // Updated for v1.5.0 Phase 2 B2B Contracts & Fleet system
+      9; // Updated for Phase 4: R&D Lab & Technology Tree
 
   Database? _database;
 
@@ -160,6 +160,10 @@ class GamePersistenceService {
       case 8:
         // v1.5.0 Phase 2 migrations - B2B corporate contracts & fleet system
         await _migrateToVersion8(db);
+        break;
+      case 9:
+        // Phase 4 migrations - R&D Lab & Technology Tree
+        await _migrateToVersion9(db);
         break;
       default:
         if (kDebugMode) {
@@ -513,6 +517,72 @@ class GamePersistenceService {
     ''');
   }
 
+  /// Migration to version 9 (Phase 4: R&D Lab & Technology Tree)
+  Future<void> _migrateToVersion9(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 9 (R&D Lab & Technology Tree)');
+    }
+
+    final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+    final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+
+    if (!existingColumns.contains('research_points')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          research_points INTEGER NOT NULL DEFAULT 0
+        ''');
+        if (kDebugMode) {
+          print('Added column: research_points');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (research_points): $e');
+        }
+      }
+    }
+
+    if (!existingColumns.contains('overclock_active')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          overclock_active INTEGER NOT NULL DEFAULT 0
+        ''');
+        if (kDebugMode) {
+          print('Added column: overclock_active');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (overclock_active): $e');
+        }
+      }
+    }
+
+    if (!existingColumns.contains('maintenance_wear')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          maintenance_wear REAL NOT NULL DEFAULT 1.0
+        ''');
+        if (kDebugMode) {
+          print('Added column: maintenance_wear');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (maintenance_wear): $e');
+        }
+      }
+    }
+
+    // Researched technologies table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS researched_technologies (
+        tech_id TEXT PRIMARY KEY,
+        level INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+  }
+
   /// Create backup of existing database before major operations
   Future<void> _createDatabaseBackup() async {
     if (_database == null) return;
@@ -658,7 +728,10 @@ class GamePersistenceService {
         auto_buy_last_tick INTEGER,
         auto_buy_resource_capacity INTEGER DEFAULT 10,
         factory_tier INTEGER NOT NULL DEFAULT 1,
-        fleet_tier INTEGER NOT NULL DEFAULT 1
+        fleet_tier INTEGER NOT NULL DEFAULT 1,
+        research_points INTEGER NOT NULL DEFAULT 0,
+        overclock_active INTEGER NOT NULL DEFAULT 0,
+        maintenance_wear REAL NOT NULL DEFAULT 1.0
       )
     ''');
 
@@ -819,6 +892,14 @@ class GamePersistenceService {
       )
     ''');
 
+    // Researched technologies table (Phase 4)
+    await db.execute('''
+      CREATE TABLE researched_technologies (
+        tech_id TEXT PRIMARY KEY,
+        level INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
     // Insert initial game state record
     await db.insert('game_state', {
       'id': 1,
@@ -826,6 +907,9 @@ class GamePersistenceService {
       'last_saved': DateTime.now().millisecondsSinceEpoch,
       'factory_tier': 1,
       'fleet_tier': 1,
+      'research_points': 0,
+      'overclock_active': 0,
+      'maintenance_wear': 1.0,
     });
   }
 
@@ -844,10 +928,11 @@ class GamePersistenceService {
       await _saveShippingData(txn, state);
       await _saveContracts(txn, state);
       await _saveReputation(txn, state);
+      await _saveTechnologies(txn, state);
     });
   }
 
-  /// Save core game state (money, last saved time, auto-buy state, fleet tier)
+  /// Save core game state (money, last saved time, auto-buy state, fleet tier, research)
   Future<void> _saveCoreGameState(DatabaseExecutor txn, GameState state) async {
     await txn.update(
       'game_state',
@@ -860,6 +945,9 @@ class GamePersistenceService {
         'auto_buy_resource_capacity': state.autoBuyResourceCapacity,
         'factory_tier': state.factoryTier,
         'fleet_tier': state.fleetTier,
+        'research_points': state.researchPoints,
+        'overclock_active': state.overclockActive ? 1 : 0,
+        'maintenance_wear': state.maintenanceWear,
       },
       where: 'id = ?',
       whereArgs: [1],
@@ -1100,6 +1188,9 @@ class GamePersistenceService {
     final autoBuyResourceCapacity = (row['auto_buy_resource_capacity'] as int?) ?? 10;
     final factoryTier = (row['factory_tier'] as int?) ?? 1;
     final fleetTier = (row['fleet_tier'] as int?) ?? 1;
+    final researchPoints = (row['research_points'] as int?) ?? 0;
+    final overclockActive = ((row['overclock_active'] as int?) ?? 0) == 1;
+    final maintenanceWear = (row['maintenance_wear'] as num?)?.toDouble() ?? 1.0;
 
     // Load all game components in parallel where possible
     final materials = await _loadMaterials(db);
@@ -1112,6 +1203,7 @@ class GamePersistenceService {
     final autoBuildData = await _loadAutoBuildData(db);
     final corporateContracts = await _loadContracts(db);
     final clientReputation = await _loadReputation(db);
+    final techLevels = await _loadTechnologies(db);
 
     return GameState(
       money: money,
@@ -1136,6 +1228,10 @@ class GamePersistenceService {
       fleetTier: fleetTier,
       corporateContracts: corporateContracts,
       clientReputation: clientReputation,
+      researchPoints: researchPoints,
+      techLevels: techLevels,
+      overclockActive: overclockActive,
+      maintenanceWear: maintenanceWear,
     );
   }
 
@@ -1389,6 +1485,27 @@ class GamePersistenceService {
     return map;
   }
 
+  /// Save researched technologies (Phase 4)
+  Future<void> _saveTechnologies(DatabaseExecutor txn, GameState state) async {
+    await txn.delete('researched_technologies');
+    for (final entry in state.techLevels.entries) {
+      await txn.insert('researched_technologies', {
+        'tech_id': entry.key,
+        'level': entry.value,
+      });
+    }
+  }
+
+  /// Load researched technologies from database (Phase 4)
+  Future<Map<String, int>> _loadTechnologies(Database db) async {
+    final result = await db.query('researched_technologies');
+    final map = <String, int>{};
+    for (final row in result) {
+      map[row['tech_id'] as String] = (row['level'] as int?) ?? 0;
+    }
+    return map;
+  }
+
   /// Check if a save file exists
   Future<bool> hasSaveData() async {
     final db = await database;
@@ -1429,6 +1546,7 @@ class GamePersistenceService {
       await txn.delete('shipping_history');
       await txn.delete('corporate_contracts');
       await txn.delete('client_reputation');
+      await txn.delete('researched_technologies');
 
       // Reset game state to defaults
       await txn.update(
@@ -1438,6 +1556,9 @@ class GamePersistenceService {
           'last_saved': DateTime.now().millisecondsSinceEpoch,
           'factory_tier': 1,
           'fleet_tier': 1,
+          'research_points': 0,
+          'overclock_active': 0,
+          'maintenance_wear': 1.0,
         },
         where: 'id = ?',
         whereArgs: [1],
@@ -1501,6 +1622,9 @@ class GamePersistenceService {
           'last_saved': DateTime.now().millisecondsSinceEpoch,
           'factory_tier': state.factoryTier,
           'fleet_tier': state.fleetTier,
+          'research_points': state.researchPoints,
+          'overclock_active': state.overclockActive ? 1 : 0,
+          'maintenance_wear': state.maintenanceWear,
         },
         where: 'id = ?',
         whereArgs: [1],
@@ -1548,6 +1672,10 @@ class GamePersistenceService {
       if (_dirtyTables.contains('reputation')) {
         await _saveReputation(txn, state);
       }
+
+      if (_dirtyTables.contains('technologies')) {
+        await _saveTechnologies(txn, state);
+      }
     });
 
     if (kDebugMode) {
@@ -1568,6 +1696,9 @@ class GamePersistenceService {
           'last_saved': DateTime.now().millisecondsSinceEpoch,
           'factory_tier': state.factoryTier,
           'fleet_tier': state.fleetTier,
+          'research_points': state.researchPoints,
+          'overclock_active': state.overclockActive ? 1 : 0,
+          'maintenance_wear': state.maintenanceWear,
         },
         where: 'id = ?',
         whereArgs: [1],
@@ -1590,6 +1721,7 @@ class GamePersistenceService {
       await _saveAutomationDataOptimized(txn, state); // v1.5.0 - Save automation data
       await _saveContracts(txn, state);
       await _saveReputation(txn, state);
+      await _saveTechnologies(txn, state);
     });
   }
 

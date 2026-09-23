@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../services/production_game_service.dart';
 import '../models/game_data.dart';
 import '../widgets/factory_tier_card.dart';
+import '../widgets/tech_tree_card.dart';
+import '../widgets/deconstruction_bay_card.dart';
 import 'settings_screen.dart';
 
 class ControlScreen extends StatefulWidget {
@@ -13,8 +15,10 @@ class ControlScreen extends StatefulWidget {
 }
 
 class _ControlScreenState extends State<ControlScreen> {
-  // Toggle between 0 (Machines) and 1 (Tiers)
+  // Toggle between 0 (Machines), 1 (Tiers), and 2 (R&D Lab)
   int _selectedSection = 0;
+  // Sub-tab for R&D Lab: 0 (Tech Tree), 1 (Deconstruction Bay)
+  int _selectedRnDTab = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +81,14 @@ class _ControlScreenState extends State<ControlScreen> {
                               onTap: () => setState(() => _selectedSection = 1),
                             ),
                           ),
+                          Expanded(
+                            child: _buildSectionButton(
+                              icon: Icons.science,
+                              label: 'R&D Lab',
+                              isSelected: _selectedSection == 2,
+                              onTap: () => setState(() => _selectedSection = 2),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -92,7 +104,9 @@ class _ControlScreenState extends State<ControlScreen> {
                       child:
                           _selectedSection == 0
                               ? _buildMachinesSection(context, gameService)
-                              : _buildTiersSection(context, gameService),
+                              : _selectedSection == 1
+                                  ? _buildTiersSection(context, gameService)
+                                  : _buildRnDLabSection(context, gameService),
                     );
                   },
                 ),
@@ -186,6 +200,202 @@ class _ControlScreenState extends State<ControlScreen> {
           // Dev Controls Section
           _buildDevControlsSection(context, gameService),
         ],
+      ),
+    );
+  }
+
+  /// Build R&D Lab Section (Phase 4)
+  Widget _buildRnDLabSection(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    final state = gameService.state;
+    return SingleChildScrollView(
+      key: const ValueKey('rnd_lab'),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // R&D Lab Header Banner with RP Counter
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF2E1A47), Color(0xFF16213E)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.purple.withValues(alpha: 0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.4)),
+                  ),
+                  child: const Icon(Icons.science, color: Colors.purpleAccent, size: 28),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'R&D Department',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Deconstruct surplus parts & research factory upgrades.',
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.purpleAccent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.6)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bubble_chart, color: Colors.purpleAccent, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${state.researchPoints} RP',
+                        style: const TextStyle(
+                          color: Colors.purpleAccent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Sub-Tab Switcher (Tech Tree vs Deconstruction Bay)
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildRnDSubTabButton(
+                    icon: Icons.account_tree_rounded,
+                    label: 'Tech Tree',
+                    badge: '${state.techLevels.values.fold(0, (a, b) => a + b)}/9',
+                    isSelected: _selectedRnDTab == 0,
+                    onTap: () => setState(() => _selectedRnDTab = 0),
+                  ),
+                ),
+                Expanded(
+                  child: _buildRnDSubTabButton(
+                    icon: Icons.recycling_rounded,
+                    label: 'Deconstruction',
+                    badge: 'Bay',
+                    isSelected: _selectedRnDTab == 1,
+                    onTap: () => setState(() => _selectedRnDTab = 1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Active Sub-Tab View
+          if (_selectedRnDTab == 0)
+            TechTreeCard(gameService: gameService)
+          else
+            DeconstructionBayCard(gameService: gameService),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRnDSubTabButton({
+    required IconData icon,
+    required String label,
+    required String badge,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.purpleAccent.withValues(alpha: 0.25) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected ? Border.all(color: Colors.purpleAccent.withValues(alpha: 0.4)) : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.purpleAccent : Colors.grey[400],
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[400],
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.purpleAccent.withValues(alpha: 0.3)
+                    : Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                badge,
+                style: TextStyle(
+                  color: isSelected ? Colors.purpleAccent : Colors.grey[500],
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -817,6 +1027,39 @@ class _ControlScreenState extends State<ControlScreen> {
 
           const SizedBox(height: 12),
 
+          // Add Research Points (Dev Tool - Phase 4)
+          _buildDevControl(
+            icon: Icons.science,
+            title: 'Add Research Points (+250 RP)',
+            subtitle: 'Dev: Grant 250 RP for testing technology upgrades',
+            color: Colors.purpleAccent,
+            onPressed: () => _addDevRP(context, gameService, 250),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Reset Maintenance Wear (Dev Tool - Phase 4)
+          _buildDevControl(
+            icon: Icons.healing,
+            title: 'Reset Maintenance Wear (0%)',
+            subtitle: 'Dev: Restore factory wear to 0% perfect health',
+            color: Colors.lightGreen,
+            onPressed: () => _resetDevMaintenanceWear(context, gameService),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Simulate Critical Wear (Dev Tool - Phase 4)
+          _buildDevControl(
+            icon: Icons.build,
+            title: 'Simulate Critical Wear (100%)',
+            subtitle: 'Dev: Force wear to 100% to test overclock shutdown',
+            color: Colors.deepOrange,
+            onPressed: () => _simulateCriticalWear(context, gameService),
+          ),
+
+          const SizedBox(height: 12),
+
           // Add Money (Dev Tool)
           _buildDevControl(
             icon: Icons.add_circle_outline,
@@ -1056,6 +1299,55 @@ class _ControlScreenState extends State<ControlScreen> {
       const SnackBar(
         content: Text('📋 Generated 3 new corporate B2B contracts (Dev)'),
         backgroundColor: Colors.teal,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Dev tool: Add research points (Phase 4)
+  void _addDevRP(
+    BuildContext context,
+    ProductionGameService gameService,
+    int amount,
+  ) {
+    gameService.devAddResearchPoints(amount);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('🧪 Added $amount Research Points (Dev)'),
+        backgroundColor: Colors.purpleAccent,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Dev tool: Reset maintenance wear (Phase 4)
+  void _resetDevMaintenanceWear(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    gameService.devSetMaintenanceWear(0.0);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🔧 Factory maintenance wear restored to 0% (Dev)'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Dev tool: Simulate critical wear (Phase 4)
+  void _simulateCriticalWear(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    gameService.devSetMaintenanceWear(1.0);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('⚠️ Factory wear set to 100% (Critical Shutdown simulated)'),
+        backgroundColor: Colors.deepOrange,
         duration: Duration(seconds: 2),
       ),
     );

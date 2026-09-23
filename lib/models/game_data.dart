@@ -953,4 +953,173 @@ class GameData {
       return null;
     }
   }
+
+  // Phase 4: Technology Tree Definitions
+  static const List<TechNode> technologies = [
+    TechNode(
+      id: 'material_science',
+      name: 'Material Science',
+      description:
+          'Quantum alloy bonding and molecular replication to duplicate manufactured outputs.',
+      emoji: '🧬',
+      branch: TechBranch.materialScience,
+      levels: [
+        TechLevelInfo(
+          level: 1,
+          title: 'Molecular Recycling',
+          description:
+              '5% chance to duplicate an assembled product without consuming input materials.',
+          rpCost: 50,
+          requiredFactoryTier: 1,
+          perkValue: 0.05,
+        ),
+        TechLevelInfo(
+          level: 2,
+          title: 'Catalytic Synthesis',
+          description:
+              '10% chance to duplicate an assembled product without consuming input materials.',
+          rpCost: 150,
+          requiredFactoryTier: 2,
+          perkValue: 0.10,
+        ),
+        TechLevelInfo(
+          level: 3,
+          title: 'Zero-Point Replicator',
+          description:
+              '15% chance to duplicate an assembled product without consuming input materials.',
+          rpCost: 400,
+          requiredFactoryTier: 3,
+          perkValue: 0.15,
+        ),
+      ],
+    ),
+    TechNode(
+      id: 'factory_overclocking',
+      name: 'Factory Overclocking',
+      description:
+          'Supercharge machine servos for accelerated production with periodic maintenance checkups.',
+      emoji: '⚡',
+      branch: TechBranch.factoryOverclocking,
+      levels: [
+        TechLevelInfo(
+          level: 1,
+          title: 'Tuned Actuators',
+          description: 'Permanently accelerates production speeds by +15%.',
+          rpCost: 75,
+          requiredFactoryTier: 1,
+          perkValue: 1.15,
+        ),
+        TechLevelInfo(
+          level: 2,
+          title: 'Coolant Overdrive',
+          description:
+              'Accelerates production speeds by +25%. Unlocks Overclock toggle in R&D Lab.',
+          rpCost: 200,
+          requiredFactoryTier: 2,
+          perkValue: 1.25,
+        ),
+        TechLevelInfo(
+          level: 3,
+          title: 'Plasma Turbocharging',
+          description:
+              'Accelerates production speeds by +40% with heavy-duty thermal insulation.',
+          rpCost: 500,
+          requiredFactoryTier: 3,
+          perkValue: 1.40,
+        ),
+      ],
+    ),
+    TechNode(
+      id: 'logistics_optimization',
+      name: 'Logistics Optimization',
+      description:
+          'Autonomous freight scheduling and quantum dispatch algorithms for lightning shipping.',
+      emoji: '🚀',
+      branch: TechBranch.logisticsOptimization,
+      levels: [
+        TechLevelInfo(
+          level: 1,
+          title: 'Priority Dispatch',
+          description:
+              'Shipping transit times reduced by 15% across all shipments.',
+          rpCost: 60,
+          requiredFactoryTier: 1,
+          perkValue: 1.15,
+        ),
+        TechLevelInfo(
+          level: 2,
+          title: 'Dynamic Courier Fast-Track',
+          description:
+              'Shipping transit times reduced by 30% + corporate contracts receive extra 25% transit speed.',
+          rpCost: 175,
+          requiredFactoryTier: 2,
+          perkValue: 1.30,
+        ),
+        TechLevelInfo(
+          level: 3,
+          title: 'Quantum Hyperlane Logistics',
+          description:
+              'Shipping transit times reduced by 40% + corporate fast-track + 1 extra concurrent dispatch slot.',
+          rpCost: 450,
+          requiredFactoryTier: 3,
+          perkValue: 1.40,
+        ),
+      ],
+    ),
+  ];
+
+  static TechNode? getTechnology(String techId) {
+    try {
+      return technologies.firstWhere((t) => t.id == techId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Phase 4: Product Research Point Valuations (Deconstruction Yield)
+  static const Map<String, int> productResearchPoints = {
+    // Basic Parts
+    'box': 1,
+    'wires': 2,
+    'gears': 3,
+    'copper_coils': 2,
+    'silicon_wafer': 4,
+    'sound_driver': 4,
+    'lens': 3,
+
+    // Intermediate Parts
+    'circuits': 6,
+    'enclosure_plastic': 5,
+    'metal_enclosure': 7,
+    'display_screen': 8,
+    'processor': 10,
+    'image_sensor': 9,
+    'gear_mechanism': 8,
+    'servo_motor': 9,
+    'microcontroller': 14,
+    'chassis_alloy': 8,
+    'inverter_unit': 12,
+    'storage_cell': 15,
+
+    // Complex Parts & Retail
+    'camera_module': 16,
+    'battery': 12,
+    'solar_cells': 10,
+    'speaker': 20,
+    'power_bank': 28,
+    'wall_clock': 24,
+    'toy_robot': 30,
+    'camera': 45,
+    'cleaning_drone': 45,
+    'solar_panel': 55,
+    'home_powerwall': 90,
+    'robotic_arm': 130,
+    'smartphone': 180,
+    'wind_turbine_generator': 250,
+  };
+
+  static int getResearchPointsForProduct(String productId) {
+    return productResearchPoints[productId] ?? 1;
+  }
 }
+

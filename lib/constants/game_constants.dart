@@ -366,3 +366,45 @@ class AppColors {
 }
 
 // ==================================================
+// RESEARCH & TECHNOLOGY CONSTANTS (PHASE 4)
+// ==================================================
+
+/// Configuration for R&D Lab and Technology Tree progression
+class ResearchConstants {
+  /// Duplication chance indexed by Material Science tech level (0, 1, 2, 3)
+  static const List<double> materialScienceDuplicationChances = [
+    0.0,
+    0.05, // Level 1: 5% chance
+    0.10, // Level 2: 10% chance
+    0.15, // Level 3: 15% chance
+  ];
+
+  /// Speed multiplier indexed by Factory Overclocking tech level (0, 1, 2, 3)
+  static const List<double> factoryOverclockSpeedMultipliers = [
+    1.0,
+    1.15, // Level 1: +15% speed
+    1.25, // Level 2: +25% speed (unlocks Overclock switch)
+    1.40, // Level 3: +40% speed
+  ];
+
+  /// Shipping speed multiplier indexed by Logistics Optimization tech level (0, 1, 2, 3)
+  static const List<double> logisticsSpeedMultipliers = [
+    1.0,
+    1.15, // Level 1: +15% speed
+    1.30, // Level 2: +30% speed
+    1.40, // Level 3: +40% speed
+  ];
+
+  /// Extra speed multiplier applied to active B2B corporate contracts at Level 2+
+  static const double logisticsContractSpeedBonus = 1.25;
+
+  /// Maintenance diagnostic checkup fee in cash to restore wear to 100%
+  static const double maintenanceCheckupFee = 50.0;
+
+  /// Wear decay per manual build operation when overclock is engaged
+  static const double wearPerManualBuild = 0.01;
+
+  /// Wear decay per auto-build tick when overclock is engaged
+  static const double wearPerAutoBuildTick = 0.02;
+}
+

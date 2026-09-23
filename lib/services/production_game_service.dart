@@ -564,10 +564,16 @@ class ProductionGameService extends ChangeNotifier {
         }
       }
 
+      double updatedWear = _state.maintenanceWear;
+      if (_state.isOverclockEngaged) {
+        updatedWear = math.max(0.0, updatedWear - ResearchConstants.wearPerManualBuild);
+      }
+
       _state = _state.copyWith(
         materials: newMaterials,
         products: newProducts,
         activeProductions: newProductions,
+        maintenanceWear: updatedWear,
       );
 
       // Mark relevant data as dirty for incremental save (v1.4.8)
@@ -636,8 +642,17 @@ class ProductionGameService extends ChangeNotifier {
       // Calculate shipping time using the formula scaled by fleet speed multiplier
       final fleet = GameData.getFleetTier(_state.fleetTier);
       final rawShippingTime = product.calculateShippingTime(quantity);
+
+      double effectiveSpeedMultiplier =
+          fleet.speedMultiplier * _state.logisticsSpeedMultiplier;
+      final hasActiveContract =
+          _state.corporateContracts.any((c) => c.status == ContractStatus.active);
+      if (hasActiveContract && _state.hasCorporateContractFastTrack) {
+        effectiveSpeedMultiplier *= ResearchConstants.logisticsContractSpeedBonus;
+      }
+
       final totalShippingTime =
-          (rawShippingTime / fleet.speedMultiplier).clamp(1.0, 86400.0);
+          (rawShippingTime / effectiveSpeedMultiplier).clamp(1.0, 86400.0);
 
       // Validate shipping time
       if (totalShippingTime <= 0 || totalShippingTime > 86400) {
@@ -1185,11 +1200,20 @@ class ProductionGameService extends ChangeNotifier {
           }
         }
         
+        double updatedWear = _state.maintenanceWear;
+        if (_state.isOverclockEngaged) {
+          updatedWear = math.max(
+            0.0,
+            updatedWear - ResearchConstants.wearPerAutoBuildTick,
+          );
+        }
+
         _state = _state.copyWith(
           materials: updatedMaterials,
           products: updatedProducts,
           activeProductions: newProductions,
           lastAutoBuildTick: newLastTicks,
+          maintenanceWear: updatedWear,
         );
         
         // Check for newly unlocked products after auto-build (v1.5.0 bug fix)
@@ -1268,21 +1292,40 @@ class ProductionGameService extends ChangeNotifier {
     List<ProductionTask> completedTasks,
   ) {
     final newProducts = Map<String, int>.from(_state.products);
+    final dupChance = _state.materialScienceDuplicationChance;
+    final random = math.Random();
 
     for (final task in completedTasks) {
       try {
         final currentCount = newProducts[task.productId] ?? 0;
         const maxProducts = LimitsConstants.maxProducts;
 
+        int bonusUnits = 0;
+        if (dupChance > 0.0) {
+          for (int q = 0; q < task.quantity; q++) {
+            if (random.nextDouble() < dupChance) {
+              bonusUnits++;
+            }
+          }
+          if (bonusUnits > 0 && kDebugMode) {
+            GameLogger.info(
+              '🧬 Material Science duplicated $bonusUnits bonus unit(s) of ${task.productId}!',
+            );
+          }
+        }
+        final totalToAdd = task.quantity + bonusUnits;
+
         // Prevent overflow
-        if (currentCount > maxProducts - task.quantity) {
+        if (currentCount > maxProducts - totalToAdd) {
           if (kDebugMode) {
-            GameLogger.warning('Product overflow prevented: ${task.productId}, current: $currentCount, adding: ${task.quantity}');
+            GameLogger.warning(
+              'Product overflow prevented: ${task.productId}, current: $currentCount, adding: $totalToAdd',
+            );
           }
           // Add what we can without overflow
           newProducts[task.productId] = maxProducts;
         } else {
-          newProducts[task.productId] = currentCount + task.quantity;
+          newProducts[task.productId] = currentCount + totalToAdd;
         }
       } catch (e) {
         if (kDebugMode) {
@@ -1493,16 +1536,20 @@ class ProductionGameService extends ChangeNotifier {
 
     // Get machine count for this tier
     final machineCount = _state.autoBuildMachinesOwned[tierKey] ?? 0;
+    final overclockMultiplier = _state.overclockSpeedMultiplier;
     
-    if (machineCount <= 0) {
+    if (machineCount <= 0 && overclockMultiplier <= 1.0) {
       return baseTime;
     }
 
-    // Calculate speed multiplier: 1.1 ^ machineCount
-    final speedMultiplier = math.pow(
-      AutoBuildConstants.buildSpeedMultiplierPerMachine,
-      machineCount,
-    ).toDouble();
+    // Calculate speed multiplier: (1.1 ^ machineCount) * overclockMultiplier
+    final machineMultiplier = machineCount > 0
+        ? math.pow(
+            AutoBuildConstants.buildSpeedMultiplierPerMachine,
+            machineCount,
+          ).toDouble()
+        : 1.0;
+    final speedMultiplier = machineMultiplier * overclockMultiplier;
 
     // Apply speed bonus: time / multiplier
     final adjustedTime = baseTime / speedMultiplier;
@@ -2631,7 +2678,229 @@ class ProductionGameService extends ChangeNotifier {
     notifyListeners();
     _saveGameStateOptimized();
   }
+
+  // ==================================================
+  // PHASE 4: R&D LAB & TECHNOLOGY TREE METHODS
+  // ==================================================
+
+  /// Deconstruct a quantity of an assembled product into Research Points (RP)
+  bool deconstructProduct(String productId, int quantity) {
+    if (productId.isEmpty || quantity <= 0) {
+      if (kDebugMode) {
+        GameLogger.warning(
+          'Invalid deconstruct parameters: productId=$productId, quantity=$quantity',
+        );
+      }
+      return false;
+    }
+
+    final product = GameData.getProduct(productId);
+    if (product == null) {
+      if (kDebugMode) {
+        GameLogger.warning('Product not found for deconstruction: $productId');
+      }
+      return false;
+    }
+
+    final currentOwned = _state.getProductCount(productId);
+    if (currentOwned < quantity) {
+      if (kDebugMode) {
+        GameLogger.warning(
+          'Insufficient inventory to deconstruct: $productId, owned: $currentOwned, needed: $quantity',
+        );
+      }
+      return false;
+    }
+
+    final newProducts = Map<String, int>.from(_state.products);
+    final remaining = currentOwned - quantity;
+    if (remaining <= 0) {
+      newProducts.remove(productId);
+    } else {
+      newProducts[productId] = remaining;
+    }
+
+    final rpPerUnit = GameData.getResearchPointsForProduct(productId);
+    final totalRpGained = rpPerUnit * quantity;
+    final updatedRp = _state.researchPoints + totalRpGained;
+
+    _state = _state.copyWith(
+      products: newProducts,
+      researchPoints: updatedRp,
+    );
+
+    _persistenceService.markDirty('products');
+    _persistenceService.markDirty('technologies');
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        '🧪 Deconstructed $quantity x ${product.name} (+$totalRpGained RP, total: $updatedRp RP)',
+      );
+    }
+
+    return true;
+  }
+
+  /// Research or upgrade a technology node
+  bool researchTechnology(String techId) {
+    final tech = GameData.getTechnology(techId);
+    if (tech == null) {
+      if (kDebugMode) {
+        GameLogger.warning('Technology not found: $techId');
+      }
+      return false;
+    }
+
+    final currentLevel = _state.getTechLevel(techId);
+    if (currentLevel >= tech.maxLevel) {
+      if (kDebugMode) {
+        GameLogger.warning(
+          'Technology already at max level ($currentLevel/${tech.maxLevel}): $techId',
+        );
+      }
+      return false;
+    }
+
+    final nextLevelInfo = tech.levels[currentLevel];
+    if (_state.researchPoints < nextLevelInfo.rpCost) {
+      if (kDebugMode) {
+        GameLogger.warning(
+          'Insufficient RP for $techId Level ${nextLevelInfo.level}: have ${_state.researchPoints}, need ${nextLevelInfo.rpCost}',
+        );
+      }
+      return false;
+    }
+
+    if (_state.factoryTier < nextLevelInfo.requiredFactoryTier) {
+      if (kDebugMode) {
+        GameLogger.warning(
+          'Factory Tier ${nextLevelInfo.requiredFactoryTier} required for $techId Level ${nextLevelInfo.level} (current: Tier ${_state.factoryTier})',
+        );
+      }
+      return false;
+    }
+
+    final newRp = _state.researchPoints - nextLevelInfo.rpCost;
+    final newTechLevels = Map<String, int>.from(_state.techLevels);
+    newTechLevels[techId] = currentLevel + 1;
+
+    _state = _state.copyWith(
+      researchPoints: newRp,
+      techLevels: newTechLevels,
+    );
+
+    _persistenceService.markDirty('technologies');
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        '🔬 Researched ${tech.name} Level ${currentLevel + 1} (${nextLevelInfo.title}) for ${nextLevelInfo.rpCost} RP',
+      );
+    }
+
+    return true;
+  }
+
+  /// Toggle Factory Overclocking on or off
+  bool toggleOverclock(bool enable) {
+    if (enable) {
+      if (_state.getTechLevel('factory_overclocking') < 2) {
+        if (kDebugMode) {
+          GameLogger.warning(
+            'Factory Overclocking Level 2 required to engage overdrive toggle',
+          );
+        }
+        return false;
+      }
+      if (_state.maintenanceWear <= 0.0) {
+        if (kDebugMode) {
+          GameLogger.warning(
+            'Cannot engage overclock: maintenance checkup required',
+          );
+        }
+        return false;
+      }
+    }
+
+    _state = _state.copyWith(overclockActive: enable);
+    notifyListeners();
+    _saveGameStateOptimized();
+    return true;
+  }
+
+  /// Perform Diagnostic Maintenance Checkup to restore wear back to 100%
+  bool performMaintenanceCheckup() {
+    const fee = ResearchConstants.maintenanceCheckupFee;
+    if (_state.money < fee) {
+      if (kDebugMode) {
+        GameLogger.warning(
+          'Insufficient cash for maintenance checkup (cost: \$$fee, have: \$${_state.money})',
+        );
+      }
+      return false;
+    }
+
+    if (_state.maintenanceWear >= 1.0) {
+      if (kDebugMode) {
+        GameLogger.info('Factory already at 100% maintenance condition');
+      }
+      return false;
+    }
+
+    _state = _state.copyWith(
+      money: _state.money - fee,
+      maintenanceWear: 1.0,
+    );
+
+    notifyListeners();
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        '🔧 Factory Maintenance Checkup completed for \$$fee. Equipment condition restored to 100%.',
+      );
+    }
+
+    return true;
+  }
+
+  /// Developer / Test helpers for Phase 4
+  void devAddResearchPoints(int amount) {
+    _state = _state.copyWith(
+      researchPoints: math.max(0, _state.researchPoints + amount),
+    );
+    _persistenceService.markDirty('technologies');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  void devSetTechLevel(String techId, int level) {
+    final newTechLevels = Map<String, int>.from(_state.techLevels);
+    newTechLevels[techId] = level;
+    _state = _state.copyWith(techLevels: newTechLevels);
+    _persistenceService.markDirty('technologies');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  void devSetMaintenanceWear(double wear) {
+    _state = _state.copyWith(
+      maintenanceWear: wear.clamp(0.0, 1.0),
+    );
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  void devSetMoney(double amount) {
+    _state = _state.copyWith(money: amount);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
 }
+
 
 
 

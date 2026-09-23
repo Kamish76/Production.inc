@@ -398,3 +398,83 @@ class LogisticsFleetTier {
     required this.perkHighlights,
   });
 }
+
+// Phase 4: R&D Lab & Technology Tree Models
+enum TechBranch {
+  materialScience,
+  factoryOverclocking,
+  logisticsOptimization,
+}
+
+extension TechBranchExtension on TechBranch {
+  String get displayName {
+    switch (this) {
+      case TechBranch.materialScience:
+        return 'Material Science';
+      case TechBranch.factoryOverclocking:
+        return 'Factory Overclocking';
+      case TechBranch.logisticsOptimization:
+        return 'Logistics Optimization';
+    }
+  }
+
+  String get emoji {
+    switch (this) {
+      case TechBranch.materialScience:
+        return '🧬';
+      case TechBranch.factoryOverclocking:
+        return '⚡';
+      case TechBranch.logisticsOptimization:
+        return '🚀';
+    }
+  }
+}
+
+class TechLevelInfo {
+  final int level;
+  final String title;
+  final String description;
+  final int rpCost;
+  final int requiredFactoryTier;
+  final double perkValue;
+
+  const TechLevelInfo({
+    required this.level,
+    required this.title,
+    required this.description,
+    required this.rpCost,
+    required this.requiredFactoryTier,
+    required this.perkValue,
+  });
+}
+
+class TechNode {
+  final String id;
+  final String name;
+  final String description;
+  final String emoji;
+  final TechBranch branch;
+  final List<TechLevelInfo> levels;
+
+  const TechNode({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.emoji,
+    required this.branch,
+    required this.levels,
+  });
+
+  int get maxLevel => levels.length;
+
+  TechLevelInfo? getLevelInfo(int level) {
+    if (level <= 0 || level > levels.length) return null;
+    return levels[level - 1];
+  }
+
+  TechLevelInfo? getNextLevelInfo(int currentLevel) {
+    if (currentLevel >= levels.length) return null;
+    return levels[currentLevel];
+  }
+}
+

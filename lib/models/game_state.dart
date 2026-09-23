@@ -2,6 +2,7 @@
 
 import 'game_models.dart';
 import 'game_data.dart';
+import '../constants/game_constants.dart';
 
 // Represents a production task in progress
 class ProductionTask {
@@ -93,6 +94,12 @@ class GameState {
   final Map<String, int> clientReputation; // clientId -> reputation points
   final List<CorporateContract> corporateContracts; // Active/available corporate contracts
 
+  // Phase 4: R&D Lab & Technology Tree state
+  final int researchPoints; // Available Research Points (RP)
+  final Map<String, int> techLevels; // techId -> researched level (0 if unresearched)
+  final bool overclockActive; // Overclocking toggle state
+  final double maintenanceWear; // 1.0 (100% pristine) down to 0.0 (overclock paused until checkup)
+
   const GameState({
     this.money = 100.0, // Starting money
     this.materials = const {},
@@ -118,6 +125,10 @@ class GameState {
     this.fleetTier = 1, // Default to Tier 1: Courier Bikes
     this.clientReputation = const {},
     this.corporateContracts = const [],
+    this.researchPoints = 0,
+    this.techLevels = const {},
+    this.overclockActive = false,
+    this.maintenanceWear = 1.0,
   });
 
   GameState copyWith({
@@ -145,6 +156,10 @@ class GameState {
     int? fleetTier,
     Map<String, int>? clientReputation,
     List<CorporateContract>? corporateContracts,
+    int? researchPoints,
+    Map<String, int>? techLevels,
+    bool? overclockActive,
+    double? maintenanceWear,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -174,8 +189,13 @@ class GameState {
       fleetTier: fleetTier ?? this.fleetTier,
       clientReputation: clientReputation ?? this.clientReputation,
       corporateContracts: corporateContracts ?? this.corporateContracts,
+      researchPoints: researchPoints ?? this.researchPoints,
+      techLevels: techLevels ?? this.techLevels,
+      overclockActive: overclockActive ?? this.overclockActive,
+      maintenanceWear: maintenanceWear ?? this.maintenanceWear,
     );
   }
+
 
   // Helper methods
   int getMaterialCount(String materialId) => materials[materialId] ?? 0;
@@ -278,7 +298,12 @@ class GameState {
   }
 
   int get maxSimultaneousShipments {
-    return GameData.getFleetTier(fleetTier).maxSimultaneousShipments;
+    int maxShipments = GameData.getFleetTier(fleetTier).maxSimultaneousShipments;
+    // Phase 4: Level 3 Logistics Optimization grants +1 concurrent dispatch slot
+    if (getTechLevel('logistics_optimization') >= 3) {
+      maxShipments += 1;
+    }
+    return maxShipments;
   }
 
   bool canShipMore(int currentActiveOrders) {
@@ -288,5 +313,51 @@ class GameState {
   bool canUpgradeFleet(LogisticsFleetTier nextTier) {
     return money >= nextTier.upgradeCost;
   }
+
+  // Phase 4: R&D Lab & Technology Tree Helpers
+  int getTechLevel(String techId) => techLevels[techId] ?? 0;
+
+  double get materialScienceDuplicationChance {
+    final level = getTechLevel('material_science');
+    if (level <= 0) return 0.0;
+    if (level >= ResearchConstants.materialScienceDuplicationChances.length) {
+      return ResearchConstants.materialScienceDuplicationChances.last;
+    }
+    return ResearchConstants.materialScienceDuplicationChances[level];
+  }
+
+  bool get isOverclockEngaged =>
+      overclockActive &&
+      getTechLevel('factory_overclocking') >= 2 &&
+      maintenanceWear > 0.0;
+
+  double get overclockSpeedMultiplier {
+    final level = getTechLevel('factory_overclocking');
+    if (level <= 0) return 1.0;
+    // Level 1: permanent passive +15%
+    if (level == 1) return ResearchConstants.factoryOverclockSpeedMultipliers[1];
+    // Level 2+: active if overclock toggle is engaged and wear > 0
+    if (isOverclockEngaged) {
+      if (level >= ResearchConstants.factoryOverclockSpeedMultipliers.length) {
+        return ResearchConstants.factoryOverclockSpeedMultipliers.last;
+      }
+      return ResearchConstants.factoryOverclockSpeedMultipliers[level];
+    }
+    // Base passive level 1 boost when overclock toggle is off
+    return ResearchConstants.factoryOverclockSpeedMultipliers[1];
+  }
+
+  double get logisticsSpeedMultiplier {
+    final level = getTechLevel('logistics_optimization');
+    if (level <= 0) return 1.0;
+    if (level >= ResearchConstants.logisticsSpeedMultipliers.length) {
+      return ResearchConstants.logisticsSpeedMultipliers.last;
+    }
+    return ResearchConstants.logisticsSpeedMultipliers[level];
+  }
+
+  bool get hasCorporateContractFastTrack =>
+      getTechLevel('logistics_optimization') >= 2;
 }
+
 

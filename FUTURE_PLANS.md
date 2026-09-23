@@ -11,8 +11,8 @@
 | **1** | **Factory Tiers & Expansion Licensing** | Control Screen (`Tiers` Tab) | ✅ **Completed** | Solves early-game rushing; gates progress with rewarding factory milestones. |
 | **2** | **B2B Corporate Contracts & Dynamic Shipping** | Shipping Screen | ✅ **Completed** | Transforms passive shipping into an active, high-margin logistics game. |
 | **3** | **New Industry Branches (Robotics & Clean Energy)** | `game_data.dart`, Build & Sell Screens | ✅ **Completed** | Expands product catalog with 11 high-tech components, flagships, and branch filters. |
-| **4** | **R&D Lab & Technology Tree** | New Screen / Control Center | 🎯 **Next Priority** | Gives utility to surplus inventory through permanent efficiency perks. |
-| **5** | **Prestige / IPO (Initial Public Offering)** | Endgame System | 💡 Concept | Infinite replayability with Golden Shares and global multipliers. |
+| **4** | **R&D Lab & Technology Tree** | Control Center (`R&D Lab` Tab) | ✅ **Completed** | Gives utility to surplus inventory through permanent efficiency perks. |
+| **5** | **Prestige / IPO (Initial Public Offering)** | Endgame System | 🎯 **Next Priority** | Infinite replayability with Golden Shares and global multipliers. |
 
 ---
 
@@ -94,17 +94,44 @@ Expanded Production.INC's manufacturing ecosystem with two complete technologica
 
 ---
 
-## 🧪 Phase 4: R&D Lab & Technology Tree
+## 🧪 Phase 4: R&D Lab & Technology Tree (✅ Completed)
 
-### 🎯 Objective
-Give players a strategic sink for surplus components instead of only selling them for raw cash.
+### 🎯 Objective & Outcome
+Transformed surplus manufactured goods into high-value **Research Points (RP)** through the **Component Deconstruction Bay**, powering a permanent 3-branch **Technology Tree** with active factory overdrive controls, diagnostics maintenance, and automated logistics fast-tracking in the Control Center.
 
-### 🧩 Core Mechanics
-* **Deconstruction for Science**: Feed surplus components into the R&D Lab to generate **Research Points (RP)**.
-* **Tech Tree Branches**:
-  * **Material Science**: 5% $\to$ 10% $\to$ 15% chance to duplicate an assembled product without consuming input materials.
-  * **Factory Overclocking**: Ability to boost machine production by +25% at the cost of periodic maintenance checkups.
-  * **Logistics Optimization**: Automatically fast-tracks shipping orders when high-priority contracts are active.
+### 📦 Delivered Features & Architecture
+- **Component Deconstruction Bay**:
+  - All 27 manufactured products assigned calibrated Research Point valuations scaled by tier (e.g., basic `box`: 1 RP, intermediate `circuits`: 6 RP, high-tech `robotic_arm`: 130 RP, flagship `wind_turbine_generator`: 250 RP).
+  - Batch deconstruction selector (`1`, `5`, `10`, `All`) with responsive branch filtering (`All Branches`, `Consumer Tech`, `Robotics`, `Clean Energy`) and live yield previews.
+  - Safely decrements player inventory and credits Research Points in atomic operations.
+- **3 Technology Branches (3 Levels each)**:
+  1. **Material Science (🧬)**:
+     - Level 1 (50 RP, Tier 1): *Molecular Recycling* (5% chance to duplicate product on assembly without consuming materials).
+     - Level 2 (150 RP, Tier 2): *Polymer Restructuring* (10% duplication chance).
+     - Level 3 (400 RP, Tier 3): *Zero-Point Replicator* (15% duplication chance).
+     - Seamlessly integrated into manual crafting and automated auto-build completion loops.
+  2. **Factory Overclocking (⚡)**:
+     - Level 1 (75 RP, Tier 1): *Tuned Actuators* (Permanent passive +15% build speed boost across all products).
+     - Level 2 (200 RP, Tier 2): *Coolant Overdrive* (+25% build speed; unlocks the interactive Overclock toggle in the Control Center).
+     - Level 3 (500 RP, Tier 3): *Plasma Turbocharging* (+40% build speed with heavy-duty thermal capacity).
+     - **Wear Degradation & Diagnostic Maintenance**: Running active overclocking degrades equipment health over production ticks. If wear reaches 0%, overclock safely auto-throttles to prevent burnout. Players perform Diagnostic Checkups ($50 fee) to restore wear to 100% pristine condition.
+  3. **Logistics Optimization (🚀)**:
+     - Level 1 (60 RP, Tier 1): *Priority Dispatch* (15% shipping transit speed reduction across all orders).
+     - Level 2 (175 RP, Tier 2): *Dynamic Courier Fast-Track* (30% shipping speed reduction + active B2B corporate contracts receive an extra +15% speed boost).
+     - Level 3 (450 RP, Tier 3): *Quantum Hyperlane Logistics* (40% shipping speed reduction + contract fast-tracking + 1 extra concurrent dispatch slot).
+- **Control Center 3-Section UI Evolution**:
+  - Expanded [`lib/screens/control_screen.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart) from 2 segments (`Machines`, `Tiers`) to 3 (`Machines`, `Tiers`, `R&D Lab`).
+  - Added R&D Department header banner with glowing RP counter badge (`🧪 X RP`).
+  - Implemented responsive sub-tab pills to toggle between [`TechTreeCard`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/widgets/tech_tree_card.dart) and [`DeconstructionBayCard`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/widgets/deconstruction_bay_card.dart).
+  - Built interactive Factory Overdrive & Diagnostics Maintenance panel directly into the Tech Tree with real-time condition gauges, master toggle switch, and service action button.
+- **Database v9 Non-Destructive Migration**:
+  - Added `_migrateToVersion9` in [`GamePersistenceService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/game_persistence_service.dart).
+  - Created `researched_technologies` table (`tech_id`, `level`, `researched_at`).
+  - Added `research_points`, `overclock_active`, and `maintenance_wear` columns to `core_game_state` with incremental dirty tracking.
+- **Developer & Test Suite**:
+  - Added dev testing helpers: `devAddResearchPoints`, `devSetTechLevel`, `devSetMaintenanceWear`, `devSetMoney`.
+  - Added UI developer controls for instant +250 RP, wear restoration, and critical wear simulation.
+  - Created comprehensive test suite [`test/phase4_rnd_lab_test.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/test/phase4_rnd_lab_test.dart) (20/20 tests passing; 49/49 combined regression pass; 0 analyzer warnings).
 
 ---
 
