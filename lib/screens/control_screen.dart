@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/production_game_service.dart';
+import '../models/game_data.dart';
+import '../widgets/factory_tier_card.dart';
 import 'settings_screen.dart';
 
 class ControlScreen extends StatefulWidget {
@@ -176,48 +178,13 @@ class _ControlScreenState extends State<ControlScreen> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          // Placeholder for future tier content
-          _buildPlaceholderSection(),
+          // Factory Tiers & Expansion Licensing System (Phase 1)
+          FactoryTierCard(gameService: gameService),
 
           const SizedBox(height: 20),
 
           // Dev Controls Section
           _buildDevControlsSection(context, gameService),
-        ],
-      ),
-    );
-  }
-
-  /// Placeholder section for future tier content
-  Widget _buildPlaceholderSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.construction, color: Colors.purple[400], size: 48),
-          const SizedBox(height: 16),
-          const Text(
-            'Tier System Coming Soon',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Content for the tier system is still being discussed.\nThis space will be populated soon!',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 14,
-            ),
-            textAlign: TextAlign.center,
-          ),
         ],
       ),
     );
@@ -806,6 +773,17 @@ class _ControlScreenState extends State<ControlScreen> {
           const Divider(color: Colors.white24),
           const SizedBox(height: 16),
 
+          // Cycle Factory Tier (Dev Tool)
+          _buildDevControl(
+            icon: Icons.military_tech,
+            title: 'Cycle Factory Tier (Current: T${gameService.state.factoryTier})',
+            subtitle: 'Dev: Cycle between Factory Tiers 1-4 for testing',
+            color: Colors.purple,
+            onPressed: () => _cycleDevFactoryTier(context, gameService),
+          ),
+
+          const SizedBox(height: 12),
+
           // Add Money (Dev Tool)
           _buildDevControl(
             icon: Icons.add_circle_outline,
@@ -972,6 +950,26 @@ class _ControlScreenState extends State<ControlScreen> {
             Icon(Icons.arrow_forward_ios, color: color, size: 16),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Dev tool: Cycle factory tier
+  void _cycleDevFactoryTier(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    final current = gameService.state.factoryTier;
+    final next = current >= 4 ? 1 : current + 1;
+    gameService.setFactoryTierForDev(next);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '🏭 Set Factory Tier to $next: ${GameData.getFactoryTier(next).name} (Dev)',
+        ),
+        backgroundColor: Colors.purple,
+        duration: const Duration(seconds: 2),
       ),
     );
   }

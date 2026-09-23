@@ -49,8 +49,9 @@ void main() {
         false,
       );
 
-      // Add more produced basic parts and required raw materials
+      // Add more produced basic parts and required raw materials (and Tier 2 license)
       final gameStateWithMoreProducts = gameState.copyWith(
+        factoryTier: 2,
         materials: {
           'cardboard': 10,
           'basic_metals': 10,

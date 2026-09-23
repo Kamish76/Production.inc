@@ -158,3 +158,28 @@ class ShippingHistory {
     required this.totalRevenue,
   });
 }
+
+// Factory Tier model for factory expansion and licensing progression
+class FactoryTier {
+  final int tierNumber;
+  final String name;
+  final String description;
+  final String emoji;
+  final double upgradeCost;
+  final Map<String, int> requiredShippedProducts; // productId -> count required
+  final int autoBuyCapacityLimit;
+  final List<String> perkHighlights;
+  final Set<ProductLevel> allowedProductLevels;
+
+  const FactoryTier({
+    required this.tierNumber,
+    required this.name,
+    required this.description,
+    required this.emoji,
+    required this.upgradeCost,
+    this.requiredShippedProducts = const {},
+    required this.autoBuyCapacityLimit,
+    required this.perkHighlights,
+    required this.allowedProductLevels,
+  });
+}

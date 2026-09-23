@@ -483,4 +483,113 @@ class GameData {
         return 'Retail';
     }
   }
+
+  // Factory Tiers configuration (Phase 1)
+  static const List<FactoryTier> factoryTiers = [
+    FactoryTier(
+      tierNumber: 1,
+      name: 'Garage Workshop',
+      description: 'Small-scale manual crafting & basic parts production',
+      emoji: '🏚️',
+      upgradeCost: 0.0,
+      autoBuyCapacityLimit: 25,
+      perkHighlights: [
+        'Manual crafting of basic components',
+        'Auto-buy capacity up to 25 units',
+        'Tier 1 Auto-build supported',
+      ],
+      allowedProductLevels: {
+        ProductLevel.material,
+        ProductLevel.basicParts,
+      },
+    ),
+    FactoryTier(
+      tierNumber: 2,
+      name: 'Light Assembly Facility',
+      description: 'Commercial facility with intermediate sub-assemblies',
+      emoji: '🏭',
+      upgradeCost: 2500.0,
+      requiredShippedProducts: {
+        'box': 20,
+        'wires': 15,
+      },
+      autoBuyCapacityLimit: 50,
+      perkHighlights: [
+        'Unlocks Intermediate Parts (Displays, Sound Drivers, Processors)',
+        'Unlocks entry Retail items (Speaker, Power Bank, Wall Clock)',
+        'Auto-buy capacity increased to 50 units',
+      ],
+      allowedProductLevels: {
+        ProductLevel.material,
+        ProductLevel.basicParts,
+        ProductLevel.intermediate,
+        ProductLevel.retail,
+      },
+    ),
+    FactoryTier(
+      tierNumber: 3,
+      name: 'Precision Tech Plant',
+      description: 'High-precision manufacturing with cleanroom assembly',
+      emoji: '🔬',
+      upgradeCost: 25000.0,
+      requiredShippedProducts: {
+        'speaker': 25,
+        'battery': 20,
+      },
+      autoBuyCapacityLimit: 100,
+      perkHighlights: [
+        'Unlocks Complex Parts (Camera Modules)',
+        'Unlocks advanced Retail items (Cameras, Solar Panels, Toy Robots)',
+        'Tier 2 Auto-build supported',
+        'Auto-buy capacity increased to 100 units',
+      ],
+      allowedProductLevels: {
+        ProductLevel.material,
+        ProductLevel.basicParts,
+        ProductLevel.intermediate,
+        ProductLevel.complex,
+        ProductLevel.retail,
+      },
+    ),
+    FactoryTier(
+      tierNumber: 4,
+      name: 'Megafactory Cleanroom',
+      description: 'State-of-the-art enterprise flagship production line',
+      emoji: '🚀',
+      upgradeCost: 150000.0,
+      requiredShippedProducts: {
+        'smartphone': 50,
+        'solar_panel': 30,
+      },
+      autoBuyCapacityLimit: 250,
+      perkHighlights: [
+        'Unlocks Flagship Retail items (Smartphone)',
+        'Tier 3 Auto-build supported',
+        'Auto-buy capacity increased to 250 units',
+        'Maximum automation throughput',
+      ],
+      allowedProductLevels: {
+        ProductLevel.material,
+        ProductLevel.basicParts,
+        ProductLevel.intermediate,
+        ProductLevel.complex,
+        ProductLevel.retail,
+      },
+    ),
+  ];
+
+  static FactoryTier getFactoryTier(int tierNumber) {
+    return factoryTiers.firstWhere(
+      (t) => t.tierNumber == tierNumber,
+      orElse: () => factoryTiers.first,
+    );
+  }
+
+  static FactoryTier? getNextFactoryTier(int currentTierNumber) {
+    try {
+      return factoryTiers.firstWhere((t) => t.tierNumber == currentTierNumber + 1);
+    } catch (_) {
+      return null;
+    }
+  }
 }

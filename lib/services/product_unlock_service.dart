@@ -46,7 +46,7 @@ class ProductUnlockService {
         .map((e) => '${e.key}:${e.value}')
         .join(',');
     final producedHash = gameState.unlockedProducts.join(',');
-    return '$materialsHash|$producedHash';
+    return '$materialsHash|$producedHash|tier:${gameState.factoryTier}';
   }
 
   /// Check if cache is still valid for the current game state
@@ -105,6 +105,19 @@ class ProductUnlockService {
     if (gameState.unlockedProducts.contains(productId)) {
       _unlockCache[productId] = true;
       return true;
+    }
+
+    // Factory tier gating check (Phase 1)
+    final currentTier = GameData.getFactoryTier(gameState.factoryTier);
+    if (!currentTier.allowedProductLevels.contains(product.levelId)) {
+      _unlockCache[productId] = false;
+      return false;
+    }
+
+    // Tier 4 Flagship product gating
+    if (productId == 'smartphone' && gameState.factoryTier < 4) {
+      _unlockCache[productId] = false;
+      return false;
     }
 
     // Calculate unlock condition based on product tier

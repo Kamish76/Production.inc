@@ -59,11 +59,12 @@ class _MoneyAndHistory {
 
 // Production.INC Game Service - handles all game logic
 class ProductionGameService extends ChangeNotifier {
-  GameState _state = const GameState(
-    autoBuildMachinesOwned: {},
-    autoBuildEnabled: {},
-    lastAutoBuildTick: {},
-    autoBuildProductCapacity: {},
+  // ignore: prefer_const_constructors
+  GameState _state = GameState(
+    autoBuildMachinesOwned: <String, int>{},
+    autoBuildEnabled: <String, bool>{},
+    lastAutoBuildTick: <String, DateTime?>{},
+    autoBuildProductCapacity: <String, int>{},
   );
   Timer? _updateTimer;
   Timer? _saveTimer;
@@ -87,11 +88,12 @@ class ProductionGameService extends ChangeNotifier {
     try {
       if (_isTestMode) {
         // In test mode, use default state and don't start timers
-        _state = const GameState(
-          autoBuildMachinesOwned: {},
-          autoBuildEnabled: {},
-          lastAutoBuildTick: {},
-          autoBuildProductCapacity: {},
+        // ignore: prefer_const_constructors
+        _state = GameState(
+          autoBuildMachinesOwned: <String, int>{},
+          autoBuildEnabled: <String, bool>{},
+          lastAutoBuildTick: <String, DateTime?>{},
+          autoBuildProductCapacity: <String, int>{},
         );
 
         // Initialize unlock state for test mode (v1.4.18)
@@ -1730,15 +1732,19 @@ class ProductionGameService extends ChangeNotifier {
     return true;
   }
 
-  /// Increase auto-buy resource capacity by 10
+  /// Increase auto-buy resource capacity by 10 (capped by factory tier)
   void increaseAutoBuyCapacity() {
-    final newCapacity = _state.autoBuyResourceCapacity + AutoBuyConstants.capacityIncrement;
-    _state = _state.copyWith(autoBuyResourceCapacity: newCapacity);
-    notifyListeners();
-    _saveGameStateOptimized();
+    final currentTier = GameData.getFactoryTier(_state.factoryTier);
+    final nextCapacity = _state.autoBuyResourceCapacity + AutoBuyConstants.capacityIncrement;
+    if (nextCapacity <= currentTier.autoBuyCapacityLimit) {
+      final newCapacity = nextCapacity;
+      _state = _state.copyWith(autoBuyResourceCapacity: newCapacity);
+      notifyListeners();
+      _saveGameStateOptimized();
 
-    if (kDebugMode) {
-      GameLogger.info('Auto-buy capacity increased to: $newCapacity');
+      if (kDebugMode) {
+        GameLogger.info('Auto-buy capacity increased to: $newCapacity (tier cap: ${currentTier.autoBuyCapacityLimit})');
+      }
     }
   }
 
@@ -2166,6 +2172,63 @@ class ProductionGameService extends ChangeNotifier {
         GameLogger.error('Dev: Database reset failed: $e');
       }
       rethrow;
+    }
+  }
+
+  // ==========================================
+  // Factory Tier Methods (Phase 1)
+  // ==========================================
+
+  /// Current factory tier configuration
+  FactoryTier get currentFactoryTier =>
+      GameData.getFactoryTier(_state.factoryTier);
+
+  /// Next factory tier configuration (null if at max tier)
+  FactoryTier? get nextFactoryTier =>
+      GameData.getNextFactoryTier(_state.factoryTier);
+
+  /// Checks if player can afford and has met shipping requirements for next tier
+  bool get canUpgradeFactoryTier {
+    final next = nextFactoryTier;
+    if (next == null) return false;
+    return _state.canUpgradeFactoryTier(next);
+  }
+
+  /// Upgrades factory license to next tier
+  Future<bool> upgradeFactoryTier() async {
+    final next = nextFactoryTier;
+    if (next == null) return false;
+    if (!_state.canUpgradeFactoryTier(next)) return false;
+
+    final newMoney = _state.money - next.upgradeCost;
+    _state = _state.copyWith(
+      money: newMoney,
+      factoryTier: next.tierNumber,
+    );
+
+    // Re-evaluate unlock status with the new tier
+    _checkAndUpdateUnlocks();
+    notifyListeners();
+    await _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Successfully upgraded to Factory Tier ${next.tierNumber}: ${next.name}',
+      );
+    }
+    return true;
+  }
+
+  /// Dev method: Set factory tier directly
+  Future<void> setFactoryTierForDev(int tier) async {
+    if (tier < 1 || tier > GameData.factoryTiers.length) return;
+    _state = _state.copyWith(factoryTier: tier);
+    _checkAndUpdateUnlocks();
+    notifyListeners();
+    await _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info('Dev: Set factory tier to $tier');
     }
   }
 }

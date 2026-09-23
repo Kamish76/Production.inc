@@ -12,7 +12,7 @@ class GamePersistenceService {
     static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      6; // Updated for v1.5.0 Phase 2 auto-build system
+      7; // Updated for v1.5.0 Phase 1 Factory Tiers system
 
   Database? _database;
 
@@ -38,6 +38,12 @@ class GamePersistenceService {
             Platform.environment.containsKey('FLUTTER_TEST'))) {
       try {
         sqfliteFfiInit();
+      } catch (e) {
+        if (kDebugMode) {
+          print('sqfliteFfiInit notice: $e');
+        }
+      }
+      try {
         databaseFactory = databaseFactoryFfi;
         if (kDebugMode) {
           print('Using FFI database factory for desktop/test platform');
@@ -45,16 +51,6 @@ class GamePersistenceService {
       } catch (e) {
         if (kDebugMode) {
           print('Failed to initialize FFI database factory: $e');
-        }
-        // Fallback for test environment
-        if (Platform.environment.containsKey('FLUTTER_TEST')) {
-          try {
-            databaseFactory = databaseFactoryFfi;
-          } catch (fallbackError) {
-            if (kDebugMode) {
-              print('Fallback FFI initialization also failed: $fallbackError');
-            }
-          }
         }
       }
     } else {
@@ -73,6 +69,18 @@ class GamePersistenceService {
   /// Initialize the SQLite database with game tables and migration support
   Future<Database> _initDatabase() async {
     try {
+      if (!kIsWeb &&
+          (Platform.isWindows ||
+              Platform.isMacOS ||
+              Platform.isLinux ||
+              Platform.environment.containsKey('FLUTTER_TEST'))) {
+        try {
+          sqfliteFfiInit();
+        } catch (_) {}
+        try {
+          databaseFactory = databaseFactoryFfi;
+        } catch (_) {}
+      }
       final dbPath = await getDatabasesPath();
       final path = '$dbPath/$_databaseName';
 
@@ -144,6 +152,10 @@ class GamePersistenceService {
       case 6:
         // v1.5.0 Phase 2 migrations - auto-build system
         await _migrateToVersion6(db);
+        break;
+      case 7:
+        // v1.5.0 Phase 1 migrations - factory tier progression system
+        await _migrateToVersion7(db);
         break;
       default:
         if (kDebugMode) {
@@ -419,6 +431,32 @@ class GamePersistenceService {
     }
   }
 
+  /// Migration to version 7 (v1.5.0 Phase 1: Factory Tiers)
+  Future<void> _migrateToVersion7(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 7 (factory tier system)');
+    }
+
+    final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+    final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+
+    if (!existingColumns.contains('factory_tier')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          factory_tier INTEGER NOT NULL DEFAULT 1
+        ''');
+        if (kDebugMode) {
+          print('Added column: factory_tier');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Migration warning (factory_tier): $e');
+        }
+      }
+    }
+  }
+
   /// Create backup of existing database before major operations
   Future<void> _createDatabaseBackup() async {
     if (_database == null) return;
@@ -562,7 +600,8 @@ class GamePersistenceService {
         auto_buy_machines_owned INTEGER DEFAULT 0,
         auto_buy_enabled INTEGER DEFAULT 0,
         auto_buy_last_tick INTEGER,
-        auto_buy_resource_capacity INTEGER DEFAULT 10
+        auto_buy_resource_capacity INTEGER DEFAULT 10,
+        factory_tier INTEGER NOT NULL DEFAULT 1
       )
     ''');
 
@@ -702,6 +741,7 @@ class GamePersistenceService {
       'id': 1,
       'money': 100.0, // Starting money
       'last_saved': DateTime.now().millisecondsSinceEpoch,
+      'factory_tier': 1,
     });
   }
 
@@ -732,6 +772,7 @@ class GamePersistenceService {
         'auto_buy_enabled': state.autoBuyEnabled ? 1 : 0,
         'auto_buy_last_tick': state.lastAutoBuyTick?.millisecondsSinceEpoch,
         'auto_buy_resource_capacity': state.autoBuyResourceCapacity,
+        'factory_tier': state.factoryTier,
       },
       where: 'id = ?',
       whereArgs: [1],
@@ -970,6 +1011,7 @@ class GamePersistenceService {
         ? DateTime.fromMillisecondsSinceEpoch(autoBuyLastTickMs) 
         : null;
     final autoBuyResourceCapacity = (row['auto_buy_resource_capacity'] as int?) ?? 10;
+    final factoryTier = (row['factory_tier'] as int?) ?? 1;
 
     // Load all game components in parallel where possible
     final materials = await _loadMaterials(db);
@@ -1000,6 +1042,7 @@ class GamePersistenceService {
       autoBuildEnabled: autoBuildData.enabled,
       lastAutoBuildTick: autoBuildData.lastTick,
       autoBuildProductCapacity: autoBuildData.capacity,
+      factoryTier: factoryTier,
     );
   }
 

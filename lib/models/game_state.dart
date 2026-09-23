@@ -84,6 +84,9 @@ class GameState {
   final Map<String, DateTime?> lastAutoBuildTick; // tier -> last tick time
   final Map<String, int> autoBuildProductCapacity; // tier -> capacity setting (e.g., 'basicParts' -> 10)
 
+  // Factory Tier progression state (Phase 1)
+  final int factoryTier; // Current factory license tier (1: Garage, 2: Light Assembly, 3: Precision, 4: Megafactory)
+
   const GameState({
     this.money = 100.0, // Starting money
     this.materials = const {},
@@ -105,6 +108,7 @@ class GameState {
     required this.autoBuildEnabled, // Required - default to empty map
     required this.lastAutoBuildTick, // Required - default to empty map
     required this.autoBuildProductCapacity, // Required - default to empty map
+    this.factoryTier = 1, // Default to Tier 1: Garage Workshop
   });
 
   GameState copyWith({
@@ -128,6 +132,7 @@ class GameState {
     Map<String, bool>? autoBuildEnabled,
     Map<String, DateTime?>? lastAutoBuildTick,
     Map<String, int>? autoBuildProductCapacity,
+    int? factoryTier,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -153,6 +158,7 @@ class GameState {
       autoBuildEnabled: autoBuildEnabled ?? this.autoBuildEnabled,
       lastAutoBuildTick: lastAutoBuildTick ?? this.lastAutoBuildTick,
       autoBuildProductCapacity: autoBuildProductCapacity ?? this.autoBuildProductCapacity,
+      factoryTier: factoryTier ?? this.factoryTier,
     );
   }
 
@@ -180,4 +186,31 @@ class GameState {
   bool hasProduced(String productId) {
     return getProductCount(productId) > 0;
   }
+
+  // Calculate total quantity of a product shipped across all shipping history
+  int getShippedProductCount(String productId) {
+    int total = 0;
+    for (final order in shippingHistory) {
+      for (final item in order.items) {
+        if (item.productId == productId) {
+          total += item.quantity;
+        }
+      }
+    }
+    return total;
+  }
+
+  // Check if player meets all prerequisites to upgrade to next tier
+  bool canUpgradeFactoryTier(FactoryTier nextTier) {
+    if (money < nextTier.upgradeCost) {
+      return false;
+    }
+    for (final entry in nextTier.requiredShippedProducts.entries) {
+      if (getShippedProductCount(entry.key) < entry.value) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
+
