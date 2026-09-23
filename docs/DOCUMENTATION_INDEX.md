@@ -25,6 +25,7 @@ For active feature work and real-time development context, reference these root 
 
 - **[`FUTURE_PLANS.md`](../FUTURE_PLANS.md)**: Master architecture roadmap detailing completed Phases 1–5 and planned Phases 6–7.
 - **[`TODO_SEP_23.md`](../TODO_SEP_23.md)**: Granular task backlog and execution checklist for upcoming releases.
+- **[`ICON_DESIGN_ROADMAP.md`](../ICON_DESIGN_ROADMAP.md)**: Master icon design roadmap & prioritized batch production guide for all game assets.
 - **[`context.md`](../context.md)**: Architectural invariants, memory constraints, and core game patterns.
 - **[`README.md`](../README.md)**: Main repository overview and player feature summary.
 - **[`CHANGELOG.md`](../CHANGELOG.md)**: Detailed historical release notes across all versions.
