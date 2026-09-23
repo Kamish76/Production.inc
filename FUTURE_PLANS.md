@@ -1,18 +1,25 @@
-# Production.INC — Future Plans & Feature Roadmap (`FUTURE_PLANS.md`)
+# Production.INC — Version 2.0 (v2.0 Major Update) Architecture & Roadmap (`FUTURE_PLANS.md`)
 
-> **Document Purpose**: This document outlines the strategic roadmap, planned gameplay expansions, and architectural milestones for **Production.INC**. It details how to evolve the game from a straightforward assembly loop into a rich, deeply satisfying industrial tycoon experience.
+> **Document Purpose**: This document records the foundational architectural milestones and 7-phase gameplay evolution that define the **Version 2.0 (v2.0 Major Update)** of **Production.INC**.
+>
+> 🚀 **Milestone Scope**: The v2.0 major update elevates Production.Inc from an early single-loop idle workshop into an end-to-end industrial tycoon simulation across **Phases 1 through 7**. Core Phases 1–5 are fully implemented, and Phases 6 & 7 are actively tracked in [`TODO_SEP_23.md`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/TODO_SEP_23.md) for final release polish and machine overhauls.
 
 ---
 
-## 🗺️ Roadmap At-A-Glance
+## 🗺️ Version 2.0 Roadmap Summary (Phases 1–7)
 
-| Phase | System / Feature | Target Area | Status | Impact |
-| :---: | :--- | :--- | :--- | :--- |
-| **1** | **Factory Tiers & Expansion Licensing** | Control Screen (`Tiers` Tab) | ✅ **Completed** | Solves early-game rushing; gates progress with rewarding factory milestones. |
-| **2** | **B2B Corporate Contracts & Dynamic Shipping** | Shipping Screen | ✅ **Completed** | Transforms passive shipping into an active, high-margin logistics game. |
+| Phase | System / Feature | Target Area | Status | Impact in v2.0 |
+| :---: | :--- | :--- | :---: | :--- |
+| **1** | **Factory Tiers & Expansion Licensing** | Control Screen (`Tiers` Tab) | ✅ **Completed** | Solves early-game rushing; gates progress with rewarding 4-tier factory milestones. |
+| **2** | **B2B Corporate Contracts & Dynamic Shipping** | Shipping Screen (`Commercial Dispatch`) | ✅ **Completed** | Transforms passive shipping into an active, high-margin corporate logistics game with AI clients. |
 | **3** | **New Industry Branches (Robotics & Clean Energy)** | `game_data.dart`, Build & Sell Screens | ✅ **Completed** | Expands product catalog with 11 high-tech components, flagships, and branch filters. |
-| **4** | **R&D Lab & Technology Tree** | Control Center (`R&D Lab` Tab) | ✅ **Completed** | Gives utility to surplus inventory through permanent efficiency perks. |
-| **5** | **Prestige / IPO (Initial Public Offering)** | Control Screen (`Prestige 🌟` Tab) | ✅ **Completed** | Infinite replayability with Golden Shares and global multipliers. |
+| **4** | **R&D Lab & Technology Tree** | Control Center (`R&D Lab` Tab) | ✅ **Completed** | Gives utility to surplus inventory through permanent science research and efficiency perks. |
+| **5** | **Prestige / IPO (Initial Public Offering)** | Control Screen (`Prestige 🌟` Tab) | ✅ **Completed** | Infinite replayability with company valuation, Golden Shares, and permanent global multipliers. |
+| **6** | **Final Testing, Ergonomics & Systems Polish** | All Screens & List Recycling | ⏳ **In Progress** | Sales screen fleet counter, lazy-loaded contracts accordion, uncapped autobuy buffer, RAM optimization. |
+| **7** | **Machine & Automation Overhaul: Dynamic Scaling** | Control Screen (`Machines` Tab) | 📋 **Planned** | Tier-based machine caps, exponential price scaling (1.15x–1.2x), bulk intake multipliers, machine salvage. |
+
+> [!TIP]
+> **Active v2.0 Finalization Checklist**: For granular task tracking, implementation checklists, and ergonomic passes for **Phase 6** and **Phase 7**, consult [`TODO_SEP_23.md`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/TODO_SEP_23.md).
 
 ---
 
@@ -178,11 +185,39 @@ Delivered the definitive endgame prestige loop for Production.INC. Players can t
   - Created [`test/phase5_prestige_ipo_test.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/test/phase5_prestige_ipo_test.dart) (15/15 tests passing).
   - 60/60 tests passing across all modern project test suites (`phase2_b2b_logistics_test.dart`, `phase3_industry_branches_test.dart`, `phase4_rnd_lab_test.dart`, `factory_tier_system_test.dart`, `phase5_prestige_ipo_test.dart`).
   - Clean static analysis with 0 warnings or errors (`flutter analyze`).
+---
+
+## ⚡ Phase 6: Final Testing, Ergonomics & Systems Polish (⏳ In Progress in v2.0)
+
+### 🎯 Objective & Scope
+The stabilization and polish pass ensuring Version 2.0 provides seamless usability and optimal frame rates across long play sessions:
+- **Selling Screen Fleet Visibility**: Add live `Fleets in Transit: X / Max` indicator directly on the portfolio card.
+- **Contract UX & Requisitions Drawer**: Completed B2B contracts automatically sink to bottom and render in a lazy-loaded accordion to conserve memory.
+- **Auto-Buy Buffer Uncapping**: Remove arbitrary machine capacity ceilings in late game to match auto-build throughput.
+- **Unified Machine Card Componentry**: Harmonize Auto-Buy and Auto-Build card layouts, typography, and controls.
+- **RAM Optimization**: Aggressive list recycling and off-screen child disposal (`addAutomaticKeepAlives: false`) across all tabs.
+
+> 📝 *Detailed checklist and implementation tasks are tracked in [`TODO_SEP_23.md`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/TODO_SEP_23.md).*
 
 ---
 
-## 🎨 Technical & Visual Evolution
+## ⚙️ Phase 7: Machine & Automation Overhaul: Dynamic Scaling (📋 Planned in v2.0)
+
+### 🎯 Objective & Scope
+The final automation capstone for the Version 2.0 release:
+- **Tier-Based Machine Caps**: Factory tiers dynamically scale total machine slots (Garage: 3 machines $\to$ Megafactory: 24+ machines).
+- **Exponential Price Scaling**: Standardize incremental machine purchasing costs (`Base * 1.15^count`).
+- **Batch Build Throughput**: High-tier auto-build machines construct goods in parallel batches.
+- **Bulk Auto-Buy Intake Multipliers**: High-tier auto-buyers procure raw materials in bulk bursts.
+- **Machine Decommissioning / Salvage**: Reclaim 60% capital value by selling outdated machinery.
+
+> 📝 *Detailed architectural specifications and tasks are tracked in [`TODO_SEP_23.md`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/TODO_SEP_23.md).*
+
+---
+
+## 🎨 Technical & Visual Evolution (Post-v2.0)
 
 1. **Custom Artwork**: Replace emoji icons with sleek vector illustrations or isometric rendered sprites for all products and machines.
 2. **Haptic & Audio Feedback**: Tactile click haptics on manual build completion and machine cycle ticks.
 3. **Cloud Save & Sync**: Backup SQLite databases securely via Google Play Games Services / iCloud.
+

@@ -132,6 +132,7 @@ lib/
 
 ## 📚 Documentation
 
+- **[Master Documentation Index](docs/DOCUMENTATION_INDEX.md)** - Central hub linking all technical guides and sprint archives
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - Complete service and method reference
 - **[Development Guide](docs/DEVELOPMENT_GUIDE.md)** - Coding standards and contribution guidelines  
 - **[Database Schema](docs/DATABASE_SCHEMA.md)** - Complete database structure documentation
