@@ -1,7 +1,9 @@
 import 'dart:math' as math;
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game1/services/production_game_service.dart';
 import 'package:game1/services/game_persistence_service.dart';
+import 'package:game1/widgets/machine_card.dart';
 
 void main() {
   group('Phase 8: High-Throughput Automation (QA Tests)', () {
@@ -222,6 +224,142 @@ void main() {
         expect(success, isFalse);
         expect(gameService.getAutoBuildThroughputLevel(tier), 1);
         expect(gameService.state.money, moneyBefore);
+      });
+    });
+
+    group('4. MachineCard UI Layer (Phase 8 Throughput Upgrades)', () {
+      testWidgets('renders throughput label and upgrade button with cost', (WidgetTester tester) async {
+        bool upgraded = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: MachineCard(
+                icon: Icons.shopping_cart,
+                title: 'Auto-Buy Machines',
+                accentColor: Colors.greenAccent,
+                isEnabled: true,
+                machineCount: 1,
+                machineCost: 100.0,
+                canBuy: true,
+                capacity: 50,
+                capacityUnit: 'per resource',
+                telemetryText: 'Active',
+                throughputLevel: 2,
+                throughputUpgradeCost: 1150.0,
+                throughputLabel: '1.25x Intake',
+                canUpgradeThroughput: true,
+                onUpgradeThroughput: () {
+                  upgraded = true;
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Throughput label badge
+        expect(find.text('1.25x Intake'), findsOneWidget);
+
+        // Upgrade button with exact formatted cost
+        final buttonFinder = find.widgetWithText(ElevatedButton, 'Upgrade (\$1150.00)');
+        expect(buttonFinder, findsOneWidget);
+
+        final buttonWidget = tester.widget<ElevatedButton>(buttonFinder);
+        expect(buttonWidget.onPressed, isNotNull);
+
+        // Tapping upgrade button calls onUpgradeThroughput
+        await tester.tap(buttonFinder);
+        expect(upgraded, isTrue);
+      });
+
+      testWidgets('Upgrade button is disabled when canUpgradeThroughput is false', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: MachineCard(
+                icon: Icons.precision_manufacturing,
+                title: 'Auto-Build: Basic Parts',
+                accentColor: Colors.cyanAccent,
+                isEnabled: true,
+                machineCount: 1,
+                machineCost: 100.0,
+                canBuy: true,
+                capacity: 20,
+                capacityUnit: 'per product',
+                telemetryText: 'Active',
+                throughputLevel: 1,
+                throughputUpgradeCost: 1000.0,
+                throughputLabel: '1 Items/Tick',
+                canUpgradeThroughput: false,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('1 Items/Tick'), findsOneWidget);
+
+        final buttonFinder = find.widgetWithText(ElevatedButton, 'Upgrade (\$1000.00)');
+        expect(buttonFinder, findsOneWidget);
+
+        final buttonWidget = tester.widget<ElevatedButton>(buttonFinder);
+        expect(buttonWidget.onPressed, isNull);
+      });
+
+      testWidgets('MachineCard.autoBuy integrates throughput values and triggers upgrade', (WidgetTester tester) async {
+        gameService.addMoney(10000.0);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => MachineCard.autoBuy(
+                  context: context,
+                  gameService: gameService,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Default level 1 shows 1.0x Intake
+        expect(find.text('1.0x Intake'), findsOneWidget);
+        expect(find.widgetWithText(ElevatedButton, 'Upgrade (\$1000.00)'), findsOneWidget);
+
+        // Tap upgrade
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Upgrade (\$1000.00)'));
+        await tester.pumpAndSettle();
+
+        // Level incremented to 2
+        expect(gameService.getAutoBuyIntakeLevel(), 2);
+      });
+
+      testWidgets('MachineCard.autoBuild integrates throughput values and triggers upgrade', (WidgetTester tester) async {
+        gameService.addMoney(10000.0);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => MachineCard.autoBuild(
+                  context: context,
+                  gameService: gameService,
+                  tier: 'basicParts',
+                  tierName: 'Basic Parts',
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Default level 1 shows 1 Items/Tick
+        expect(find.text('1 Items/Tick'), findsOneWidget);
+        expect(find.widgetWithText(ElevatedButton, 'Upgrade (\$1000.00)'), findsOneWidget);
+
+        // Tap upgrade
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Upgrade (\$1000.00)'));
+        await tester.pumpAndSettle();
+
+        // Level incremented to 2
+        expect(gameService.getAutoBuildThroughputLevel('basicParts'), 2);
       });
     });
   });

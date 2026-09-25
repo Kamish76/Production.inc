@@ -35,6 +35,11 @@ class MachineCard extends StatelessWidget {
   final double salvageValue;
   final VoidCallback? onSalvage;
   final bool canSalvage;
+  final int throughputLevel;
+  final double throughputUpgradeCost;
+  final VoidCallback? onUpgradeThroughput;
+  final String throughputLabel;
+  final bool canUpgradeThroughput;
 
   const MachineCard({
     super.key,
@@ -60,6 +65,11 @@ class MachineCard extends StatelessWidget {
     this.salvageValue = 0.0,
     this.onSalvage,
     this.canSalvage = false,
+    this.throughputLevel = 1,
+    this.throughputUpgradeCost = 0.0,
+    this.onUpgradeThroughput,
+    this.throughputLabel = '',
+    this.canUpgradeThroughput = false,
   });
 
   /// Factory constructor for Auto-Buy Machinery
@@ -77,6 +87,11 @@ class MachineCard extends StatelessWidget {
     final salvageValue = gameService.getMachineSalvageValue('autoBuy', machineCount);
     final canSalvage = machineCount > 0;
     final canBuy = state.money >= cost && machineCount < machineLimit;
+    final throughputLevel = gameService.getAutoBuyIntakeLevel();
+    final throughputCost = gameService.getAutoBuyIntakeUpgradeCost();
+    final canUpgradeThroughput = state.money >= throughputCost;
+    final throughputLabel =
+        '${gameService.getAutoBuyIntakeMultiplier(throughputLevel)}x Intake';
 
     String telemetry;
     if (machineCount > 0) {
@@ -103,6 +118,21 @@ class MachineCard extends StatelessWidget {
       machineLimit: machineLimit,
       salvageValue: salvageValue,
       canSalvage: canSalvage,
+      throughputLevel: throughputLevel,
+      throughputUpgradeCost: throughputCost,
+      canUpgradeThroughput: canUpgradeThroughput,
+      throughputLabel: throughputLabel,
+      onUpgradeThroughput: () async {
+        final success = await gameService.upgradeAutoBuyIntake();
+        if (!success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Not enough money to upgrade intake!'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
       onSalvage: () async {
         await gameService.salvageMachine('autoBuy');
       },
@@ -149,6 +179,10 @@ class MachineCard extends StatelessWidget {
     final salvageValue = gameService.getMachineSalvageValue(tier, machineCount);
     final canSalvage = machineCount > 0;
     final canBuy = state.money >= cost && machineCount < machineLimit;
+    final throughputLevel = gameService.getAutoBuildThroughputLevel(tier);
+    final throughputCost = gameService.getAutoBuildThroughputUpgradeCost(tier);
+    final canUpgradeThroughput = state.money >= throughputCost;
+    final throughputLabel = '$throughputLevel Items/Tick';
 
     final effectiveColor = accentColor ?? _defaultColorForTier(tier);
     final effectiveIcon = icon ?? _defaultIconForTier(tier);
@@ -179,6 +213,21 @@ class MachineCard extends StatelessWidget {
       machineLimit: machineLimit,
       salvageValue: salvageValue,
       canSalvage: canSalvage,
+      throughputLevel: throughputLevel,
+      throughputUpgradeCost: throughputCost,
+      canUpgradeThroughput: canUpgradeThroughput,
+      throughputLabel: throughputLabel,
+      onUpgradeThroughput: () async {
+        final success = await gameService.upgradeAutoBuildThroughput(tier);
+        if (!success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Not enough money to upgrade throughput!'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
       onSalvage: () async {
         await gameService.salvageMachine(tier);
       },
@@ -568,9 +617,68 @@ class MachineCard extends StatelessWidget {
                 ],
               ),
 
+              const SizedBox(height: 12),
+
+              // 4. Throughput Upgrade Row: Throughput Badge + Upgrade Button
+              Row(
+                children: [
+                  const Text(
+                    'Throughput:',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  if (throughputLabel.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF131726),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: accentColor.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Text(
+                        throughputLabel,
+                        style: TextStyle(
+                          color: accentColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: canUpgradeThroughput ? onUpgradeThroughput : null,
+                      icon: const Icon(Icons.arrow_upward, size: 16),
+                      label: Text(
+                        'Upgrade (\$${throughputUpgradeCost.toStringAsFixed(2)})',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E88E5),
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.grey[850],
+                        disabledForegroundColor: Colors.grey[600],
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
               const SizedBox(height: 14),
 
-              // 4. Telemetry / Status Strip
+              // 5. Telemetry / Status Strip
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
