@@ -99,13 +99,36 @@ class ShippingScreen extends StatelessWidget {
   Widget _buildContractsTab(BuildContext context, ProductionGameService gameService) {
     final contracts = gameService.state.corporateContracts;
 
+    // Auto-sort contracts: active requisitions first, fulfilled/completed sink to bottom
+    final sortedContracts = List<game.CorporateContract>.from(contracts)
+      ..sort((a, b) {
+        final aCompleted = a.status == game.ContractStatus.completed;
+        final bCompleted = b.status == game.ContractStatus.completed;
+        if (aCompleted != bCompleted) {
+          return aCompleted ? 1 : -1;
+        }
+        // Active contracts: active before available, then by expiration
+        if (a.status != b.status) {
+          if (a.status == game.ContractStatus.active) return -1;
+          if (b.status == game.ContractStatus.active) return 1;
+        }
+        return a.expiresAt.compareTo(b.expiresAt);
+      });
+
+    final active = sortedContracts
+        .where((c) => c.status != game.ContractStatus.completed)
+        .toList();
+    final fulfilled = sortedContracts
+        .where((c) => c.status == game.ContractStatus.completed)
+        .toList();
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
       children: [
         // Corporate Reputation & Standing Header
         ClientReputationBar(gameService: gameService),
 
-        // Section Title with live contract count
+        // Section Title with active contract count
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 4),
           child: Row(
@@ -113,7 +136,7 @@ class ShippingScreen extends StatelessWidget {
               const Icon(Icons.assignment, color: Colors.cyanAccent, size: 18),
               const SizedBox(width: 8),
               Text(
-                'Active Bulk Requisitions (${contracts.length})',
+                'Active Bulk Requisitions (${active.length})',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -141,11 +164,86 @@ class ShippingScreen extends StatelessWidget {
               subtitle: 'Corporate partners are preparing new bulk requisitions...',
             ),
           )
-        else
-          ...contracts.map((c) => CorporateContractCard(
-                contract: c,
-                gameService: gameService,
-              )),
+        else ...[
+          if (active.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E2235),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Center(
+                  child: Text(
+                    'All active requisitions fulfilled! Check completed archive below.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            ...active.map((c) => CorporateContractCard(
+                  key: ValueKey(c.id),
+                  contract: c,
+                  gameService: gameService,
+                )),
+
+          // Dedicated Lazy-Loaded Archive for Fulfilled Contracts
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                dividerColor: Colors.transparent,
+              ),
+              child: ExpansionTile(
+                initiallyExpanded: false,
+                maintainState: false,
+                tilePadding: const EdgeInsets.symmetric(horizontal: 18),
+                shape: const RoundedRectangleBorder(
+                  side: BorderSide.none,
+                ),
+                collapsedShape: const RoundedRectangleBorder(
+                  side: BorderSide.none,
+                ),
+                iconColor: Colors.greenAccent,
+                collapsedIconColor: Colors.grey[400],
+                leading: const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.greenAccent,
+                  size: 20,
+                ),
+                title: Text(
+                  'Completed Requisitions (${fulfilled.length})',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                children: [
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: fulfilled.length,
+                    itemBuilder: (context, index) {
+                      return CorporateContractCard(
+                        key: ValueKey(fulfilled[index].id),
+                        contract: fulfilled[index],
+                        gameService: gameService,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

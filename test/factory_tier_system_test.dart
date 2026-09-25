@@ -179,22 +179,19 @@ void main() {
       expect(serviceWithHistoryState.canUpgradeFactoryTier(GameData.getFactoryTier(2)), true);
     });
 
-    test('Auto-buy capacity is capped by Factory Tier limit', () async {
+    test('Auto-buy capacity is uncapped and scales infinitely (Phase 6)', () async {
       expect(gameService.state.factoryTier, 1);
       expect(gameService.state.autoBuyResourceCapacity, 10);
 
-      // Tier 1 cap is 25, so increasing it once gives 20
+      // Increasing capacity scales beyond previous Tier 1 cap (25) freely
       gameService.increaseAutoBuyCapacity();
       expect(gameService.state.autoBuyResourceCapacity, 20);
 
-      // Increasing again would be 30 (> 25 cap), so it remains 20
-      gameService.increaseAutoBuyCapacity();
-      expect(gameService.state.autoBuyResourceCapacity, 20);
-
-      // Switch to Tier 2 (cap is 50), now it can increase to 30
-      await gameService.setFactoryTierForDev(2);
       gameService.increaseAutoBuyCapacity();
       expect(gameService.state.autoBuyResourceCapacity, 30);
+
+      gameService.increaseAutoBuyCapacity();
+      expect(gameService.state.autoBuyResourceCapacity, 40);
     });
   });
 }

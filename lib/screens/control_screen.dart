@@ -6,6 +6,7 @@ import '../widgets/factory_tier_card.dart';
 import '../widgets/tech_tree_card.dart';
 import '../widgets/deconstruction_bay_card.dart';
 import '../widgets/prestige_card.dart';
+import '../widgets/machine_card.dart';
 import 'settings_screen.dart';
 
 class ControlScreen extends StatefulWidget {
@@ -514,486 +515,119 @@ class _ControlScreenState extends State<ControlScreen> {
     BuildContext context,
     ProductionGameService gameService,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Section Header
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Row(
             children: [
-              Icon(
-                Icons.precision_manufacturing,
-                color: Colors.blue[400],
-                size: 24,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.cyan.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.cyanAccent.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Icon(
+                  Icons.precision_manufacturing,
+                  color: Colors.cyan[400],
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Machine Controls',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Machine Controls',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    'Autonomous procurement and assembly fleet',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const Divider(color: Colors.white24),
-          const SizedBox(height: 16),
-
-          // Auto Buy Machine Section
-          _buildAutoBuyMachineControls(context, gameService),
-
-          const SizedBox(height: 16),
-          const Divider(color: Colors.white24),
-          const SizedBox(height: 16),
-
-          // Auto Build Machines Section
-          _buildAutoBuildMachinesControls(context, gameService),
-        ],
-      ),
-    );
-  }
-
-  /// Auto Buy Machine Controls
-  Widget _buildAutoBuyMachineControls(
-    BuildContext context,
-    ProductionGameService gameService,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Row(
-          children: [
-            Icon(Icons.shopping_cart, color: Colors.green[400], size: 20),
-            const SizedBox(width: 8),
-            const Text(
-              'Auto-Buy Machines',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // Machine Count Controls
-        Row(
-          children: [
-            const Text(
-              'Machines:',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-            const SizedBox(width: 12),
-
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '${gameService.state.autoBuyMachinesOwned}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-
-            const SizedBox(width: 16),
-
-            // Buy Machine button
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed:
-                    gameService.state.money >= 1000
-                        ? () async {
-                          final success = await gameService.buyAutoBuyMachine();
-                          if (!success && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Not enough money to buy machine!',
-                                ),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          }
-                        }
-                        : null,
-                icon: const Icon(Icons.add_shopping_cart, size: 18),
-                label: const Text(
-                  'Buy Machine (\$1,000)',
-                  style: TextStyle(fontSize: 13),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey[800],
-                  disabledForegroundColor: Colors.grey[600],
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            // Enable/Disable Toggle
-            Switch(
-              value: gameService.state.autoBuyEnabled,
-              onChanged:
-                  gameService.state.autoBuyMachinesOwned > 0
-                      ? (_) => gameService.toggleAutoBuy()
-                      : null,
-              activeThumbColor: Colors.green[400],
-              activeTrackColor: Colors.green[200],
-            ),
-          ],
         ),
 
-        const SizedBox(height: 12),
+        // 1. Auto-Buy Procurement Fleet Card
+        MachineCard.autoBuy(
+          context: context,
+          gameService: gameService,
+        ),
 
-        // Capacity Controls
-        Row(
-          children: [
-            const Text(
-              'Capacity:',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-            const SizedBox(width: 12),
+        const SizedBox(height: 16),
 
-            IconButton(
-              onPressed:
-                  gameService.state.autoBuyResourceCapacity > 10
-                      ? gameService.decreaseAutoBuyCapacity
-                      : null,
-              icon: const Icon(Icons.remove_circle_outline),
-              color: Colors.red[400],
-              disabledColor: Colors.grey,
-              iconSize: 24,
-            ),
-
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '${gameService.state.autoBuyResourceCapacity}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-
-            IconButton(
-              onPressed: gameService.increaseAutoBuyCapacity,
-              icon: const Icon(Icons.add_circle_outline),
-              color: Colors.green[400],
-              iconSize: 24,
-            ),
-
-            const SizedBox(width: 8),
-
-            Expanded(
-              child: Text(
-                'per resource',
+        // Section Sub-header for Auto-Build Assembly Tiers
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Icon(Icons.construction, size: 16, color: Colors.blue[300]),
+              const SizedBox(width: 8),
+              Text(
+                'AUTO-BUILD ASSEMBLY TIERS',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: Colors.blue[300],
                   fontSize: 12,
-                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
 
-        // Status info
-        if (gameService.state.autoBuyMachinesOwned > 0) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color:
-                  gameService.state.autoBuyEnabled
-                      ? Colors.green.withValues(alpha: 0.1)
-                      : Colors.grey.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              'Buying ${gameService.state.autoBuyMachinesOwned * 5} materials every 5s${gameService.state.autoBuyEnabled ? " (active)" : " (paused)"}',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-        ],
+        // 2. Auto-Build: Basic Parts Card
+        MachineCard.autoBuild(
+          context: context,
+          gameService: gameService,
+          tier: 'basicParts',
+          tierName: 'Basic Parts',
+          accentColor: Colors.cyanAccent,
+          icon: Icons.precision_manufacturing,
+          subtitle: 'Automates basic components (Boxes, Gears, Coils)',
+        ),
+
+        const SizedBox(height: 14),
+
+        // 3. Auto-Build: Intermediate Card
+        MachineCard.autoBuild(
+          context: context,
+          gameService: gameService,
+          tier: 'intermediate',
+          tierName: 'Intermediate',
+          accentColor: Colors.amberAccent,
+          icon: Icons.handyman,
+          subtitle: 'Automates sub-assemblies (Frames, Engines, Circuits)',
+        ),
+
+        const SizedBox(height: 14),
+
+        // 4. Auto-Build: Complex Card
+        MachineCard.autoBuild(
+          context: context,
+          gameService: gameService,
+          tier: 'complex',
+          tierName: 'Complex',
+          accentColor: Colors.purpleAccent,
+          icon: Icons.memory,
+          subtitle: 'Automates high-tech products (Smartphones, Drones, Robotics)',
+        ),
       ],
-    );
-  }
-
-  /// Auto Build Machines Controls
-  Widget _buildAutoBuildMachinesControls(
-    BuildContext context,
-    ProductionGameService gameService,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Row(
-          children: [
-            Icon(Icons.build, color: Colors.blue[400], size: 20),
-            const SizedBox(width: 8),
-            const Text(
-              'Auto-Build Machines',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // Tier controls
-        _buildAutoBuildTierControl(
-          context,
-          gameService,
-          'basicParts',
-          'Basic Parts',
-        ),
-        const SizedBox(height: 12),
-        _buildAutoBuildTierControl(
-          context,
-          gameService,
-          'intermediate',
-          'Intermediate',
-        ),
-        const SizedBox(height: 12),
-        _buildAutoBuildTierControl(context, gameService, 'complex', 'Complex'),
-      ],
-    );
-  }
-
-  /// Auto Build Tier Control
-  Widget _buildAutoBuildTierControl(
-    BuildContext context,
-    ProductionGameService gameService,
-    String tier,
-    String tierName,
-  ) {
-    final machineCount = gameService.state.autoBuildMachinesOwned[tier] ?? 0;
-    final enabled = gameService.state.autoBuildEnabled[tier] ?? false;
-    final capacity = gameService.state.autoBuildProductCapacity[tier] ?? 10;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color:
-              enabled
-                  ? Colors.blue.withValues(alpha: 0.3)
-                  : Colors.grey.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Tier name and toggle
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  tierName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Switch(
-                value: enabled,
-                onChanged:
-                    machineCount > 0
-                        ? (_) => gameService.toggleAutoBuild(tier)
-                        : null,
-                activeThumbColor: Colors.blue[400],
-                activeTrackColor: Colors.blue[200],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Machine count and buy button
-          Row(
-            children: [
-              const Text(
-                'Machines:',
-                style: TextStyle(color: Colors.white60, fontSize: 12),
-              ),
-              const SizedBox(width: 8),
-
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '$machineCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Buy Machine button
-              ElevatedButton.icon(
-                onPressed:
-                    gameService.state.money >= 1000
-                        ? () async {
-                          final success = await gameService.buyAutoBuildMachine(
-                            tier,
-                          );
-                          if (!success && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Not enough money to buy machine!',
-                                ),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          }
-                        }
-                        : null,
-                icon: const Icon(Icons.add_shopping_cart, size: 16),
-                label: const Text('Buy (\$1k)', style: TextStyle(fontSize: 11)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey[800],
-                  disabledForegroundColor: Colors.grey[600],
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Capacity controls
-          Row(
-            children: [
-              const Text(
-                'Cap:',
-                style: TextStyle(color: Colors.white60, fontSize: 12),
-              ),
-              const SizedBox(width: 8),
-
-              IconButton(
-                onPressed:
-                    capacity > 10
-                        ? () => gameService.decreaseAutoBuildCapacity(tier)
-                        : null,
-                icon: const Icon(Icons.remove_circle_outline, size: 20),
-                color: Colors.red[400],
-                disabledColor: Colors.grey,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-
-              const SizedBox(width: 8),
-
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.cyan.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '$capacity',
-                  style: const TextStyle(
-                    color: Colors.cyan,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 8),
-
-              IconButton(
-                onPressed: () => gameService.increaseAutoBuildCapacity(tier),
-                icon: const Icon(Icons.add_circle_outline, size: 20),
-                color: Colors.green[400],
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
-          ),
-
-          // Status info with tick tracker
-          if (machineCount > 0) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color:
-                    enabled
-                        ? Colors.blue.withValues(alpha: 0.1)
-                        : Colors.grey.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'Building ${machineCount * 5} products every 5s${enabled ? " (active)" : " (paused)"}',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 

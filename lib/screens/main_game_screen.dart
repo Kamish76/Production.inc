@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/production_game_service.dart';
+import '../models/game_models.dart';
 import 'buy_materials_screen.dart';
 import 'build_products_screen.dart';
 import 'sell_products_screen.dart';

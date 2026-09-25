@@ -1800,19 +1800,15 @@ class ProductionGameService extends ChangeNotifier {
     return true;
   }
 
-  /// Increase auto-buy resource capacity by 10 (capped by factory tier)
+  /// Increase auto-buy resource capacity by 10 (uncapped)
   void increaseAutoBuyCapacity() {
-    final currentTier = GameData.getFactoryTier(_state.factoryTier);
-    final nextCapacity = _state.autoBuyResourceCapacity + AutoBuyConstants.capacityIncrement;
-    if (nextCapacity <= currentTier.autoBuyCapacityLimit) {
-      final newCapacity = nextCapacity;
-      _state = _state.copyWith(autoBuyResourceCapacity: newCapacity);
-      notifyListeners();
-      _saveGameStateOptimized();
+    final newCapacity = _state.autoBuyResourceCapacity + AutoBuyConstants.capacityIncrement;
+    _state = _state.copyWith(autoBuyResourceCapacity: newCapacity);
+    notifyListeners();
+    _saveGameStateOptimized();
 
-      if (kDebugMode) {
-        GameLogger.info('Auto-buy capacity increased to: $newCapacity (tier cap: ${currentTier.autoBuyCapacityLimit})');
-      }
+    if (kDebugMode) {
+      GameLogger.info('Auto-buy capacity increased to: $newCapacity');
     }
   }
 
