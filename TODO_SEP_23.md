@@ -10,7 +10,7 @@
 
 | Phase | System / Feature | Target Area | Status | Impact in v2.0 |
 | :---: | :--- | :--- | :---: | :--- |
-| **6** | **Current Priority: Usability, Ergonomics & Critical Fixes** | All Screens & Controls | ⏳ **Active Focus** | Resolves identified friction points: fleet counter on sell screen, lazy-loaded contracts archive, auto-buy buffer uncapping, unified machine cards, and RAM optimization. |
+| **6** | **Current Priority: Usability, Ergonomics & Critical Fixes** | All Screens & Controls | ✅ **Completed** | Resolves identified friction points: fleet counter on sell screen, lazy-loaded contracts archive, auto-buy buffer uncapping, unified machine cards, and RAM optimization. |
 | **7** | **Machine Economy & Dynamic Pricing: Tier Limits & Salvage** | Control Screen (`Machines` Tab) & Engine | 📋 **Planned** | Implements tier-based machine ownership caps (10/20/30/40), exponential price scaling ($1,000 base, 1.18x–1.20x curve), and 50% machine salvage refund. |
 | **8** | **High-Throughput Automation: Batch Crafting & Bulk Procurement** | Crafting Engine & Procurement Loop | 📋 **Planned** | Symmetrical production rate upgrades: Auto-Build Batch Throughput (items crafted/tick) and Auto-Buy Intake Multipliers (materials purchased/tick). |
 | **9** | **Automated Outbound Distribution: Auto-Sell Dispatchers** | Machines Tab & Storefront Loop | 📋 **Planned** | Unlocks timid Tier 1 Auto-Sell (1 unit/tick baseline), batch fulfillment upgrades, and direct storefront retail sales (0 fleet slots consumed). |
@@ -19,7 +19,7 @@
 
 ---
 
-## 🛠️ Phase 6: Usability, Ergonomics & Critical System Fixes (⏳ Active Priority)
+## 🛠️ Phase 6: Usability, Ergonomics & Critical System Fixes (✅ Completed)
 
 ### 🎯 Objective & Overview
 Phase 6 is the immediate active implementation priority for **Production.INC**, directly addressing player-reported friction points, UI ergonomics, and performance bottlenecks identified during gameplay testing. It focuses on resolving critical usability issues before adding further machine economy layers.
@@ -32,25 +32,25 @@ Phase 6 is the immediate active implementation priority for **Production.INC**, 
 ### 📋 Phase 6 Implementation Checklist
 
 #### 1. 🏷️ Selling Products Screen: Logistics Fleet Capacity Visibility
-- [ ] **Fleet Capacity Metric on Financial Card**:
+- [x] **Fleet Capacity Metric on Financial Card**:
   - Update [`FinancialStatusDisplay`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/widgets/financial_status_display.dart) (specifically when rendered in `FinancialDisplayMode.portfolio` on [`SellProductsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/sell_products_screen.dart)) to display an ongoing fleet counter beside `Total Products` and `Portfolio Value`.
   - Format: `Fleets in Transit: X / Max` (e.g., `🚚 2/4` or `Fleets: 2/6 Active`).
   - Provide immediate visual feedback on whether transport lines are fully saturated without requiring the player to switch back and forth between the Sell and Shipping screens.
   - Responsive column layout with subtle divider bars matching existing financial metrics.
 
 #### 2. 📋 B2B Bulk Requisitions: Auto-Sorting & Lazy-Loaded Archive
-- [ ] **Completed Requisition Auto-Deprioritization**:
+- [x] **Completed Requisition Auto-Deprioritization**:
   - In [`ShippingScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/shipping_screen.dart) (`B2B Contracts` tab), automatically sort contracts so fulfilled/completed requisitions sink to the bottom of the list below active contracts.
-- [ ] **Lazy-Loaded "Fulfilled Requisitions" Collapsible Section**:
+- [x] **Lazy-Loaded "Fulfilled Requisitions" Collapsible Section**:
   - Move fulfilled orders into a dedicated collapsible accordion/drawer (`Completed Requisitions (${fulfilled.length})`).
   - **Memory Optimization (RAM Conservation)**: Dynamically build contract item widgets *only* when the accordion is expanded (avoiding full widget instantiation and off-screen state holding in memory when collapsed).
   - Use `ListView.builder` with `shrinkWrap: true` or conditional child instantiation so completed orders don't bloat the widget tree or heap size during long play sessions.
 
 #### 3. ⚙️ Machine Controls: Capacity Uncapping & UI Design Unification
-- [ ] **Auto-Buy Resource Capacity Uncapping**:
+- [x] **Auto-Buy Resource Capacity Uncapping**:
   - Remove or raise the artificial capacity ceiling on auto-buy (currently capped at 20-25 or tier-restricted) in [`ProductionGameService.increaseAutoBuyCapacity`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart).
   - Align with auto-build machines behavior, allowing players to scale resource buffers freely as their late-game economy demands.
-- [ ] **Unified Machine Controls UI Architecture**:
+- [x] **Unified Machine Controls UI Architecture**:
   - Standardize the design between **Auto-Buy Machines** and **Auto-Build Machines** in [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart) (`Machines` tab).
   - Unify components into consistent modular cards (matching styling, border radiuses, dark gradients, and elevation).
   - Uniform layout structure for both machine types:
@@ -60,13 +60,13 @@ Phase 6 is the immediate active implementation priority for **Production.INC**, 
     - **Telemetry / Status Strip**: Dynamic info pill showing active throughput (e.g., `Buying X materials every 5s` vs `Building Y items every cycle`).
 
 #### 4. ⚡ Memory Optimization & Garbage Collection Pass (✅ Approved)
-- [ ] **RAM & List Recycling Optimization**:
+- [x] **RAM & List Recycling Optimization**:
   - Audit `ListView` implementations across all main tabs ([`BuildProductsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/build_products_screen.dart), [`SellProductsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/sell_products_screen.dart), [`ShippingScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/shipping_screen.dart), [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart)).
   - Apply efficient list recycling properties (`findChildIndexCallback`, `addRepaintBoundaries: true`, `addAutomaticKeepAlives: false` where appropriate).
   - Clean up discarded controllers and unmount heavy off-screen widgets to guarantee solid 60 FPS performance and avoid heap bloating during long play sessions.
 
 #### 5. 🔔 Cross-Screen Logistics Notification Badges (✅ Approved)
-- [ ] **Bottom Navigation & Screen Notification Badges**:
+- [x] **Bottom Navigation & Screen Notification Badges**:
   - Display real-time badge counters on the bottom navigation bar on [`MainGameScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/main_game_screen.dart):
     - Highlight when logistics fleet dispatch slots become free and ready for dispatch.
     - Highlight when an active corporate contract is fulfilled and ready to claim.
