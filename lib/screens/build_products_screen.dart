@@ -219,6 +219,8 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.all(16),
+                    addAutomaticKeepAlives: false,
+                    addRepaintBoundaries: true,
                     children: [
                       // Show welcome message for completely new players
                       if (gameService.state.unlockedProducts.isEmpty)

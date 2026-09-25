@@ -234,6 +234,8 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
                   Expanded(
                     child: ListView(
                       padding: const EdgeInsets.all(16),
+                      addAutomaticKeepAlives: false,
+                      addRepaintBoundaries: true,
                       children: [
                         // Build sections for each tier that has available products
                         ...gameService.productsByTier.entries
