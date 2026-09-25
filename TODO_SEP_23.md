@@ -145,11 +145,11 @@ $$\text{Salvage Value}(N) = \left\lfloor 0.50 \times \left( \$1,000.00 \times (1
 ---
 
 ### 📋 Phase 7 Implementation Checklist
-- [ ] Add tier machine cap validation in [`ProductionGameService.buyAutoBuyMachine`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) and auto-build purchasing methods.
-- [ ] Implement exponential price calculation helper `getMachinePrice(category, currentCount)`.
-- [ ] Implement `salvageMachine(category)` awarding 50% refund.
-- [ ] Update UI cards in [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart) with tier limit counters and salvage action buttons.
-- [ ] Unit tests covering tier cap enforcement, price escalation, and salvage refunds.
+- [x] Add tier machine cap validation in [`ProductionGameService.buyAutoBuyMachine`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) and auto-build purchasing methods.
+- [x] Implement exponential price calculation helper `getMachinePrice(category, currentCount)`.
+- [x] Implement `salvageMachine(category)` awarding 50% refund.
+- [x] Update UI cards in [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart) with tier limit counters and salvage action buttons.
+- [x] Unit tests covering tier cap enforcement, price escalation, and salvage refunds.
 
 ---
 
