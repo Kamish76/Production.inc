@@ -135,6 +135,30 @@ class FinancialStatusDisplay extends StatelessWidget {
                   ),
                 ],
               ),
+              Container(
+                height: 30,
+                width: 1,
+                color: backgroundColor?.withValues(alpha: 0.8) ?? Colors.purple[400],
+              ),
+              Column(
+                children: [
+                  Text(
+                    'Fleets Active',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: backgroundColor?.withValues(alpha: 0.6) ?? Colors.purple[200],
+                    ),
+                  ),
+                  Text(
+                    '${gameService.state.activeShippingOrders.length}/${gameService.state.maxSimultaneousShipments}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ],
