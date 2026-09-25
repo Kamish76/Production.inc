@@ -77,7 +77,7 @@ void main() {
     test('getAdjustedProductionTime - 3 machines give 1.728x speed', () {
       // Setup: 3 intermediate machines
       gameService.state.autoBuildMachinesOwned['intermediate'] = 3;
-      const productId = 'smartphones';
+      const productId = 'smartphone';
       final product = GameData.products.firstWhere((p) => p.id == productId);
       final baseTime = product.productionTimeSeconds;
 
@@ -105,8 +105,8 @@ void main() {
           reason: 'basicParts product should use basicParts machine count');
 
       // Test intermediate product
-      final smartphoneProduct = GameData.products.firstWhere((p) => p.id == 'smartphones');
-      final smartphoneTime = gameService.getAdjustedProductionTime('smartphones', smartphoneProduct.productionTimeSeconds);
+      final smartphoneProduct = GameData.products.firstWhere((p) => p.id == 'smartphone');
+      final smartphoneTime = gameService.getAdjustedProductionTime('smartphone', smartphoneProduct.productionTimeSeconds);
       final expectedSmartphoneTime = smartphoneProduct.productionTimeSeconds / math.pow(1.2, 2);
       expect(smartphoneTime, closeTo(expectedSmartphoneTime, 0.01),
           reason: 'intermediate product should use intermediate machine count');
