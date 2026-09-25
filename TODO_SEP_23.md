@@ -12,7 +12,7 @@
 | :---: | :--- | :--- | :---: | :--- |
 | **6** | **Current Priority: Usability, Ergonomics & Critical Fixes** | All Screens & Controls | ✅ **Completed** | Resolves identified friction points: fleet counter on sell screen, lazy-loaded contracts archive, auto-buy buffer uncapping, unified machine cards, and RAM optimization. |
 | **7** | **Machine Economy & Dynamic Pricing: Tier Limits & Salvage** | Control Screen (`Machines` Tab) & Engine | 📋 **Planned** | Implements tier-based machine ownership caps (10/20/30/40), exponential price scaling ($1,000 base, 1.18x–1.20x curve), and 50% machine salvage refund. |
-| **8** | **High-Throughput Automation: Batch Crafting & Bulk Procurement** | Crafting Engine & Procurement Loop | 📋 **Planned** | Symmetrical production rate upgrades: Auto-Build Batch Throughput (items crafted/tick) and Auto-Buy Intake Multipliers (materials purchased/tick). |
+| **8** | **High-Throughput Automation: Batch Crafting & Bulk Procurement** | Crafting Engine & Procurement Loop | ✅ **Completed** | Symmetrical production rate upgrades: Auto-Build Batch Throughput (items crafted/tick) and Auto-Buy Intake Multipliers (materials purchased/tick). |
 | **9** | **Automated Outbound Distribution: Auto-Sell Dispatchers** | Machines Tab & Storefront Loop | 📋 **Planned** | Unlocks timid Tier 1 Auto-Sell (1 unit/tick baseline), batch fulfillment upgrades, and direct storefront retail sales (0 fleet slots consumed). |
 | **10** | **Logistics Fleet Overhaul: Payload Capacities & Variety Caps** | Shipping Screen & Fleet Engine | 📋 **Planned** | Adds physical payload capacity (20 $\to$ 600 units) and variety limits (2 $\to$ 12 types) across Bikes, Vans, Trucks, and Planes so carrier tiers truly matter. |
 | **11** | **Commercial Dispatch Manifest: Multi-Product Bulk Selling UI** | Sell Products Screen | 📋 **Planned** | Adds docked manifest staging tray, interactive review drawer, multi-product selection, and consolidated single-carrier dispatches. |
@@ -153,7 +153,7 @@ $$\text{Salvage Value}(N) = \left\lfloor 0.50 \times \left( \$1,000.00 \times (1
 
 ---
 
-## ⚡ Phase 8: High-Throughput Automation: Batch Crafting & Bulk Procurement (📋 Planned)
+## ⚡ Phase 8: High-Throughput Automation: Batch Crafting & Bulk Procurement (✅ Completed)
 
 ### 🎯 Objective & Overview
 Phase 8 scales factory output speed without violating the machine caps introduced in Phase 7. It adds symmetrical throughput upgrades to existing machinery: **Batch Build Throughput** (crafting multiple items per cycle tick) and **Auto-Buy Intake Multipliers** (purchasing raw materials in bulk bursts).
@@ -180,11 +180,11 @@ $$\text{Purchases Per Tick} = \left\lfloor \text{Machines Owned} \times 5 \times
 ---
 
 ### 📋 Phase 8 Implementation Checklist
-- [ ] Add `autoBuildThroughputLevel` and `autoBuyIntakeLevel` state variables in [`GameState`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_state.dart).
-- [ ] Update `_processAutoBuildQueue` to process items up to the batch throughput limit.
-- [ ] Update `_processAutoBuy` to multiply raw material purchase volume by the intake multiplier.
-- [ ] Add upgrade action buttons with live throughput telemetry pills to machine cards.
-- [ ] Unit tests for batch production, partial material consumption, and intake multipliers.
+- [x] Add `autoBuildThroughputLevel` and `autoBuyIntakeLevel` state variables in [`GameState`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_state.dart).
+- [x] Update `_processAutoBuildQueue` to process items up to the batch throughput limit.
+- [x] Update `_processAutoBuy` to multiply raw material purchase volume by the intake multiplier.
+- [x] Add upgrade action buttons with live throughput telemetry pills to machine cards.
+- [x] Unit tests for batch production, partial material consumption, and intake multipliers.
 
 ---
 
