@@ -31,6 +31,10 @@ class MachineCard extends StatelessWidget {
   final bool canIncreaseCapacity;
   final String telemetryText;
   final IconData? telemetryIcon;
+  final int machineLimit;
+  final double salvageValue;
+  final VoidCallback? onSalvage;
+  final bool canSalvage;
 
   const MachineCard({
     super.key,
@@ -52,6 +56,10 @@ class MachineCard extends StatelessWidget {
     this.canIncreaseCapacity = true,
     required this.telemetryText,
     this.telemetryIcon,
+    this.machineLimit = 10,
+    this.salvageValue = 0.0,
+    this.onSalvage,
+    this.canSalvage = false,
   });
 
   /// Factory constructor for Auto-Buy Machinery
@@ -64,8 +72,11 @@ class MachineCard extends StatelessWidget {
     final machineCount = state.autoBuyMachinesOwned;
     final isEnabled = state.autoBuyEnabled;
     final capacity = state.autoBuyResourceCapacity;
-    const cost = AutoBuyConstants.machineCost;
-    final canBuy = state.money >= cost;
+    final machineLimit = gameService.getMachineTierLimit('autoBuy');
+    final cost = gameService.getMachinePrice('autoBuy', machineCount);
+    final salvageValue = gameService.getMachineSalvageValue('autoBuy', machineCount);
+    final canSalvage = machineCount > 0;
+    final canBuy = state.money >= cost && machineCount < machineLimit;
 
     String telemetry;
     if (machineCount > 0) {
@@ -89,6 +100,12 @@ class MachineCard extends StatelessWidget {
       machineCount: machineCount,
       machineCost: cost,
       canBuy: canBuy,
+      machineLimit: machineLimit,
+      salvageValue: salvageValue,
+      canSalvage: canSalvage,
+      onSalvage: () async {
+        await gameService.salvageMachine('autoBuy');
+      },
       onBuy: () async {
         final success = await gameService.buyAutoBuyMachine();
         if (!success && context.mounted) {
@@ -127,8 +144,11 @@ class MachineCard extends StatelessWidget {
     final machineCount = state.autoBuildMachinesOwned[tier] ?? 0;
     final isEnabled = state.autoBuildEnabled[tier] ?? false;
     final capacity = state.autoBuildProductCapacity[tier] ?? AutoBuildConstants.defaultProductCapacity;
-    const cost = AutoBuildConstants.machineCost;
-    final canBuy = state.money >= cost;
+    final machineLimit = gameService.getMachineTierLimit(tier);
+    final cost = gameService.getMachinePrice(tier, machineCount);
+    final salvageValue = gameService.getMachineSalvageValue(tier, machineCount);
+    final canSalvage = machineCount > 0;
+    final canBuy = state.money >= cost && machineCount < machineLimit;
 
     final effectiveColor = accentColor ?? _defaultColorForTier(tier);
     final effectiveIcon = icon ?? _defaultIconForTier(tier);
@@ -156,6 +176,12 @@ class MachineCard extends StatelessWidget {
       machineCount: machineCount,
       machineCost: cost,
       canBuy: canBuy,
+      machineLimit: machineLimit,
+      salvageValue: salvageValue,
+      canSalvage: canSalvage,
+      onSalvage: () async {
+        await gameService.salvageMachine(tier);
+      },
       onBuy: () async {
         final success = await gameService.buyAutoBuildMachine(tier);
         if (!success && context.mounted) {
@@ -363,7 +389,7 @@ class MachineCard extends StatelessWidget {
 
               const SizedBox(height: 14),
 
-              // 2. Fleet Count Row: Machines badge + Buy Machine action button
+              // 2. Fleet Count Row: Machines badge + Buy Machine action button + Salvage button
               Row(
                 children: [
                   const Text(
@@ -395,25 +421,83 @@ class MachineCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: canBuy ? onBuy : null,
-                      icon: const Icon(Icons.add_shopping_cart, size: 16),
-                      label: Text(
-                        'Buy Machine (\$${machineCost.toInt()})',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[700],
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: Colors.grey[850],
-                        disabledForegroundColor: Colors.grey[600],
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
+                    child: machineCount >= machineLimit
+                        ? Tooltip(
+                            message:
+                                'Tier Limit Reached ($machineLimit/$machineLimit). Upgrade Factory to expand.',
+                            child: ElevatedButton.icon(
+                              onPressed: null,
+                              icon: const Icon(Icons.add_shopping_cart, size: 16),
+                              label: Text(
+                                'Buy Machine (\$${machineCost.toInt()})',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green[700],
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: Colors.grey[850],
+                                disabledForegroundColor: Colors.grey[600],
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                              ),
+                            ),
+                          )
+                        : ElevatedButton.icon(
+                            onPressed: canBuy ? onBuy : null,
+                            icon: const Icon(Icons.add_shopping_cart, size: 16),
+                            label: Text(
+                              'Buy Machine (\$${machineCost.toInt()})',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green[700],
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: Colors.grey[850],
+                              disabledForegroundColor: Colors.grey[600],
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              elevation: 0,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.recycling),
+                    tooltip: 'Salvage Machine',
+                    color: Colors.orangeAccent,
+                    disabledColor: Colors.grey[700],
+                    onPressed: canSalvage
+                        ? () {
+                            showDialog<void>(
+                              context: context,
+                              builder: (dialogContext) => AlertDialog(
+                                title: const Text('Salvage Machine'),
+                                content: Text(
+                                  'Salvage 1 Machine for +\$${salvageValue.toStringAsFixed(2)}?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogContext).pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(dialogContext).pop();
+                                      onSalvage?.call();
+                                    },
+                                    child: const Text('Salvage'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        : null,
                   ),
                 ],
               ),
