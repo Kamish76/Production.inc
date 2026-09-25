@@ -79,12 +79,14 @@ class GameState {
   final bool autoBuyEnabled; // Master on/off toggle for auto-buy machines
   final DateTime? lastAutoBuyTick; // Last time auto-buy tick was processed
   final int autoBuyResourceCapacity; // Player-configurable capacity per resource (increments of 10)
+  final int autoBuyIntakeLevel; // Intake capacity level (Phase 8: High-Throughput Automation)
 
   // Auto-Build Machine state (v1.5.0 Phase 2 - in development)
   final Map<String, int> autoBuildMachinesOwned; // tier -> number of machines (e.g., 'basicParts' -> 2)
   final Map<String, bool> autoBuildEnabled; // tier -> on/off toggle (e.g., 'basicParts' -> true)
   final Map<String, DateTime?> lastAutoBuildTick; // tier -> last tick time
   final Map<String, int> autoBuildProductCapacity; // tier -> capacity setting (e.g., 'basicParts' -> 10)
+  final Map<String, int> autoBuildThroughputLevel; // tier -> throughput level (Phase 8: High-Throughput Automation)
 
   // Factory Tier progression state (Phase 1)
   final int factoryTier; // Current factory license tier (1: Garage, 2: Light Assembly, 3: Precision, 4: Megafactory)
@@ -125,10 +127,12 @@ class GameState {
     this.autoBuyEnabled = false,
     this.lastAutoBuyTick,
     this.autoBuyResourceCapacity = 10, // Default starting capacity
+    this.autoBuyIntakeLevel = 1,
     required this.autoBuildMachinesOwned, // Required - default to empty map
     required this.autoBuildEnabled, // Required - default to empty map
     required this.lastAutoBuildTick, // Required - default to empty map
     required this.autoBuildProductCapacity, // Required - default to empty map
+    this.autoBuildThroughputLevel = const {},
     this.factoryTier = 1, // Default to Tier 1: Garage Workshop
     this.fleetTier = 1, // Default to Tier 1: Courier Bikes
     this.clientReputation = const {},
@@ -162,10 +166,12 @@ class GameState {
     bool? autoBuyEnabled,
     DateTime? lastAutoBuyTick,
     int? autoBuyResourceCapacity,
+    int? autoBuyIntakeLevel,
     Map<String, int>? autoBuildMachinesOwned,
     Map<String, bool>? autoBuildEnabled,
     Map<String, DateTime?>? lastAutoBuildTick,
     Map<String, int>? autoBuildProductCapacity,
+    Map<String, int>? autoBuildThroughputLevel,
     int? factoryTier,
     int? fleetTier,
     Map<String, int>? clientReputation,
@@ -201,10 +207,12 @@ class GameState {
       autoBuyEnabled: autoBuyEnabled ?? this.autoBuyEnabled,
       lastAutoBuyTick: lastAutoBuyTick ?? this.lastAutoBuyTick,
       autoBuyResourceCapacity: autoBuyResourceCapacity ?? this.autoBuyResourceCapacity,
+      autoBuyIntakeLevel: autoBuyIntakeLevel ?? this.autoBuyIntakeLevel,
       autoBuildMachinesOwned: autoBuildMachinesOwned ?? this.autoBuildMachinesOwned,
       autoBuildEnabled: autoBuildEnabled ?? this.autoBuildEnabled,
       lastAutoBuildTick: lastAutoBuildTick ?? this.lastAutoBuildTick,
       autoBuildProductCapacity: autoBuildProductCapacity ?? this.autoBuildProductCapacity,
+      autoBuildThroughputLevel: autoBuildThroughputLevel ?? this.autoBuildThroughputLevel,
       factoryTier: factoryTier ?? this.factoryTier,
       fleetTier: fleetTier ?? this.fleetTier,
       clientReputation: clientReputation ?? this.clientReputation,
@@ -499,6 +507,178 @@ class GameState {
     final fromShipping =
         (currentRunUnitsShipped / PrestigeConstants.goldenShareUnitsShippedUnit).floor();
     return fromNetWorth + fromShipping;
+  }
+
+  /// Serialize GameState to JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'money': money,
+      'materials': materials,
+      'products': products,
+      'machines': machines,
+      'buildQuantityPreferences': buildQuantityPreferences,
+      'buyQuantityPreferences': buyQuantityPreferences,
+      'sellQuantityPreferences': sellQuantityPreferences,
+      'unlockedProducts': unlockedProducts.toList(),
+      'productUnlockStatus': productUnlockStatus,
+      'autoBuyMachinesOwned': autoBuyMachinesOwned,
+      'autoBuyEnabled': autoBuyEnabled,
+      'lastAutoBuyTick': lastAutoBuyTick?.toIso8601String(),
+      'autoBuyResourceCapacity': autoBuyResourceCapacity,
+      'autoBuyIntakeLevel': autoBuyIntakeLevel,
+      'autoBuildMachinesOwned': autoBuildMachinesOwned,
+      'autoBuildEnabled': autoBuildEnabled,
+      'lastAutoBuildTick': lastAutoBuildTick
+          .map((k, v) => MapEntry(k, v?.toIso8601String())),
+      'autoBuildProductCapacity': autoBuildProductCapacity,
+      'autoBuildThroughputLevel': autoBuildThroughputLevel,
+      'factoryTier': factoryTier,
+      'fleetTier': fleetTier,
+      'clientReputation': clientReputation,
+      'researchPoints': researchPoints,
+      'techLevels': techLevels,
+      'overclockActive': overclockActive,
+      'maintenanceWear': maintenanceWear,
+      'prestigeCount': prestigeCount,
+      'goldenShares': goldenShares,
+      'lifetimeGoldenShares': lifetimeGoldenShares,
+      'lifetimeRevenue': lifetimeRevenue,
+      'lifetimeUnitsShipped': lifetimeUnitsShipped,
+      'unlockedPrestigePerks': unlockedPrestigePerks.toList(),
+    };
+  }
+
+  /// Deserialize GameState from JSON map
+  factory GameState.fromJson(Map<String, dynamic> json) {
+    return GameState(
+      money: (json['money'] as num?)?.toDouble() ?? 100.0,
+      materials: (json['materials'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, (v as num).toInt()),
+          ) ??
+          const {},
+      products: (json['products'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, (v as num).toInt()),
+          ) ??
+          const {},
+      machines: (json['machines'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, (v as num).toInt()),
+          ) ??
+          const {},
+      buildQuantityPreferences:
+          (json['buildQuantityPreferences'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(k, (v as num).toInt()),
+              ) ??
+              const {},
+      buyQuantityPreferences:
+          (json['buyQuantityPreferences'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(k, (v as num).toInt()),
+              ) ??
+              const {},
+      sellQuantityPreferences:
+          (json['sellQuantityPreferences'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(k, (v as num).toInt()),
+              ) ??
+              const {},
+      unlockedProducts: (json['unlockedProducts'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toSet() ??
+          const {},
+      productUnlockStatus:
+          (json['productUnlockStatus'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(k, v as bool),
+              ) ??
+              const {},
+      autoBuyMachinesOwned: json['autoBuyMachinesOwned'] as int? ??
+          json['auto_buy_machines_owned'] as int? ??
+          0,
+      autoBuyEnabled: json['autoBuyEnabled'] as bool? ??
+          json['auto_buy_enabled'] as bool? ??
+          false,
+      lastAutoBuyTick: json['lastAutoBuyTick'] != null
+          ? DateTime.tryParse(json['lastAutoBuyTick'] as String)
+          : null,
+      autoBuyResourceCapacity: json['autoBuyResourceCapacity'] as int? ??
+          json['auto_buy_resource_capacity'] as int? ??
+          10,
+      autoBuyIntakeLevel: json['autoBuyIntakeLevel'] as int? ??
+          json['auto_buy_intake_level'] as int? ??
+          1,
+      autoBuildMachinesOwned:
+          (json['autoBuildMachinesOwned'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(k, (v as num).toInt()),
+              ) ??
+              const {},
+      autoBuildEnabled:
+          (json['autoBuildEnabled'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(k, v as bool),
+              ) ??
+              const {},
+      lastAutoBuildTick:
+          (json['lastAutoBuildTick'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(
+                    k, v != null ? DateTime.tryParse(v as String) : null),
+              ) ??
+              const {},
+      autoBuildProductCapacity:
+          (json['autoBuildProductCapacity'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(k, (v as num).toInt()),
+              ) ??
+              const {},
+      autoBuildThroughputLevel:
+          (json['autoBuildThroughputLevel'] as Map<String, dynamic>? ??
+                  json['auto_build_throughput_level'] as Map<String, dynamic>?)
+              ?.map(
+                (k, v) => MapEntry(k, (v as num).toInt()),
+              ) ??
+              const {},
+      factoryTier: json['factoryTier'] as int? ??
+          json['factory_tier'] as int? ??
+          1,
+      fleetTier: json['fleetTier'] as int? ??
+          json['fleet_tier'] as int? ??
+          1,
+      clientReputation:
+          (json['clientReputation'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(k, (v as num).toInt()),
+              ) ??
+              const {},
+      corporateContracts: const [],
+      researchPoints: json['researchPoints'] as int? ??
+          json['research_points'] as int? ??
+          0,
+      techLevels: (json['techLevels'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, (v as num).toInt()),
+          ) ??
+          const {},
+      overclockActive: json['overclockActive'] as bool? ??
+          json['overclock_active'] as bool? ??
+          false,
+      maintenanceWear:
+          (json['maintenanceWear'] as num?)?.toDouble() ??
+              (json['maintenance_wear'] as num?)?.toDouble() ??
+              1.0,
+      prestigeCount: json['prestigeCount'] as int? ??
+          json['prestige_count'] as int? ??
+          0,
+      goldenShares: json['goldenShares'] as int? ??
+          json['golden_shares'] as int? ??
+          0,
+      lifetimeGoldenShares: json['lifetimeGoldenShares'] as int? ??
+          json['lifetime_golden_shares'] as int? ??
+          0,
+      lifetimeRevenue:
+          (json['lifetimeRevenue'] as num?)?.toDouble() ??
+              (json['lifetime_revenue'] as num?)?.toDouble() ??
+              0.0,
+      lifetimeUnitsShipped: json['lifetimeUnitsShipped'] as int? ??
+          json['lifetime_units_shipped'] as int? ??
+          0,
+      unlockedPrestigePerks:
+          (json['unlockedPrestigePerks'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toSet() ??
+              const {},
+    );
   }
 }
 

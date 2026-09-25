@@ -877,12 +877,15 @@ class ProductionGameService extends ChangeNotifier {
 
     // Perform auto-buy tick using pooled-capacity model with money constraints
     final materialsCopy = Map<String, int>.from(_state.materials);
+    final currentBuysPerTick = (AutoBuyConstants.buysPerMachinePerTick *
+            getAutoBuyIntakeMultiplier(_state.autoBuyIntakeLevel))
+        .floor();
     final result = machine_buyer.performAutoBuyTick(
       inventory: materialsCopy,
       currentMoney: _state.money,
       materialPrices: materialPrices,
       machinesEnabled: _state.autoBuyMachinesOwned,
-      buysPerMachinePerTick: AutoBuyConstants.buysPerMachinePerTick,
+      buysPerMachinePerTick: currentBuysPerTick,
       resourceOrder: AutoBuyConstants.resourceOrder,
       resourceCap: _state.autoBuyResourceCapacity, // Use player's configurable capacity
     );
@@ -1016,6 +1019,7 @@ class ProductionGameService extends ChangeNotifier {
         queuedProductCounts[task.productId] = (queuedProductCounts[task.productId] ?? 0) + task.quantity;
       }
       
+      final throughputLevel = getAutoBuildThroughputLevel(tier);
       final result = machine_builder.performAutoBuildTick(
         productInventory: productsCopy,
         materialInventory: materialsCopy,
@@ -1023,7 +1027,7 @@ class ProductionGameService extends ChangeNotifier {
         unlockedProducts: unlockedProducts,
         queuedProductCounts: queuedProductCounts,
         machinesEnabled: machineCount,
-        buildsPerMachinePerTick: AutoBuildConstants.buildsPerMachinePerTick,
+        buildsPerMachinePerTick: throughputLevel,
         productOrder: productOrder,
         productCap: capacity,
       );
@@ -1835,6 +1839,107 @@ class ProductionGameService extends ChangeNotifier {
     }
 
     return true;
+  }
+
+  // =========================================================================
+  // Phase 8: High-Throughput Automation (Intake & Throughput Upgrades)
+  // =========================================================================
+
+  /// Get current auto-buy intake level (default 1)
+  int getAutoBuyIntakeLevel() => _state.autoBuyIntakeLevel;
+
+  /// Calculate auto-buy intake multiplier based on level: 1.0 + ((level - 1) * 0.25)
+  double getAutoBuyIntakeMultiplier(int level) => 1.0 + ((level - 1) * 0.25);
+
+  /// Calculate upgrade cost for auto-buy intake: 1000 * 1.15^(level - 1)
+  double getAutoBuyIntakeUpgradeCost() =>
+      1000.0 * math.pow(1.15, _state.autoBuyIntakeLevel - 1).toDouble();
+
+  /// Upgrade auto-buy intake level
+  /// Checks money, deducts cost, increments autoBuyIntakeLevel, notifies listeners, and saves state.
+  Future<bool> upgradeAutoBuyIntake() async {
+    final cost = getAutoBuyIntakeUpgradeCost();
+    if (_state.money < cost) {
+      return false;
+    }
+
+    final newMoney = _state.money - cost;
+    final newLevel = _state.autoBuyIntakeLevel + 1;
+
+    _state = _state.copyWith(
+      money: newMoney,
+      autoBuyIntakeLevel: newLevel,
+    );
+
+    notifyListeners();
+    _persistenceService.markDirty('automation');
+    await _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Auto-buy intake upgraded to Level $newLevel! Money remaining: \$${newMoney.toStringAsFixed(2)}',
+      );
+    }
+
+    return true;
+  }
+
+  /// Get current auto-build throughput level for a given tier (default 1)
+  int getAutoBuildThroughputLevel(String tier) =>
+      _state.autoBuildThroughputLevel[tier] ?? 1;
+
+  /// Calculate upgrade cost for auto-build throughput for a tier: 1000 * 1.15^(level - 1)
+  double getAutoBuildThroughputUpgradeCost(String tier) {
+    final level = getAutoBuildThroughputLevel(tier);
+    return 1000.0 * math.pow(1.15, level - 1).toDouble();
+  }
+
+  /// Upgrade auto-build throughput level for a tier
+  /// Checks money, deducts cost, increments autoBuildThroughputLevel[tier], notifies listeners, and saves state.
+  Future<bool> upgradeAutoBuildThroughput(String tier) async {
+    final cost = getAutoBuildThroughputUpgradeCost(tier);
+    if (_state.money < cost) {
+      return false;
+    }
+
+    final newMoney = _state.money - cost;
+    final currentLevel = getAutoBuildThroughputLevel(tier);
+    final newThroughputMap =
+        Map<String, int>.from(_state.autoBuildThroughputLevel);
+    newThroughputMap[tier] = currentLevel + 1;
+
+    _state = _state.copyWith(
+      money: newMoney,
+      autoBuildThroughputLevel: newThroughputMap,
+    );
+
+    notifyListeners();
+    _persistenceService.markDirty('automation');
+    await _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Auto-build throughput for $tier upgraded to Level ${newThroughputMap[tier]}! Money remaining: \$${newMoney.toStringAsFixed(2)}',
+      );
+    }
+
+    return true;
+  }
+
+  /// Set auto-buy intake level directly (for testing/dev)
+  void setAutoBuyIntakeLevel(int level) {
+    _state = _state.copyWith(autoBuyIntakeLevel: level);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Set auto-build throughput level for a tier directly (for testing/dev)
+  void setAutoBuildThroughputLevel(String tier, int level) {
+    final newMap = Map<String, int>.from(_state.autoBuildThroughputLevel);
+    newMap[tier] = level;
+    _state = _state.copyWith(autoBuildThroughputLevel: newMap);
+    notifyListeners();
+    _saveGameStateOptimized();
   }
 
   /// Buy one auto-buy machine with dynamic pricing and tier limits
