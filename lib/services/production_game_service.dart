@@ -1772,16 +1772,87 @@ class ProductionGameService extends ChangeNotifier {
     }
   }
 
-  /// Buy one auto-buy machine for $1000
-  /// Returns true if purchase was successful, false if not enough money
+  // =========================================================================
+  // Phase 7: Machine Economy (Dynamic Pricing, Tier Limits, Salvage)
+  // =========================================================================
+
+  /// Calculate dynamic machine price: 1000 * 1.15^currentCount
+  double getMachinePrice(String category, int currentCount) {
+    return 1000 * math.pow(1.15, currentCount).toDouble();
+  }
+
+  /// Calculate machine salvage value: 50% of the price of the (currentCount - 1)-th machine, floored.
+  /// If currentCount is 0, returns 0.
+  double getMachineSalvageValue(String category, int currentCount) {
+    if (currentCount <= 0) return 0.0;
+    return (0.50 * getMachinePrice(category, currentCount - 1)).floorToDouble();
+  }
+
+  /// Get maximum machines allowed for a category based on current factory tier limit
+  int getMachineTierLimit(String category) {
+    return currentFactoryTier.machineLimit;
+  }
+
+  /// Salvage a machine in the given category ('autoBuy' or auto-build tier like 'basicParts')
+  /// Decreases count by 1 and refunds salvage value.
+  Future<bool> salvageMachine(String category) async {
+    final int currentCount;
+    if (category == 'autoBuy') {
+      currentCount = _state.autoBuyMachinesOwned;
+    } else {
+      currentCount = _state.autoBuildMachinesOwned[category] ?? 0;
+    }
+
+    if (currentCount <= 0) {
+      return false;
+    }
+
+    final salvageValue = getMachineSalvageValue(category, currentCount);
+    final newMoney = _state.money + salvageValue;
+
+    if (category == 'autoBuy') {
+      _state = _state.copyWith(
+        money: newMoney,
+        autoBuyMachinesOwned: currentCount - 1,
+      );
+    } else {
+      final newMachines = Map<String, int>.from(_state.autoBuildMachinesOwned);
+      newMachines[category] = currentCount - 1;
+      _state = _state.copyWith(
+        money: newMoney,
+        autoBuildMachinesOwned: newMachines,
+      );
+    }
+
+    notifyListeners();
+    _persistenceService.markDirty('automation');
+    await _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Machine salvaged for $category! Refunded: \$${salvageValue.toStringAsFixed(2)}, Money remaining: \$${newMoney.toStringAsFixed(2)}',
+      );
+    }
+
+    return true;
+  }
+
+  /// Buy one auto-buy machine with dynamic pricing and tier limits
+  /// Returns true if purchase was successful, false if limit reached or not enough money
   Future<bool> buyAutoBuyMachine() async {
-    if (_state.money < AutoBuyConstants.machineCost) {
+    final currentCount = _state.autoBuyMachinesOwned;
+    if (currentCount >= getMachineTierLimit('autoBuy')) {
+      return false; // Reached factory tier limit
+    }
+
+    final price = getMachinePrice('autoBuy', currentCount);
+    if (_state.money < price) {
       return false; // Not enough money
     }
 
     // Deduct cost
-    final newMoney = _state.money - AutoBuyConstants.machineCost;
-    final newCount = _state.autoBuyMachinesOwned + 1;
+    final newMoney = _state.money - price;
+    final newCount = currentCount + 1;
 
     _state = _state.copyWith(
       money: newMoney,
@@ -1891,17 +1962,23 @@ class ProductionGameService extends ChangeNotifier {
     }
   }
 
-  /// Buy one auto-build machine for a specific tier for $1000
-  /// Returns true if purchase was successful, false if not enough money
+  /// Buy one auto-build machine for a specific tier with dynamic pricing and tier limits
+  /// Returns true if purchase was successful, false if limit reached or not enough money
   Future<bool> buyAutoBuildMachine(String tier) async {
-    if (_state.money < AutoBuildConstants.machineCost) {
+    final currentCount = _state.autoBuildMachinesOwned[tier] ?? 0;
+    if (currentCount >= getMachineTierLimit(tier)) {
+      return false; // Reached factory tier limit
+    }
+
+    final price = getMachinePrice(tier, currentCount);
+    if (_state.money < price) {
       return false; // Not enough money
     }
 
     // Deduct cost
-    final newMoney = _state.money - AutoBuildConstants.machineCost;
+    final newMoney = _state.money - price;
     final newMachines = Map<String, int>.from(_state.autoBuildMachinesOwned);
-    newMachines[tier] = (newMachines[tier] ?? 0) + 1;
+    newMachines[tier] = currentCount + 1;
     
     _state = _state.copyWith(
       money: newMoney,

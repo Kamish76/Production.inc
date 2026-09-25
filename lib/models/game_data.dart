@@ -764,6 +764,7 @@ class GameData {
       emoji: '🏚️',
       upgradeCost: 0.0,
       autoBuyCapacityLimit: 25,
+      machineLimit: 10,
       perkHighlights: [
         'Manual crafting of basic components',
         'Auto-buy capacity up to 25 units',
@@ -785,6 +786,7 @@ class GameData {
         'wires': 15,
       },
       autoBuyCapacityLimit: 50,
+      machineLimit: 20,
       perkHighlights: [
         'Unlocks Intermediate Parts (Displays, Processors, Motors, Inverters)',
         'Unlocks entry Retail items (Speaker, Power Bank, Wall Clock, Cleaning Drone)',
@@ -808,6 +810,7 @@ class GameData {
         'battery': 20,
       },
       autoBuyCapacityLimit: 100,
+      machineLimit: 30,
       perkHighlights: [
         'Unlocks Complex Parts (Camera Modules)',
         'Unlocks advanced Retail items (Cameras, Solar Panels, Powerwalls, Robotic Arms)',
@@ -833,6 +836,7 @@ class GameData {
         'solar_panel': 30,
       },
       autoBuyCapacityLimit: 250,
+      machineLimit: 40,
       perkHighlights: [
         'Unlocks Flagship Retail items (Smartphone, Wind Turbine Generator)',
         'Tier 3 Auto-build supported',

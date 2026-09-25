@@ -214,6 +214,7 @@ class FactoryTier {
   final double upgradeCost;
   final Map<String, int> requiredShippedProducts; // productId -> count required
   final int autoBuyCapacityLimit;
+  final int machineLimit;
   final List<String> perkHighlights;
   final Set<ProductLevel> allowedProductLevels;
 
@@ -225,6 +226,7 @@ class FactoryTier {
     required this.upgradeCost,
     this.requiredShippedProducts = const {},
     required this.autoBuyCapacityLimit,
+    required this.machineLimit,
     required this.perkHighlights,
     required this.allowedProductLevels,
   });
