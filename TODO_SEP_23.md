@@ -11,9 +11,10 @@
 | Phase | System / Feature | Target Area | Status | Impact in v2.0 |
 | :---: | :--- | :--- | :---: | :--- |
 | **6** | **Current Priority: Usability, Ergonomics & Critical Fixes** | All Screens & Controls | ✅ **Completed** | Resolves identified friction points: fleet counter on sell screen, lazy-loaded contracts archive, auto-buy buffer uncapping, unified machine cards, and RAM optimization. |
-| **7** | **Machine Economy & Dynamic Pricing: Tier Limits & Salvage** | Control Screen (`Machines` Tab) & Engine | 📋 **Planned** | Implements tier-based machine ownership caps (10/20/30/40), exponential price scaling ($1,000 base, 1.18x–1.20x curve), and 50% machine salvage refund. |
+| **7** | **Machine Economy & Dynamic Pricing: Tier Limits & Salvage** | Control Screen (`Machines` Tab) & Engine | ✅ **Completed** | Implements tier-based machine ownership caps (10/20/30/40), exponential price scaling ($1,000 base, 1.15x curve), and 50% machine salvage refund. |
 | **8** | **High-Throughput Automation: Batch Crafting & Bulk Procurement** | Crafting Engine & Procurement Loop | ✅ **Completed** | Symmetrical production rate upgrades: Auto-Build Batch Throughput (items crafted/tick) and Auto-Buy Intake Multipliers (materials purchased/tick). |
-| **9** | **Automated Outbound Distribution: Auto-Sell Dispatchers** | Machines Tab & Storefront Loop | 📋 **Planned** | Unlocks timid Tier 1 Auto-Sell (1 unit/tick baseline), batch fulfillment upgrades, and direct storefront retail sales (0 fleet slots consumed). |
+| **9A** | **B2B Contract Overhaul: Retail & Manufacturing Types** | Sell Products Screen & Contract Engine | 📋 **Planned** | Splits B2B contracts into Retail (premium finished goods, small qty) and Manufacturing (bulk parts, multi-product). Adds Lock & Ship fulfillment (no partial delivery), fleet slot consumption, `shipping` status, per-type auto-ship toggles, and relocates B2B tab to Sell Screen. |
+| **9B** | **Auto-Sell Dispatchers: Storefront Automation** | Machines Tab & Storefront Loop | 📋 **Planned** | Unlocks timid Tier 1 Auto-Sell (1 unit/tick baseline), batch fulfillment upgrades, and direct storefront retail sales (0 fleet slots consumed). |
 | **10** | **Logistics Fleet Overhaul: Payload Capacities & Variety Caps** | Shipping Screen & Fleet Engine | 📋 **Planned** | Adds physical payload capacity (20 $\to$ 600 units) and variety limits (2 $\to$ 12 types) across Bikes, Vans, Trucks, and Planes so carrier tiers truly matter. |
 | **11** | **Commercial Dispatch Manifest: Multi-Product Bulk Selling UI** | Sell Products Screen | 📋 **Planned** | Adds docked manifest staging tray, interactive review drawer, multi-product selection, and consolidated single-carrier dispatches. |
 
@@ -188,14 +189,110 @@ $$\text{Purchases Per Tick} = \left\lfloor \text{Machines Owned} \times 5 \times
 
 ---
 
-## 📦 Phase 9: Automated Outbound Distribution: Auto-Sell Dispatchers (📋 Planned)
+## 📦 Phase 9A: B2B Contract Overhaul: Retail & Manufacturing Types (📋 Planned)
 
 ### 🎯 Objective & Overview
-Phase 9 completes the industrial automation loop (**Auto-Buy $\to$ Auto-Build $\to$ Auto-Sell**). It introduces **Auto-Sell Dispatchers** to automate finished goods sales, featuring an early Tier 1 unlock with a gentle, timid baseline.
+Phase 9A overhauls the B2B contract system by introducing two distinct contract categories (**Retail** and **Manufacturing**), replacing the current incremental delivery model with a **Lock & Ship** fulfillment flow (no partial deliveries), integrating contract completion into the fleet shipping pipeline, and relocating the B2B Contracts tab to the Sell Products Screen.
 
 ---
 
-### 📋 Phase 9 Core Features & Specifications
+### 📋 Phase 9A Core Features & Specifications
+
+#### 1. 🏷️ Contract Type System: Retail vs Manufacturing
+
+Add a `ContractType` enum (`retail` / `manufacturing`) to `CorporateContract`:
+
+**Retail Contracts:**
+- Target **finished/complex products** (smartphone, laptop, tablet, gaming_console).
+- Smaller quantities: **5–25 units** per contract.
+- Premium per-unit price (above market sell price).
+- **Longer shipping timer** (retail distribution chain).
+- Single-product orders only.
+
+**Manufacturing Contracts:**
+- Target **intermediate parts** (wires, screws, plastic_parts, glass_panels, circuit_boards, metal_frames, screens, packaged_goods, cardboard_boxes).
+- Large bulk quantities: **50–200 units** per contract.
+- Lower per-unit price, but **high total payout** from sheer volume.
+- **0.75x shipping time bonus** (faster industrial bulk logistics).
+- Can request **multiple different products** in one order (e.g., "Ship 30 Wires + 20 Screws + 10 Circuit Boards").
+
+#### 2. 📦 Lock & Ship Fulfillment Model (No Partial Deliveries)
+
+Replaces the current incremental `deliveredQuantity` system entirely:
+- **No partial deliveries.** Player must have **all** required products in inventory before shipping.
+- When the player clicks **"Ship Contract"**, all items are **deducted from inventory at once**.
+- A shipping order is created consuming **1 fleet slot** with a standard shipping timer.
+- Cash + rep rewards are paid out **when the shipping timer completes** (not instantly).
+- `deliveredQuantity` field is removed/repurposed from `CorporateContract`.
+
+#### 3. 🔄 New Contract Status: `shipping`
+
+Updated `ContractStatus` enum flow:
+$$\text{available} \to \text{active (accepted)} \to \text{shipping (items locked, fleet slot consumed)} \to \text{completed (reward paid)}$$
+
+Add nullable `shippingOrderId` (`String?`) to `CorporateContract` — set when the contract enters the shipping pipeline.
+
+#### 4. 📊 Multi-Product Manufacturing Orders
+
+Evolve the data model from single-product to multi-product support:
+- **Current**: `targetProductId` (String) + `requiredQuantity` (int)
+- **New**: `requiredProducts` (`Map<String, int>`) — e.g., `{'wires': 30, 'screws': 20, 'circuit_boards': 10}`
+- For Retail contracts, this map will contain a single entry.
+
+#### 5. 📈 Contract Slot Scaling by Factory Tier
+
+| Factory Tier | Contract Slots |
+|:---:|:---:|
+| Tier 1 (Garage Workshop) | 3 |
+| Tier 2 (Light Assembly Facility) | 3–4 |
+| Tier 3 (Precision Manufacturing Plant) | 4 |
+| Tier 4 (Megafactory Cleanroom) | 5 |
+
+The contract pool generates a mix of both types. The ratio shifts as the player tiers up — more manufacturing contracts appear at higher tiers.
+
+#### 6. 🚚 Shipping Timer Calculation
+
+Uses standard shipping formula: `shippingTime = product.calculateShippingTime(quantity) / fleetSpeedMultiplier`
+- **Retail**: Standard formula.
+- **Manufacturing**: Gets a **0.75x shipping time multiplier** (25% faster industrial logistics).
+- For multi-product manufacturing orders, sum the shipping times of each product line.
+
+#### 7. 🤖 Per-Type Auto-Ship Toggles
+
+Two independent toggles:
+- **Auto-Ship Retail** — automatically locks & ships completed retail contracts if a fleet slot is available.
+- **Auto-Ship Manufacturing** — automatically locks & ships completed manufacturing contracts if a fleet slot is available.
+- Runs during the game tick loop (`_processContractsTick`).
+
+#### 8. 🖥️ UI Relocation: B2B Tab → Sell Products Screen
+
+Move the **entire B2B Contracts tab** from the **Shipping Screen** to the **Sell Products Screen**. The Sell Screen becomes the unified "sales hub" (manual sells + B2B contracts). The Shipping Screen remains focused purely on active shipping orders and fleet management. Contract cards should display visual badges distinguishing 🏷️ Retail vs 🏭 Manufacturing.
+
+---
+
+### 📋 Phase 9A Implementation Checklist
+- [ ] Add `ContractType` enum (`retail` / `manufacturing`) and `contractType` field to [`CorporateContract`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_models.dart).
+- [ ] Add `shipping` to `ContractStatus` enum and `shippingOrderId` field to `CorporateContract`.
+- [ ] Refactor `CorporateContract` from `targetProductId`/`requiredQuantity` to `requiredProducts` (`Map<String, int>`).
+- [ ] Implement Lock & Ship fulfillment in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) (deduct all items, create shipping order, consume fleet slot).
+- [ ] Scale contract slots by factory tier (3 → 5).
+- [ ] Update contract generation to produce both Retail and Manufacturing types with tier-based ratio shifting.
+- [ ] Add per-type auto-ship toggles (`autoShipRetail`, `autoShipManufacturing`) to [`GameState`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_state.dart).
+- [ ] Apply 0.75x shipping time bonus for Manufacturing contracts.
+- [ ] Relocate B2B Contracts tab from Shipping Screen to Sell Products Screen.
+- [ ] Add visual badges (🏷️ Retail / 🏭 Manufacturing) to contract cards.
+- [ ] Unit tests for Lock & Ship flow, fleet slot consumption, multi-product fulfillment, and auto-ship toggles.
+
+---
+
+## 🏪 Phase 9B: Auto-Sell Dispatchers: Storefront Automation (📋 Planned)
+
+### 🎯 Objective & Overview
+Phase 9B completes the industrial automation loop (**Auto-Buy $\to$ Auto-Build $\to$ Auto-Sell**). It introduces **Auto-Sell Dispatchers** to automate finished goods sales via direct local storefront walk-in sales, featuring an early Tier 1 unlock with a gentle, timid baseline.
+
+---
+
+### 📋 Phase 9B Core Features & Specifications
 
 #### 1. 🏪 Early Tier 1 Timid Baseline (Hands-Free Early Game)
 - **Unlocked at Tier 1 (Garage Workshop)**: Provides immediate passive income early on.
@@ -205,11 +302,11 @@ Phase 9 completes the industrial automation loop (**Auto-Buy $\to$ Auto-Build $\
 #### 2. 📈 Auto-Sell Batch Fulfillment Throughput Upgrades
 - **Throughput Formula**: $\text{Units Sold Per Tick} = \text{Machines Owned} \times \text{Fulfillment Level}$.
 - Level 1: 1 unit / machine / tick $\to$ Level 2: 2 units / machine / tick $\to$ Level $K$.
-- Machine cost and upgrade costs follow the standard $1,000 base with $1.20\times$ compounding curve.
+- Machine cost and upgrade costs follow the standard $1,000 base with $1.15\times$ compounding curve.
 
 #### 3. 🚚 Zero-Fleet-Slot Storefront Pipeline (Fleet Protection)
 - Auto-Sell operates as **direct local storefront walk-in sales** (**0 fleet slots consumed**).
-- *Critical Game Balance*: Guarantees that Auto-Sell never jams the player's 2 bike slots, preserving fleet carriers for strategic B2B corporate contracts and manual wholesale dispatches.
+- *Critical Game Balance*: Guarantees that Auto-Sell never jams the player's fleet slots, preserving fleet carriers for strategic B2B corporate contracts and manual wholesale dispatches.
 
 #### 4. 🛡️ Inventory Reserve Protections
 - Auto-Sell only targets finished manufactured products (never raw materials or items below configured reserve thresholds).
@@ -217,13 +314,14 @@ Phase 9 completes the industrial automation loop (**Auto-Buy $\to$ Auto-Build $\
 
 ---
 
-### 📋 Phase 9 Implementation Checklist
-- [ ] Add `autoSellMachines` and `autoSellThroughputLevel` to [`GameState`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_state.dart).
-- [ ] Add `_processAutoSell` loop in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) selling eligible inventory per cycle tick.
-- [ ] Create `AutoSellMachineCard` in `Machines` tab of [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart).
+### 📋 Phase 9B Implementation Checklist
+- [ ] Add `autoSellMachinesOwned`, `autoSellEnabled`, and `autoSellThroughputLevel` to [`GameState`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_state.dart).
+- [ ] Add `_processAutoSellTick` loop in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) selling eligible inventory per cycle tick.
+- [ ] Create `AutoSellMachineCard` using unified `MachineCard` widget in `Machines` tab of [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart).
 - [ ] Unit tests verifying auto-sell execution, zero-fleet-slot isolation, and inventory reserve safety.
 
 ---
+
 
 ## 🚚 Phase 10: Logistics Fleet Overhaul: Payload Capacities & Variety Caps (📋 Planned)
 
