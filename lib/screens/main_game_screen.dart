@@ -85,6 +85,15 @@ class _MainGameScreenState extends State<MainGameScreen> {
           );
         }
 
+        // Calculate badges
+        final int freeSlots = gameService.state.maxSimultaneousShipments - gameService.state.activeShippingOrders.length;
+        final int readyContracts = gameService.state.corporateContracts.where((c) {
+          if (c.status != ContractStatus.active && c.status != ContractStatus.available) return false;
+          final remaining = c.requiredQuantity - c.deliveredQuantity;
+          return gameService.state.getProductCount(c.targetProductId) >= remaining;
+        }).length;
+        final int shippingBadgeCount = (freeSlots > 0 ? freeSlots : 0) + readyContracts;
+
         // Game is loaded, show normal interface
         return Scaffold(
           body: PageView(
@@ -204,12 +213,17 @@ class _MainGameScreenState extends State<MainGameScreen> {
                               : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      Icons.local_shipping,
-                      color:
-                          _currentIndex == 3
-                              ? Colors.orange[400]
-                              : Colors.grey[400],
+                    child: Badge(
+                      isLabelVisible: shippingBadgeCount > 0,
+                      label: Text('$shippingBadgeCount'),
+                      backgroundColor: Colors.redAccent,
+                      child: Icon(
+                        Icons.local_shipping,
+                        color:
+                            _currentIndex == 3
+                                ? Colors.orange[400]
+                                : Colors.grey[400],
+                      ),
                     ),
                   ),
                   label: 'Shipping',
