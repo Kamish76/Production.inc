@@ -399,3 +399,96 @@ $$\text{Actual Shipping Time} = \frac{\text{Base Transit Time}}{\text{Fleet Spee
 - [x] Update `ItemCard` in Sell mode with "Add to Manifest" chips and staged count pills.
 - [x] Create `test/phase11_bulk_manifest_test.dart` validating staging, dispatch, and settlement.
 
+---
+
+## 🛡️ Phase 12: Comprehensive System Quality & Cross-Pipeline Integration Verification (📋 Planned)
+
+### 🎯 Objective & Overview
+Over the course of Phases 6 through 11, the core simulation of *Production.INC* evolved into an interconnected industrial powerhouse:
+- **Phase 6**: Machine Controls Unification, Capacity Uncapping, Memory Recycler, and Navigation Badges.
+- **Phase 7**: Machine Economy & Dynamic Pricing ($1.20^N$ compound curve, tier caps, 50% salvage refunds).
+- **Phase 8**: High-Throughput Automation (batch build throughput, auto-buy intake multipliers).
+- **Phase 9A**: B2B Contract Overhaul (Retail vs Manufacturing, Lock & Ship fulfillment, multi-product requisitions, auto-ship toggles, Sales Hub migration).
+- **Phase 9B**: Auto-Sell Dispatchers (Storefront Automation, zero-fleet-slot storefront walk-in pipeline, throughput upgrades, inventory reserve protection).
+- **Phase 10**: Logistics Fleet Overhaul (payload capacities, variety caps, per-type caps, Courier Bikes $\to$ Cargo Planes).
+- **Phase 11**: Commercial Dispatch Manifest (multi-product staging cart, docked tray, review drawer, square-root consolidated transit times, stock-drop auto-clamping).
+
+**Phase 12 is a dedicated, rigorous Quality Assurance, Cross-System Integration, Adversarial Stress Testing, and Performance Verification arc.** It guarantees that all systems from Phase 6 through Phase 11 operate in complete harmony without race conditions, memory leaks, fleet slot starvation, economic exploits, or layout overflows.
+
+```mermaid
+flowchart TD
+    subgraph S6_8 [Phases 6-8: Industrial Automation Engine]
+        AB[Auto-Buy Multipliers] --> RawMat[Raw Materials Inventory]
+        RawMat --> AC[Auto-Build Batch Units]
+        AC --> FinishedGoods[Finished Products Warehouse]
+    end
+
+    subgraph S9B [Phase 9B: Storefront Automation]
+        FinishedGoods -->|0 Fleet Slots| AutoSell[Auto-Sell Dispatchers]
+        AutoSell -->|Cash Inflow| PlayerCash[Player Treasury]
+    end
+
+    subgraph S9A [Phase 9A: B2B Industrial Requisitions]
+        FinishedGoods -->|Lock & Ship / 1 Fleet Slot| B2BShip[Corporate Shipping Orders]
+        B2BShip -->|Cash & Rep Rewards| PlayerCash
+    end
+
+    subgraph S10_11 [Phases 10-11: Commercial Dispatch Logistics]
+        FinishedGoods -->|Staged Manifest Cart| ManifestTray[Shipping Manifest Builder]
+        ManifestTray -->|Cap Guards & Clamping / 1 Fleet Slot| ConsolidatedShip[Consolidated Carrier Dispatch]
+        ConsolidatedShip -->|Square-Root Scaled Revenue| PlayerCash
+    end
+
+    subgraph Economy [Phase 7: Machine Economy]
+        PlayerCash -->|1.20x Compound Pricing| BuyMachines[Tier-Capped Machinery]
+        BuyMachines -->|50% Refund| Salvage[Decommission & Salvage]
+    end
+```
+
+---
+
+### 📋 Phase 12 Core Verification Pillars & Test Matrix
+
+#### 1. 🔄 Cross-System Pipeline Harmonization Matrix
+Verify mutual compatibility and concurrency between all operational pipelines:
+
+| Interaction Pair | Systems Involved | Key Invariant / Guarantee to Validate |
+| :--- | :--- | :--- |
+| **Auto-Sell $\times$ Fleet Slots** | Phase 9B $\times$ Phase 10 | Auto-Sell storefront sales **NEVER consume carrier fleet slots**, guaranteeing fleet capacity remains 100% available for B2B requisitions and manifest dispatches. |
+| **Auto-Sell $\times$ Staged Manifest** | Phase 9B $\times$ Phase 11 | If Auto-Sell sells inventory while the player is staging or dispatching a bulk manifest, the manifest **auto-clamps to remaining stock** without crashes, negative values, or inventory corruption. |
+| **Auto-Buy $\times$ Auto-Build** | Phase 6 & 8 | High-throughput Auto-Buy intake multipliers scale alongside batch Auto-Build consumption so crafting pipelines do not starve or over-consume materials. |
+| **B2B Contracts $\times$ Carrier Caps** | Phase 9A $\times$ Phase 10 | Industrial bulk B2B manufacturing contracts (>200 units) are either appropriately exempted from retail carrier payload limits or scale with fleet capacity. |
+| **Manifest Caps $\times$ Fleet Tiers** | Phase 10 $\times$ Phase 11 | Manifest builder strictly enforces current fleet tier caps (`maxPayloadUnits`, `maxProductVarieties`, `maxUnitsPerType`) across all 4 tiers (Bikes, Vans, Trucks, Planes). |
+| **Dynamic Economy $\times$ Salvage** | Phase 7 $\times$ Phase 8 | $1.20^N$ dynamic pricing, tier ownership caps, and 50% salvage refunds remain mathematically sound even after batch throughput upgrades. |
+
+#### 2. 🧪 Adversarial Stress Testing & Boundary Conditions
+- **High-Velocity Concurrency Stress**: Run 200 consecutive game ticks with Auto-Buy, Auto-Build, Auto-Sell, active B2B contracts, and active consolidated manifest shipping simultaneously firing.
+- **Starvation & Depletion Edge Cases**: Set cash to $\$0.00$, materials to 0, inventory to 0, and fleet slots to 0. Verify zero exceptions, no unhandled async rejections, and no division-by-zero or `NaN` values.
+- **Extreme Scale Stress (Megafactory Tier 4)**: 40 Auto-Buy machines, 40 Auto-Build machines, Level 10 throughput, and maxed Cargo Planes with 600 payload units.
+- **SQLite Database Persistence & Cold Restart Integrity**:
+  - Save game state with active multi-product shipments, staged manifest, auto-build queues, and machine levels.
+  - Cold-restart service from SQLite database and verify 100% data fidelity across all state properties.
+
+#### 3. 📱 UI/UX, Responsive Constraints & Zero-Overflow Audit
+- **Responsive Layout Verification**:
+  - Test across Mobile Small (360x640), Mobile Standard (390x844), Tablet (768x1024), and Wide Desktop (1080x1920).
+  - Verify zero `RenderFlex` overflows in [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart), [`SellProductsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/sell_products_screen.dart), [`ShippingManifestTray`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/widgets/shipping_manifest_tray.dart), and [`ShippingManifestDrawer`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/widgets/shipping_manifest_drawer.dart).
+- **Navigation & Notification Badges**:
+  - Confirm real-time notification counters on the bottom navigation bar reflect available fleet slots and completed requisitions accurately.
+- **Haptic & Visual Feedback**:
+  - Ensure haptic responses trigger consistently on sell, manifest add/remove, and dispatch actions.
+
+#### 4. 🗂️ Full Repository Test Suite Modernization & Zero-Warning Pass
+- Audit and modernize legacy test assertions (updating outdated header strings from pre-Phase-8 tests in `comprehensive_widget_test.dart` and `bug_fix_auto_buy_unlock_test.dart`).
+- Achieve **100% test pass rate across the entire repository** (`flutter test`).
+- Ensure **0 lint warnings or errors** in `flutter analyze`.
+
+---
+
+### 📋 Phase 12 Implementation Checklist
+- [ ] Create `test/phase12_system_quality_test.dart` with comprehensive cross-pipeline integration tests (Phases 6–11).
+- [ ] Build adversarial stress test scenarios (200-tick concurrency, resource starvation, and cold-boot DB reload).
+- [ ] Conduct UI responsive constraint audit for zero RenderFlex overflows across all device form factors.
+- [ ] Modernize outdated pre-Phase-8 test expectations so the entire repository test suite (`flutter test`) passes 100% green.
+- [ ] Confirm clean `flutter analyze` with 0 warnings and verify hot reload stability on running application.
+
