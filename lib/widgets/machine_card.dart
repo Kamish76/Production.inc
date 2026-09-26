@@ -40,6 +40,8 @@ class MachineCard extends StatelessWidget {
   final VoidCallback? onUpgradeThroughput;
   final String throughputLabel;
   final bool canUpgradeThroughput;
+  final bool isMaxThroughput;
+  final bool showCapacity;
 
   const MachineCard({
     super.key,
@@ -70,6 +72,8 @@ class MachineCard extends StatelessWidget {
     this.onUpgradeThroughput,
     this.throughputLabel = '',
     this.canUpgradeThroughput = false,
+    this.isMaxThroughput = false,
+    this.showCapacity = true,
   });
 
   /// Factory constructor for Auto-Buy Machinery
@@ -120,7 +124,8 @@ class MachineCard extends StatelessWidget {
       canSalvage: canSalvage,
       throughputLevel: throughputLevel,
       throughputUpgradeCost: throughputCost,
-      canUpgradeThroughput: canUpgradeThroughput,
+      canUpgradeThroughput: canUpgradeThroughput && throughputLevel < 5,
+      isMaxThroughput: throughputLevel >= 5,
       throughputLabel: throughputLabel,
       onUpgradeThroughput: () async {
         final success = await gameService.upgradeAutoBuyIntake();
@@ -215,7 +220,8 @@ class MachineCard extends StatelessWidget {
       canSalvage: canSalvage,
       throughputLevel: throughputLevel,
       throughputUpgradeCost: throughputCost,
-      canUpgradeThroughput: canUpgradeThroughput,
+      canUpgradeThroughput: canUpgradeThroughput && throughputLevel < 5,
+      isMaxThroughput: throughputLevel >= 5,
       throughputLabel: throughputLabel,
       onUpgradeThroughput: () async {
         final success = await gameService.upgradeAutoBuildThroughput(tier);
@@ -251,6 +257,91 @@ class MachineCard extends StatelessWidget {
       canIncreaseCapacity: true,
       telemetryText: telemetry,
       telemetryIcon: Icons.precision_manufacturing,
+    );
+  }
+
+  /// Factory constructor for Auto-Sell Machinery (Phase 9B: Auto-Sell Dispatchers)
+  factory MachineCard.autoSell({
+    Key? key,
+    required BuildContext context,
+    required ProductionGameService gameService,
+  }) {
+    final state = gameService.state;
+    final machineCount = state.autoSellMachinesOwned;
+    final isEnabled = state.autoSellEnabled;
+    final machineLimit = gameService.getMachineTierLimit('autoSell');
+    final cost = gameService.getMachinePrice('autoSell', machineCount);
+    final salvageValue =
+        gameService.getMachineSalvageValue('autoSell', machineCount);
+    final canSalvage = machineCount > 0;
+    final canBuy = state.money >= cost && machineCount < machineLimit;
+    final throughputLevel = gameService.getAutoSellThroughputLevel();
+    final throughputCost = gameService.getAutoSellThroughputUpgradeCost();
+    final canUpgradeThroughput = state.money >= throughputCost;
+    final throughputLabel = '$throughputLevel Units/Machine';
+
+    String telemetry;
+    if (machineCount > 0) {
+      if (isEnabled) {
+        final totalCapacity = machineCount * throughputLevel;
+        telemetry = 'Selling up to $totalCapacity items every 5s (walk-in)';
+      } else {
+        telemetry = 'Offline - Auto-sell is paused';
+      }
+    } else {
+      telemetry =
+          'No dispatchers deployed. Purchase a unit to start auto-selling.';
+    }
+
+    return MachineCard(
+      key: key,
+      icon: Icons.storefront,
+      title: 'Auto-Sell Dispatchers',
+      subtitle: 'Automates finished goods sales (consumes fleet capacity)',
+      accentColor: const Color(0xFFAB47BC), // Purple accent
+      isEnabled: isEnabled,
+      machineCount: machineCount,
+      machineCost: cost,
+      canBuy: canBuy,
+      machineLimit: machineLimit,
+      salvageValue: salvageValue,
+      canSalvage: canSalvage,
+      throughputLevel: throughputLevel,
+      throughputUpgradeCost: throughputCost,
+      canUpgradeThroughput: canUpgradeThroughput && throughputLevel < 5,
+      isMaxThroughput: throughputLevel >= 5,
+      throughputLabel: throughputLabel,
+      showCapacity: false,
+      capacity: 0,
+      capacityUnit: '',
+      onUpgradeThroughput: () async {
+        final success = await gameService.upgradeAutoSellThroughput();
+        if (!success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Not enough money to upgrade throughput!'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      onSalvage: () async {
+        await gameService.salvageMachine('autoSell');
+      },
+      onBuy: () async {
+        final success = await gameService.buyAutoSellMachine();
+        if (!success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Not enough money to buy machine!'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      onToggle: machineCount > 0 ? (_) => gameService.toggleAutoSell() : null,
+      telemetryText: telemetry,
+      telemetryIcon: Icons.point_of_sale,
     );
   }
 
@@ -551,71 +642,73 @@ class MachineCard extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 12),
+              if (showCapacity) ...[
+                const SizedBox(height: 12),
 
-              // 3. Capacity Stepper Row: [-] [Value] [+] + Unit label
-              Row(
-                children: [
-                  const Text(
-                    'Capacity:',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  IconButton(
-                    onPressed: canDecreaseCapacity ? onDecreaseCapacity : null,
-                    icon: const Icon(Icons.remove_circle_outline),
-                    color: Colors.redAccent,
-                    disabledColor: Colors.grey[700],
-                    iconSize: 22,
-                    padding: const EdgeInsets.all(4),
-                    constraints: const BoxConstraints(),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF131726),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: accentColor.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Text(
-                      '$capacity',
+                // 3. Capacity Stepper Row: [-] [Value] [+] + Unit label
+                Row(
+                  children: [
+                    const Text(
+                      'Capacity:',
                       style: TextStyle(
-                        color: accentColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: canIncreaseCapacity ? onIncreaseCapacity : null,
-                    icon: const Icon(Icons.add_circle_outline),
-                    color: Colors.greenAccent,
-                    disabledColor: Colors.grey[700],
-                    iconSize: 22,
-                    padding: const EdgeInsets.all(4),
-                    constraints: const BoxConstraints(),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      capacityUnit,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
+                    const SizedBox(width: 10),
+                    IconButton(
+                      onPressed: canDecreaseCapacity ? onDecreaseCapacity : null,
+                      icon: const Icon(Icons.remove_circle_outline),
+                      color: Colors.redAccent,
+                      disabledColor: Colors.grey[700],
+                      iconSize: 22,
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF131726),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: accentColor.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Text(
+                        '$capacity',
+                        style: TextStyle(
+                          color: accentColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: canIncreaseCapacity ? onIncreaseCapacity : null,
+                      icon: const Icon(Icons.add_circle_outline),
+                      color: Colors.greenAccent,
+                      disabledColor: Colors.grey[700],
+                      iconSize: 22,
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        capacityUnit,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
 
               const SizedBox(height: 12),
 
@@ -657,7 +750,9 @@ class MachineCard extends StatelessWidget {
                       onPressed: canUpgradeThroughput ? onUpgradeThroughput : null,
                       icon: const Icon(Icons.arrow_upward, size: 16),
                       label: Text(
-                        'Upgrade (\$${throughputUpgradeCost.toStringAsFixed(2)})',
+                        isMaxThroughput 
+                            ? 'Max Level' 
+                            : 'Upgrade (\$${throughputUpgradeCost.toStringAsFixed(2)})',
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -764,5 +859,17 @@ class AutoBuildMachineCard extends StatelessWidget {
       icon: icon,
       subtitle: subtitle,
     );
+  }
+}
+
+/// Convenience wrapper for AutoSellMachineCard using unified MachineCard (Phase 9B)
+class AutoSellMachineCard extends StatelessWidget {
+  final ProductionGameService gameService;
+
+  const AutoSellMachineCard({super.key, required this.gameService});
+
+  @override
+  Widget build(BuildContext context) {
+    return MachineCard.autoSell(context: context, gameService: gameService);
   }
 }

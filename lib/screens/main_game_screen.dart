@@ -90,8 +90,7 @@ class _MainGameScreenState extends State<MainGameScreen> {
         final int freeSlots = gameService.state.maxSimultaneousShipments - gameService.state.activeShippingOrders.length;
         final int readyContracts = gameService.state.corporateContracts.where((c) {
           if (c.status != ContractStatus.active && c.status != ContractStatus.available) return false;
-          final remaining = c.requiredQuantity - c.deliveredQuantity;
-          return gameService.state.getProductCount(c.targetProductId) >= remaining;
+          return c.canFulfill(gameService.state.products);
         }).length;
         final int shippingBadgeCount = (freeSlots > 0 ? freeSlots : 0) + readyContracts;
 

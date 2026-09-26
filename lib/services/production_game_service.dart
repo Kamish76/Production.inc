@@ -408,6 +408,15 @@ class ProductionGameService extends ChangeNotifier {
         return false;
       }
 
+      // Manual Build Lockout (Phase 10)
+      if ((_state.autoBuildEnabled[product.levelId.name] ?? false) &&
+          (_state.autoBuildMachinesOwned[product.levelId.name] ?? 0) > 0) {
+        if (kDebugMode) {
+          GameLogger.warning('Manual build locked: Auto-Build is active for tier ${product.levelId.name}');
+        }
+        return false;
+      }
+
       // Prevent excessive production quantities
       const maxQuantity = 10000;
       if (quantity > maxQuantity) {
@@ -646,7 +655,7 @@ class ProductionGameService extends ChangeNotifier {
       double effectiveSpeedMultiplier =
           fleet.speedMultiplier * _state.logisticsSpeedMultiplier;
       final hasActiveContract =
-          _state.corporateContracts.any((c) => c.status == ContractStatus.active);
+          _state.corporateContracts.any((c) => c.status == ContractStatus.active || c.status == ContractStatus.shipping);
       if (hasActiveContract && _state.hasCorporateContractFastTrack) {
         effectiveSpeedMultiplier *= ResearchConstants.logisticsContractSpeedBonus;
       }
@@ -725,6 +734,9 @@ class ProductionGameService extends ChangeNotifier {
       // Check and process auto-build ticks for all tiers (v1.5.0 Phase 2)
       _processAutoBuildTicks();
 
+      // Check and process auto-sell tick (Phase 9B: Auto-Sell Dispatchers)
+      _processAutoSellTick();
+
       // Check and process corporate contracts expiry and refills (Phase 2)
       _processContractsTick();
       
@@ -796,18 +808,30 @@ class ProductionGameService extends ChangeNotifier {
     }
   }
 
-  /// Handle queued task logic - start if no active production of same type
+  /// Handle queued task logic - start if active tracks < maxParallel
   void _handleQueuedTask(
     ProductionTask task,
     List<ProductionTask> activeTasks,
   ) {
-    // Check if this queued task should start now
-    final hasActiveProductionOfSameType = activeTasks.any(
+    // Determine max parallel for this product's tier
+    int maxParallel = 1;
+    final product = GameData.getProduct(task.productId);
+    if (product != null) {
+      final tier = product.levelId.name;
+      final autoBuildEnabled = _state.autoBuildEnabled[tier] ?? false;
+      final machinesOwned = _state.autoBuildMachinesOwned[tier] ?? 0;
+      if (autoBuildEnabled && machinesOwned > 0) {
+        maxParallel = getAutoBuildThroughputLevel(tier);
+      }
+    }
+
+    // Count how many active tracks are running for this product
+    final activeCount = activeTasks.where(
       (otherTask) =>
           otherTask.productId == task.productId && !otherTask.isQueued,
-    );
+    ).length;
 
-    if (!hasActiveProductionOfSameType) {
+    if (activeCount < maxParallel) {
       // Start this queued task
       final startedTask = task.copyWith(
         isQueued: false,
@@ -1065,57 +1089,45 @@ class ProductionGameService extends ChangeNotifier {
             );
             
             // Check if there's already an active production of this product
-            final hasActiveProduction = newProductions.any(
-              (task) => task.productId == productId && !task.isQueued,
-            );
+            // Queue individual items across parallel tracks based on throughput
+            int maxParallel = getAutoBuildThroughputLevel(tier);
             
-            // Enqueue production tasks (one per unit, following v1.4.10 pattern)
             for (int i = 0; i < builtCount; i++) {
-              final shouldQueue = hasActiveProduction || i > 0;
+              final productTasks = newProductions.where((t) => t.productId == productId).toList();
+              productTasks.sort((a, b) => a.startTime.compareTo(b.startTime));
+              
+              final endTimes = productTasks.map((t) => t.startTime.add(Duration(seconds: t.durationSeconds.round()))).toList();
+              endTimes.sort((a, b) => b.compareTo(a)); // Descending order (latest first)
               
               DateTime startTime = DateTime.now();
-              if (shouldQueue) {
-                // Find the latest task for this product type to chain after it
-                final lastTaskForProduct = newProductions
-                    .where((task) => task.productId == productId)
-                    .fold<ProductionTask?>(null, (latest, current) {
-                  if (latest == null) return current;
-                  final latestEnd = latest.startTime.add(
-                    Duration(seconds: latest.durationSeconds.round()),
-                  );
-                  final currentEnd = current.startTime.add(
-                    Duration(seconds: current.durationSeconds.round()),
-                  );
-                  return latestEnd.isAfter(currentEnd) ? latest : current;
-                });
-                
-                if (lastTaskForProduct != null) {
-                  startTime = lastTaskForProduct.startTime.add(
-                    Duration(seconds: lastTaskForProduct.durationSeconds.round()),
-                  );
+              bool shouldQueue = false;
+              
+              if (endTimes.length >= maxParallel) {
+                shouldQueue = true;
+                startTime = endTimes[maxParallel - 1];
+                if (startTime.isBefore(DateTime.now())) {
+                  startTime = DateTime.now();
+                  shouldQueue = false;
                 }
               }
               
-              // Apply auto-build machine speed bonus (1.2x per machine)
               final adjustedTime = getAdjustedProductionTime(
                 productId,
                 product.productionTimeSeconds,
               );
               
-              // Use microseconds to ensure unique IDs even when multiple items are built in same millisecond
               final task = ProductionTask(
                 id: '${DateTime.now().microsecondsSinceEpoch}_autobuild_${tier}_$i',
                 productId: productId,
                 startTime: startTime,
-                durationSeconds: adjustedTime, // Adjusted for machine speed bonus
-                quantity: 1, // Always 1 for proper queue behavior
+                durationSeconds: adjustedTime,
+                quantity: 1, // Single unit for UI visibility
                 isQueued: shouldQueue,
               );
               
               newProductions.add(task);
               
-              // Log speed bonus for auto-build (v1.5.0)
-              if (kDebugMode && (product.productionTimeSeconds - adjustedTime).abs() > 0.01) {
+              if (kDebugMode && i == 0 && (product.productionTimeSeconds - adjustedTime).abs() > 0.01) {
                 final speedMultiplier = product.productionTimeSeconds / adjustedTime;
                 GameLogger.info('⚡ Auto-build speed bonus: $productId - ${product.productionTimeSeconds}s → ${adjustedTime.toStringAsFixed(1)}s (${speedMultiplier.toStringAsFixed(2)}x faster)');
               }
@@ -1269,6 +1281,157 @@ class ProductionGameService extends ChangeNotifier {
     }
   }
 
+  DateTime? _lastAutoSellTick;
+
+  /// Process auto-sell tick if enabled and interval has elapsed (Phase 9B: Auto-Sell Dispatchers)
+  /// Automatically sells `machines * throughputLevel` units of finished products per tick directly for cash.
+  /// Consumes 0 fleet slots, targets only finished products in _state.products, and prioritizes lowest-tier products first.
+  void _processAutoSellTick({bool force = false}) {
+    // Skip if not enabled or no machines owned
+    if (!_state.autoSellEnabled || _state.autoSellMachinesOwned <= 0) {
+      return;
+    }
+
+    final now = DateTime.now();
+    if (!force && _lastAutoSellTick != null) {
+      final elapsed = now.difference(_lastAutoSellTick!).inSeconds;
+      if (elapsed < 5) {
+        return; // 5-second tick interval matching auto-buy and auto-build
+      }
+    }
+
+    // Check fleet slot availability
+    if (!_state.canShipMore(_state.activeShippingOrders.length)) {
+      return; // Fleet is full, wait for next tick
+    }
+
+    // Capacity calculation: machines * throughputLevel
+    int unitsToSellRemaining =
+        _state.autoSellMachinesOwned * _state.autoSellThroughputLevel;
+    if (unitsToSellRemaining <= 0) {
+      return;
+    }
+
+    // Finished products only: targets _state.products, strictly ignores raw materials in _state.materials
+    // Prioritize lowest-tier finished products first (basicParts -> intermediate -> complex -> retail)
+    const tierOrder = [
+      ProductLevel.basicParts,
+      ProductLevel.intermediate,
+      ProductLevel.complex,
+      ProductLevel.retail,
+    ];
+
+    final productsCopy = Map<String, int>.from(_state.products);
+    double totalRevenue = 0.0;
+    int totalUnitsSold = 0;
+    double rawShippingTime = 0.0;
+    final shippingItems = <ShippingItem>[];
+
+    for (final tier in tierOrder) {
+      if (unitsToSellRemaining <= 0) break;
+
+      final tierProducts =
+          GameData.products.where((p) => p.levelId == tier).toList();
+
+      for (final product in tierProducts) {
+        if (unitsToSellRemaining <= 0) break;
+
+        final available = productsCopy[product.id] ?? 0;
+        if (available <= 0) continue;
+
+        final quantityToSell = math.min(unitsToSellRemaining, available);
+        final newQuantity = available - quantityToSell;
+        if (newQuantity <= 0) {
+          productsCopy.remove(product.id);
+        } else {
+          productsCopy[product.id] = newQuantity;
+        }
+
+        unitsToSellRemaining -= quantityToSell;
+        totalUnitsSold += quantityToSell;
+        totalRevenue += quantityToSell * product.sellPrice;
+        rawShippingTime += product.calculateShippingTime(quantityToSell);
+        shippingItems.add(ShippingItem(productId: product.id, quantity: quantityToSell));
+      }
+    }
+
+    if (unitsToSellRemaining > 0) {
+      for (final entry in Map<String, int>.from(productsCopy).entries) {
+        if (unitsToSellRemaining <= 0) break;
+        final available = entry.value;
+        if (available <= 0) continue;
+
+        final prod =
+            GameData.products.where((p) => p.id == entry.key).firstOrNull;
+        final sellPrice = prod?.sellPrice ?? 4.0;
+        final quantityToSell = math.min(unitsToSellRemaining, available);
+        final newQuantity = available - quantityToSell;
+        if (newQuantity <= 0) {
+          productsCopy.remove(entry.key);
+        } else {
+          productsCopy[entry.key] = newQuantity;
+        }
+
+        unitsToSellRemaining -= quantityToSell;
+        totalUnitsSold += quantityToSell;
+        totalRevenue += quantityToSell * sellPrice;
+        if (prod != null) {
+          rawShippingTime += prod.calculateShippingTime(quantityToSell);
+        } else {
+          rawShippingTime += quantityToSell * 1.0;
+        }
+        shippingItems.add(ShippingItem(productId: entry.key, quantity: quantityToSell));
+      }
+    }
+
+    _lastAutoSellTick = now;
+
+    if (totalUnitsSold > 0) {
+      // Calculate effective shipping time
+      final fleet = GameData.getFleetTier(_state.fleetTier);
+      double effectiveSpeedMultiplier = fleet.speedMultiplier * _state.logisticsSpeedMultiplier;
+      final hasActiveContract = _state.corporateContracts.any((c) => c.status == ContractStatus.active || c.status == ContractStatus.shipping);
+      if (hasActiveContract && _state.hasCorporateContractFastTrack) {
+        effectiveSpeedMultiplier *= ResearchConstants.logisticsContractSpeedBonus;
+      }
+      final totalShippingTime = (rawShippingTime / effectiveSpeedMultiplier).clamp(1.0, 86400.0);
+
+      // Create shipping order
+      final shippingOrder = ShippingOrder(
+        id: '${DateTime.now().microsecondsSinceEpoch}_autosell',
+        items: shippingItems,
+        startTime: DateTime.now(),
+        totalShippingTime: totalShippingTime,
+        totalRevenue: totalRevenue,
+      );
+
+      final newShippingOrders = List<ShippingOrder>.from(_state.activeShippingOrders);
+      newShippingOrders.add(shippingOrder);
+
+      _state = _state.copyWith(
+        products: productsCopy,
+        activeShippingOrders: newShippingOrders,
+      );
+
+      _persistenceService.markDirty('products');
+      _persistenceService.markDirty('shipping');
+      notifyListeners();
+      _saveGameStateOptimized();
+
+      if (kDebugMode) {
+        GameLogger.info(
+          'Auto-sell tick: queued $totalUnitsSold units for \$${totalRevenue.toStringAsFixed(2)} (consumed 1 fleet slot)',
+        );
+      }
+    }
+  }
+
+  /// Trigger auto-sell tick directly for testing (Phase 9B)
+  @visibleForTesting
+  void processAutoSellTickForTest({bool force = true}) {
+    _processAutoSellTick(force: force);
+  }
+
   /// Apply completed operations to game state
   void _applyCompletedOperations(_OperationResults results) {
     // Process completed productions and add to inventory
@@ -1342,11 +1505,15 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   /// Process completed shipping orders - add revenue and create history
+  /// Phase 9A: Also handles B2B contract completion when linked shipping order finishes
   _MoneyAndHistory _processCompletedShipping(
     List<ShippingOrder> completedShipping,
   ) {
     double newMoney = _state.money;
     final newHistory = List<ShippingHistory>.from(_state.shippingHistory);
+    final updatedContracts = List<CorporateContract>.from(_state.corporateContracts);
+    final newReputation = Map<String, int>.from(_state.clientReputation);
+    bool contractsChanged = false;
 
     for (final order in completedShipping) {
       try {
@@ -1361,14 +1528,41 @@ class ProductionGameService extends ChangeNotifier {
           id: order.id,
           items: order.items,
           completedTime: DateTime.now(),
-          totalRevenue: order.totalRevenue,
+        totalRevenue: order.totalRevenue,
         );
         newHistory.add(historyEntry);
+
+        // Phase 9A: If this is a B2B contract shipment, complete the contract
+        if (order.contractId != null) {
+          final contractIndex = updatedContracts
+              .indexWhere((c) => c.id == order.contractId);
+          if (contractIndex != -1) {
+            final contract = updatedContracts[contractIndex];
+            // Award reputation
+            final currentRep = newReputation[contract.clientId] ?? 0;
+            newReputation[contract.clientId] = currentRep + contract.repReward;
+            // Update contract to completed
+            updatedContracts[contractIndex] = contract.copyWith(
+              status: ContractStatus.completed,
+            );
+            contractsChanged = true;
+          }
+        }
       } catch (e) {
         if (kDebugMode) {
           GameLogger.error('Error completing shipping order ${order.id}', e);
         }
       }
+    }
+
+    // Update contracts and reputation if any B2B shipments completed
+    if (contractsChanged) {
+      _state = _state.copyWith(
+        corporateContracts: updatedContracts,
+        clientReputation: newReputation,
+      );
+      _persistenceService.markDirty('contracts');
+      _persistenceService.markDirty('reputation');
     }
 
     return _MoneyAndHistory(money: newMoney, history: newHistory);
@@ -1502,70 +1696,12 @@ class ProductionGameService extends ChangeNotifier {
 
   /// Calculate adjusted production time with auto-build machine speed bonus
   /// Each machine provides a 1.1x speed multiplier (stacks multiplicatively)
-  /// Formula: adjustedTime = baseTime / (1.1 ^ machineCount)
-  /// Minimum production time is enforced at 1 second to match tick mechanism
+  /// Calculates adjusted production time based on machine speed bonuses
+  /// Phase 10: Speed estimation removed to ensure precise tick alignment (returns baseTime)
   double getAdjustedProductionTime(String productId, double baseTime) {
-    // Find which tier this product belongs to
-    final product = GameData.products.firstWhere(
-      (p) => p.id == productId,
-      orElse: () => Product(
-        id: productId,
-        name: productId,
-        description: '',
-        sellPrice: 0,
-        emoji: '❓',
-        requiredMaterials: {},
-        productionTimeSeconds: baseTime,
-        baseShippingTimeSeconds: 0,
-        levelId: ProductLevel.basicParts,
-      ),
-    );
-
-    // Determine the tier key based on product level
-    String? tierKey;
-    switch (product.levelId) {
-      case ProductLevel.basicParts:
-        tierKey = 'basicParts';
-        break;
-      case ProductLevel.intermediate:
-        tierKey = 'intermediate';
-        break;
-      case ProductLevel.complex:
-        tierKey = 'complex';
-        break;
-      default:
-        // Materials don't get speed bonus
-        if (product.levelId == ProductLevel.material) {
-          return baseTime;
-        }
-        tierKey = null;
-        break;
-    }
-
-    // Get machine count for this tier
-    final machineCount = tierKey != null ? (_state.autoBuildMachinesOwned[tierKey] ?? 0) : 0;
-    final overclockMultiplier = tierKey != null ? _state.overclockSpeedMultiplier : 1.0;
-    final prestigeMultiplier = _state.prestigeSpeedMultiplier;
-    
-    if (machineCount <= 0 && overclockMultiplier <= 1.0 && prestigeMultiplier <= 1.0) {
-      return baseTime;
-    }
-
-    // Calculate speed multiplier: (1.1 ^ machineCount) * overclockMultiplier * prestigeMultiplier
-    final machineMultiplier = machineCount > 0
-        ? math.pow(
-            AutoBuildConstants.buildSpeedMultiplierPerMachine,
-            machineCount,
-          ).toDouble()
-        : 1.0;
-    final speedMultiplier = machineMultiplier * overclockMultiplier * prestigeMultiplier;
-
-    // Apply speed bonus: time / multiplier
-    final adjustedTime = baseTime / speedMultiplier;
-
-    // Enforce minimum of 1 second (tick mechanism operates by seconds, not milliseconds)
-    return math.max(1.0, adjustedTime);
+    return baseTime;
   }
+
 
   /// Get filtered products by tier (only unlocked)
   List<Product> getUnlockedProductsByTier(ProductLevel tier) {
@@ -1803,6 +1939,8 @@ class ProductionGameService extends ChangeNotifier {
     final int currentCount;
     if (category == 'autoBuy') {
       currentCount = _state.autoBuyMachinesOwned;
+    } else if (category == 'autoSell') {
+      currentCount = _state.autoSellMachinesOwned;
     } else {
       currentCount = _state.autoBuildMachinesOwned[category] ?? 0;
     }
@@ -1818,6 +1956,11 @@ class ProductionGameService extends ChangeNotifier {
       _state = _state.copyWith(
         money: newMoney,
         autoBuyMachinesOwned: currentCount - 1,
+      );
+    } else if (category == 'autoSell') {
+      _state = _state.copyWith(
+        money: newMoney,
+        autoSellMachinesOwned: currentCount - 1,
       );
     } else {
       final newMachines = Map<String, int>.from(_state.autoBuildMachinesOwned);
@@ -1848,8 +1991,8 @@ class ProductionGameService extends ChangeNotifier {
   /// Get current auto-buy intake level (default 1)
   int getAutoBuyIntakeLevel() => _state.autoBuyIntakeLevel;
 
-  /// Calculate auto-buy intake multiplier based on level: 1.0 + ((level - 1) * 0.25)
-  double getAutoBuyIntakeMultiplier(int level) => 1.0 + ((level - 1) * 0.25);
+  /// Calculate auto-buy intake multiplier based on level: 1.0 per level
+  double getAutoBuyIntakeMultiplier(int level) => level * 1.0;
 
   /// Calculate upgrade cost for auto-buy intake: 1000 * 1.15^(level - 1)
   double getAutoBuyIntakeUpgradeCost() =>
@@ -1858,6 +2001,8 @@ class ProductionGameService extends ChangeNotifier {
   /// Upgrade auto-buy intake level
   /// Checks money, deducts cost, increments autoBuyIntakeLevel, notifies listeners, and saves state.
   Future<bool> upgradeAutoBuyIntake() async {
+    if (getAutoBuyIntakeLevel() >= 5) return false;
+    
     final cost = getAutoBuyIntakeUpgradeCost();
     if (_state.money < cost) {
       return false;
@@ -1894,9 +2039,80 @@ class ProductionGameService extends ChangeNotifier {
     return 1000.0 * math.pow(1.15, level - 1).toDouble();
   }
 
+  void _recalculateQueueStartTimes(String tier) {
+    final now = DateTime.now();
+    final newProductions = List<ProductionTask>.from(_state.activeProductions);
+    bool changed = false;
+
+    final tierProducts = GameData.products.where((p) => p.levelId.name == tier).map((p) => p.id).toSet();
+    
+    final autoBuildEnabled = _state.autoBuildEnabled[tier] ?? false;
+    final machinesOwned = _state.autoBuildMachinesOwned[tier] ?? 0;
+    int maxParallel = 1;
+    if (autoBuildEnabled && machinesOwned > 0) {
+      maxParallel = getAutoBuildThroughputLevel(tier);
+    }
+
+    for (final productId in tierProducts) {
+      final productTasks = newProductions.where((t) => t.productId == productId).toList();
+      if (productTasks.isEmpty) continue;
+      
+      productTasks.sort((a, b) => a.startTime.compareTo(b.startTime));
+      
+      final endTimes = <DateTime>[];
+      
+      for (int i = 0; i < productTasks.length; i++) {
+        final task = productTasks[i];
+        
+        DateTime newStartTime;
+        if (endTimes.length < maxParallel) {
+          newStartTime = task.startTime.isBefore(now) ? task.startTime : now;
+        } else {
+          endTimes.sort(); 
+          newStartTime = endTimes[0];
+          if (newStartTime.isBefore(now)) {
+            newStartTime = now;
+          }
+        }
+        
+        final newEndTime = newStartTime.add(Duration(seconds: task.durationSeconds.round()));
+        
+        if (newStartTime != task.startTime) {
+          final updatedTask = ProductionTask(
+            id: task.id,
+            productId: task.productId,
+            startTime: newStartTime,
+            durationSeconds: task.durationSeconds,
+            quantity: task.quantity,
+            isQueued: newStartTime.isAfter(now),
+          );
+          
+          final index = newProductions.indexWhere((t) => t.id == task.id);
+          newProductions[index] = updatedTask;
+          changed = true;
+        }
+        
+        if (endTimes.length < maxParallel) {
+          endTimes.add(newEndTime);
+        } else {
+          endTimes.sort();
+          endTimes[0] = newEndTime;
+        }
+      }
+    }
+
+    if (changed) {
+      _state = _state.copyWith(activeProductions: newProductions);
+      _persistenceService.markDirty('productions');
+    }
+  }
+
   /// Upgrade auto-build throughput level for a tier
   /// Checks money, deducts cost, increments autoBuildThroughputLevel[tier], notifies listeners, and saves state.
   Future<bool> upgradeAutoBuildThroughput(String tier) async {
+    // Phase 10: Cap throughput upgrade to Level 5
+    if (getAutoBuildThroughputLevel(tier) >= 5) return false;
+
     final cost = getAutoBuildThroughputUpgradeCost(tier);
     if (_state.money < cost) {
       return false;
@@ -1913,6 +2129,8 @@ class ProductionGameService extends ChangeNotifier {
       autoBuildThroughputLevel: newThroughputMap,
     );
 
+    _recalculateQueueStartTimes(tier);
+
     notifyListeners();
     _persistenceService.markDirty('automation');
     await _saveGameStateOptimized();
@@ -1924,6 +2142,122 @@ class ProductionGameService extends ChangeNotifier {
     }
 
     return true;
+  }
+
+  // =========================================================================
+  // Phase 9B: Auto-Sell Dispatchers (Storefront Automation)
+  // =========================================================================
+
+  /// Toggle auto-sell on/off (Phase 9B: Auto-Sell Dispatchers)
+  void toggleAutoSell() {
+    _state = _state.copyWith(autoSellEnabled: !_state.autoSellEnabled);
+    notifyListeners();
+    _persistenceService.markDirty('game_state');
+    _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Auto-sell toggled: ${_state.autoSellEnabled ? "ON" : "OFF"}',
+      );
+    }
+  }
+
+  /// Buy one auto-sell machine with dynamic pricing and tier limits
+  /// Returns true if purchase was successful, false if limit reached or not enough money
+  Future<bool> buyAutoSellMachine() async {
+    final currentCount = _state.autoSellMachinesOwned;
+    if (currentCount >= getMachineTierLimit('autoSell')) {
+      return false; // Reached factory tier limit
+    }
+
+    final price = getMachinePrice('autoSell', currentCount);
+    if (_state.money < price) {
+      return false; // Not enough money
+    }
+
+    final newMoney = _state.money - price;
+    final newCount = currentCount + 1;
+
+    _state = _state.copyWith(
+      money: newMoney,
+      autoSellMachinesOwned: newCount,
+    );
+    notifyListeners();
+
+    _persistenceService.markDirty('game_state');
+    await _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Auto-sell machine purchased! Count: $newCount, Money remaining: \$${newMoney.toStringAsFixed(2)}',
+      );
+    }
+
+    return true;
+  }
+
+  /// Get current auto-sell throughput level (default 1)
+  int getAutoSellThroughputLevel() => _state.autoSellThroughputLevel;
+
+  /// Calculate upgrade cost for auto-sell throughput: 1000 * 1.15^(level - 1)
+  double getAutoSellThroughputUpgradeCost() =>
+      1000.0 * math.pow(1.15, _state.autoSellThroughputLevel - 1).toDouble();
+
+  /// Upgrade auto-sell throughput level
+  /// Checks money, deducts cost, increments autoSellThroughputLevel, notifies listeners, and saves state.
+  Future<bool> upgradeAutoSellThroughput() async {
+    if (getAutoSellThroughputLevel() >= 5) return false;
+    
+    final cost = getAutoSellThroughputUpgradeCost();
+    if (_state.money < cost) {
+      return false;
+    }
+
+    final newMoney = _state.money - cost;
+    final newLevel = _state.autoSellThroughputLevel + 1;
+
+    _state = _state.copyWith(
+      money: newMoney,
+      autoSellThroughputLevel: newLevel,
+    );
+
+    notifyListeners();
+    _persistenceService.markDirty('game_state');
+    await _saveGameStateOptimized();
+
+    if (kDebugMode) {
+      GameLogger.info(
+        'Auto-sell throughput upgraded to Level $newLevel! Money remaining: \$${newMoney.toStringAsFixed(2)}',
+      );
+    }
+
+    return true;
+  }
+
+  /// Set auto-sell throughput level directly (for testing/dev)
+  void setAutoSellThroughputLevel(int level) {
+    _state = _state.copyWith(autoSellThroughputLevel: level);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Set auto-sell machine count directly (for testing/dev)
+  void setAutoSellMachineCount(int count) {
+    _state = _state.copyWith(autoSellMachinesOwned: count);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Set auto-sell enabled directly (for testing/dev)
+  void setAutoSellEnabled(bool enabled) {
+    _state = _state.copyWith(autoSellEnabled: enabled);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Reset auto-sell tick timer (for testing/dev)
+  void resetAutoSellTickTimer() {
+    _lastAutoSellTick = null;
   }
 
   /// Set auto-buy intake level directly (for testing/dev)
@@ -2057,6 +2391,10 @@ class ProductionGameService extends ChangeNotifier {
     newEnabled[tier] = !(newEnabled[tier] ?? false);
     
     _state = _state.copyWith(autoBuildEnabled: newEnabled);
+    
+    // Reshape the queue to match the new throughput (1 if off, X if on)
+    _recalculateQueueStartTimes(tier);
+    
     notifyListeners();
     _saveGameStateOptimized();
 
@@ -2248,6 +2586,23 @@ class ProductionGameService extends ChangeNotifier {
     if (kDebugMode) {
       GameLogger.info('Dev: Added \$${amount.toStringAsFixed(2)} to balance (total: \$${_state.money.toStringAsFixed(2)})');
     }
+  }
+
+  /// Dev method: Set money directly (for testing)
+  void setMoney(double amount) {
+    _state = _state.copyWith(money: amount);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Dev method: Add material directly to inventory (for testing)
+  void addMaterialToInventory(String materialId, int quantity) {
+    if (quantity <= 0) return;
+    final newMaterials = Map<String, int>.from(_state.materials);
+    newMaterials[materialId] = (newMaterials[materialId] ?? 0) + quantity;
+    _state = _state.copyWith(materials: newMaterials);
+    notifyListeners();
+    _saveGameStateOptimized();
   }
 
   /// Dev method: Complete all active productions instantly (for testing)
@@ -2546,7 +2901,26 @@ class ProductionGameService extends ChangeNotifier {
     return material.buyPrice * (1.0 - discount);
   }
 
-  /// Check and refresh corporate contracts (maintains 3 active/available contracts)
+  /// Phase 9A: Auto-ship B2B contracts when toggles are enabled
+  void _processAutoShipTick() {
+    if (!_state.autoShipRetail && !_state.autoShipManufacturing) return;
+
+    for (final contract in _state.corporateContracts) {
+      if (contract.status != ContractStatus.available) continue;
+      if (contract.isExpired) continue;
+
+      final shouldAutoShip =
+          (contract.contractType == ContractType.retail && _state.autoShipRetail) ||
+          (contract.contractType == ContractType.manufacturing && _state.autoShipManufacturing);
+
+      if (!shouldAutoShip) continue;
+      if (!contract.canFulfill(_state.products)) continue;
+      if (!_state.canShipMore(_state.activeShippingOrders.length)) break;
+
+      shipContract(contract.id);
+    }
+  }
+
   void _processContractsTick() {
     bool stateChanged = false;
     final now = DateTime.now();
@@ -2572,15 +2946,17 @@ class ProductionGameService extends ChangeNotifier {
       updatedContracts.add(contract);
     }
 
-    // Refill contracts if less than 3 active/available
+    // Refill contracts based on tier-scaled max slots
+    final maxSlots = _state.maxContractSlots;
     final openCount = updatedContracts
         .where((c) =>
             c.status == ContractStatus.available ||
-            c.status == ContractStatus.active)
+            c.status == ContractStatus.active ||
+            c.status == ContractStatus.shipping)
         .length;
 
-    if (openCount < 3) {
-      final needed = 3 - openCount;
+    if (openCount < maxSlots) {
+      final needed = maxSlots - openCount;
       for (int i = 0; i < needed; i++) {
         final newContract = _generateNewContract(updatedContracts);
         if (newContract != null) {
@@ -2595,19 +2971,24 @@ class ProductionGameService extends ChangeNotifier {
       _persistenceService.markDirty('contracts');
       notifyListeners();
     }
+
+    // Process auto-ship after contract state is updated
+    _processAutoShipTick();
   }
 
   /// Initial contracts generation helper
   void _checkAndGenerateInitialContracts() {
+    final maxSlots = _state.maxContractSlots;
     final openCount = _state.corporateContracts
         .where((c) =>
             c.status == ContractStatus.available ||
-            c.status == ContractStatus.active)
+            c.status == ContractStatus.active ||
+            c.status == ContractStatus.shipping)
         .length;
 
-    if (openCount < 3) {
+    if (openCount < maxSlots) {
       final list = List<CorporateContract>.from(_state.corporateContracts);
-      final needed = 3 - openCount;
+      final needed = maxSlots - openCount;
       for (int i = 0; i < needed; i++) {
         final c = _generateNewContract(list);
         if (c != null) list.add(c);
@@ -2618,75 +2999,189 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   /// Generates a single contract matched to the player's tier and unlocked items
+  /// Phase 9A: Now generates either Retail or Manufacturing contracts (50/50 split)
   CorporateContract? _generateNewContract(List<CorporateContract> existing) {
     if (GameData.corporateClients.isEmpty) return null;
 
     final client = _pickClientForNewContract(existing);
+    final random = math.Random();
 
-    // Filter demanded products to those currently unlocked
-    final availableProducts = client.demandedProductIds
+    // 50/50 split between Retail and Manufacturing
+    final isRetail = random.nextBool();
+
+    if (isRetail) {
+      return _generateRetailContract(client, random);
+    } else {
+      return _generateManufacturingContract(client, random);
+    }
+  }
+
+  /// Generates a Retail contract targeting finished/complex products
+  /// Single-product, small quantities (5-25), premium pricing
+  CorporateContract? _generateRetailContract(
+    CorporateClient client,
+    math.Random random,
+  ) {
+    // Retail targets complex and retail-level products
+    final retailProducts = client.demandedProductIds
         .where((id) => _state.isProductUnlocked(id))
+        .where((id) {
+          final product = GameData.getProduct(id);
+          return product != null &&
+              (product.levelId == ProductLevel.complex ||
+               product.levelId == ProductLevel.retail);
+        })
         .toList();
 
-    String targetProductId;
-    if (availableProducts.isNotEmpty) {
-      targetProductId = availableProducts[
-          DateTime.now().microsecondsSinceEpoch % availableProducts.length];
-    } else {
-      final allUnlocked = _state.unlockedProducts.toList();
-      targetProductId = allUnlocked.isNotEmpty
-          ? allUnlocked[
-              DateTime.now().microsecondsSinceEpoch % allUnlocked.length]
-          : 'box';
+    // Fallback: any unlocked complex/retail product from any client
+    List<String> targetPool = retailProducts;
+    if (targetPool.isEmpty) {
+      targetPool = _state.unlockedProducts
+          .where((id) {
+            final product = GameData.getProduct(id);
+            return product != null &&
+                (product.levelId == ProductLevel.complex ||
+                 product.levelId == ProductLevel.retail);
+          })
+          .toList();
     }
+    // Last fallback: any unlocked product
+    if (targetPool.isEmpty) {
+      targetPool = _state.unlockedProducts.toList();
+    }
+    if (targetPool.isEmpty) return null;
 
-    final product = GameData.getProduct(targetProductId);
+    final productId = targetPool[random.nextInt(targetPool.length)];
+    final product = GameData.getProduct(productId);
     if (product == null) return null;
 
-    int qty = 10;
-    switch (product.levelId) {
-      case ProductLevel.basicParts:
-        qty = 15 + (DateTime.now().microsecondsSinceEpoch % 15);
-        break;
-      case ProductLevel.intermediate:
-        qty = 5 + (DateTime.now().microsecondsSinceEpoch % 8);
-        break;
-      case ProductLevel.complex:
-      case ProductLevel.retail:
-        qty = 2 + (DateTime.now().microsecondsSinceEpoch % 4);
-        break;
-      default:
-        qty = 10;
-    }
+    // Retail: 5-25 units
+    final qty = 5 + random.nextInt(21); // 5 to 25
 
-    final baseMarketPrice = product.sellPrice * qty;
-    final clientBonusMultiplier =
-        _state.getContractBonusMultiplier(client.id);
+    // Premium pricing: 1.6x market price
+    final clientBonusMultiplier = _state.getContractBonusMultiplier(client.id);
     final cashReward =
-        (baseMarketPrice * 1.4 * (1.0 + clientBonusMultiplier)).roundToDouble();
+        (product.sellPrice * qty * 1.6 * (1.0 + clientBonusMultiplier)).roundToDouble();
 
-    int repReward = 30;
-    if (product.levelId == ProductLevel.retail ||
-        product.levelId == ProductLevel.complex) {
-      repReward = 75;
-    } else if (product.levelId == ProductLevel.intermediate) {
-      repReward = 50;
-    }
+    final repReward = 75; // Retail contracts give premium reputation
 
     final durationMinutes = 20 + (_state.factoryTier * 5);
     final now = DateTime.now();
 
     return CorporateContract(
-      id: '${now.microsecondsSinceEpoch}_${client.id}',
+      id: '${now.microsecondsSinceEpoch}_${client.id}_retail',
       clientId: client.id,
-      title: '${client.name} Bulk Requisition',
+      title: '${client.name} Retail Order',
       description:
-          'Urgent bulk fulfillment request for ${product.name} units.',
-      targetProductId: targetProductId,
-      requiredQuantity: qty,
-      deliveredQuantity: 0,
+          'Premium retail fulfillment: ship ${product.name} units to ${client.name} distribution.',
+      contractType: ContractType.retail,
+      requiredProducts: {productId: qty},
       cashReward: cashReward,
       repReward: repReward,
+      expiresAt: now.add(Duration(minutes: durationMinutes)),
+      status: ContractStatus.available,
+      createdAt: now,
+    );
+  }
+
+  /// Generates a Manufacturing contract targeting intermediate/basic parts
+  /// Multi-product (1-4 types scaling with tier), large quantities (50-200), bulk pricing
+  CorporateContract? _generateManufacturingContract(
+    CorporateClient client,
+    math.Random random,
+  ) {
+    // Manufacturing targets basic and intermediate parts
+    final mfgProducts = client.demandedProductIds
+        .where((id) => _state.isProductUnlocked(id))
+        .where((id) {
+          final product = GameData.getProduct(id);
+          return product != null &&
+              (product.levelId == ProductLevel.basicParts ||
+               product.levelId == ProductLevel.intermediate);
+        })
+        .toList();
+
+    // Fallback: any unlocked basic/intermediate product
+    List<String> targetPool = mfgProducts;
+    if (targetPool.isEmpty) {
+      targetPool = _state.unlockedProducts
+          .where((id) {
+            final product = GameData.getProduct(id);
+            return product != null &&
+                (product.levelId == ProductLevel.basicParts ||
+                 product.levelId == ProductLevel.intermediate);
+          })
+          .toList();
+    }
+    // Last fallback: any unlocked product
+    if (targetPool.isEmpty) {
+      targetPool = _state.unlockedProducts.toList();
+    }
+    if (targetPool.isEmpty) return null;
+
+    // Product count scales with factory tier: T1-2: 1-2, T3: 2-3, T4: 2-4
+    int maxProductTypes;
+    switch (_state.factoryTier) {
+      case 1:
+      case 2:
+        maxProductTypes = 1 + random.nextInt(2); // 1-2
+        break;
+      case 3:
+        maxProductTypes = 2 + random.nextInt(2); // 2-3
+        break;
+      case 4:
+        maxProductTypes = 2 + random.nextInt(3); // 2-4
+        break;
+      default:
+        maxProductTypes = 1;
+    }
+    maxProductTypes = math.min(maxProductTypes, targetPool.length);
+
+    // Shuffle and pick products
+    final shuffled = List<String>.from(targetPool)..shuffle(random);
+    final selectedProducts = shuffled.take(maxProductTypes).toList();
+
+    // Build requiredProducts map with 50-200 units each
+    final requiredProducts = <String, int>{};
+    double totalCashReward = 0;
+    int totalRepReward = 0;
+
+    for (final productId in selectedProducts) {
+      final product = GameData.getProduct(productId);
+      if (product == null) continue;
+
+      final qty = 50 + random.nextInt(151); // 50 to 200
+      requiredProducts[productId] = qty;
+
+      // Bulk pricing: 1.2x market price
+      final clientBonusMultiplier = _state.getContractBonusMultiplier(client.id);
+      totalCashReward +=
+          product.sellPrice * qty * 1.2 * (1.0 + clientBonusMultiplier);
+      totalRepReward += 30; // 30 rep per product line
+    }
+
+    if (requiredProducts.isEmpty) return null;
+
+    final durationMinutes = 20 + (_state.factoryTier * 5);
+    final now = DateTime.now();
+
+    // Build description listing all required products
+    final productNames = requiredProducts.entries
+        .map((e) {
+          final p = GameData.getProduct(e.key);
+          return '${e.value}x ${p?.name ?? e.key}';
+        })
+        .join(', ');
+
+    return CorporateContract(
+      id: '${now.microsecondsSinceEpoch}_${client.id}_mfg',
+      clientId: client.id,
+      title: '${client.name} Bulk Manufacturing',
+      description: 'Industrial bulk order: $productNames.',
+      contractType: ContractType.manufacturing,
+      requiredProducts: requiredProducts,
+      cashReward: totalCashReward.roundToDouble(),
+      repReward: totalRepReward,
       expiresAt: now.add(Duration(minutes: durationMinutes)),
       status: ContractStatus.available,
       createdAt: now,
@@ -2700,7 +3195,8 @@ class ProductionGameService extends ChangeNotifier {
     }
     for (final contract in existing) {
       if (contract.status == ContractStatus.available ||
-          contract.status == ContractStatus.active) {
+          contract.status == ContractStatus.active ||
+          contract.status == ContractStatus.shipping) {
         counts[contract.clientId] = (counts[contract.clientId] ?? 0) + 1;
       }
     }
@@ -2716,128 +3212,127 @@ class ProductionGameService extends ChangeNotifier {
     return best;
   }
 
-  /// Accept a corporate contract
-  bool acceptContract(String contractId) {
-    final index =
-        _state.corporateContracts.indexWhere((c) => c.id == contractId);
-    if (index == -1) return false;
+  /// Ship a B2B contract: Lock & Ship fulfillment model (Phase 9A)
+  /// One-step flow: available → shipping → completed (when shipping timer finishes)
+  /// Deducts ALL required products at once, creates a shipping order consuming 1 fleet slot
+  bool shipContract(String contractId) {
+    try {
+      final index =
+          _state.corporateContracts.indexWhere((c) => c.id == contractId);
+      if (index == -1) return false;
 
-    final contract = _state.corporateContracts[index];
-    if (contract.status != ContractStatus.available || contract.isExpired) {
-      return false;
-    }
+      final contract = _state.corporateContracts[index];
+      if (contract.status != ContractStatus.available || contract.isExpired) {
+        return false;
+      }
 
-    final updated = List<CorporateContract>.from(_state.corporateContracts);
-    updated[index] = contract.copyWith(status: ContractStatus.active);
-    _state = _state.copyWith(corporateContracts: updated);
-    _persistenceService.markDirty('contracts');
-    notifyListeners();
-    return true;
-  }
+      // Check ALL required products are in inventory
+      if (!contract.canFulfill(_state.products)) {
+        if (kDebugMode) {
+          GameLogger.warning('Cannot ship contract ${contract.id}: insufficient inventory');
+        }
+        return false;
+      }
 
-  /// Deliver items to contract (or fulfill)
-  bool deliverToContract(String contractId, int quantity) {
-    if (quantity <= 0) return false;
+      // Check fleet slot availability
+      if (!_state.canShipMore(_state.activeShippingOrders.length)) {
+        if (kDebugMode) {
+          GameLogger.warning(
+            'Cannot ship contract: fleet at capacity ${_state.activeShippingOrders.length} / ${_state.maxSimultaneousShipments}',
+          );
+        }
+        return false;
+      }
 
-    final index =
-        _state.corporateContracts.indexWhere((c) => c.id == contractId);
-    if (index == -1) return false;
+      // Deduct ALL items from inventory at once
+      final newProducts = Map<String, int>.from(_state.products);
+      for (final entry in contract.requiredProducts.entries) {
+        final current = newProducts[entry.key] ?? 0;
+        final remaining = current - entry.value;
+        if (remaining <= 0) {
+          newProducts.remove(entry.key);
+        } else {
+          newProducts[entry.key] = remaining;
+        }
+      }
 
-    final contract = _state.corporateContracts[index];
-    if ((contract.status != ContractStatus.available &&
-            contract.status != ContractStatus.active) ||
-        contract.isExpired) {
-      return false;
-    }
+      // Calculate shipping time
+      final totalShippingTime = _calculateContractShippingTime(contract);
 
-    final owned = _state.getProductCount(contract.targetProductId);
-    if (owned <= 0) return false;
+      // Create shipping order
+      final orderId = DateTime.now().microsecondsSinceEpoch.toString();
+      final shippingItems = contract.requiredProducts.entries
+          .map((e) => ShippingItem(productId: e.key, quantity: e.value))
+          .toList();
 
-    final remainingNeeded =
-        contract.requiredQuantity - contract.deliveredQuantity;
-    final toDeliver = math.min(quantity, math.min(owned, remainingNeeded));
-    if (toDeliver <= 0) return false;
-
-    // Deduct products from inventory
-    final newProducts = Map<String, int>.from(_state.products);
-    newProducts[contract.targetProductId] = owned - toDeliver;
-    if (newProducts[contract.targetProductId]! <= 0) {
-      newProducts.remove(contract.targetProductId);
-    }
-
-    final newDelivered = contract.deliveredQuantity + toDeliver;
-    final isCompleted = newDelivered >= contract.requiredQuantity;
-
-    final updatedContracts =
-        List<CorporateContract>.from(_state.corporateContracts);
-    var newMoney = _state.money;
-    final newReputation = Map<String, int>.from(_state.clientReputation);
-
-    if (isCompleted) {
-      // Award cash reward
-      newMoney =
-          _addRevenueWithOverflowProtection(newMoney, contract.cashReward);
-      // Award reputation points
-      final currentRep = newReputation[contract.clientId] ?? 0;
-      newReputation[contract.clientId] = currentRep + contract.repReward;
-
-      updatedContracts[index] = contract.copyWith(
-        deliveredQuantity: newDelivered,
-        status: ContractStatus.completed,
-      );
-
-      // Record to shipping history
-      final historyEntry = ShippingHistory(
-        id: 'contract_${contract.id}',
-        items: [
-          ShippingItem(
-            productId: contract.targetProductId,
-            quantity: contract.requiredQuantity,
-          ),
-        ],
-        completedTime: DateTime.now(),
+      final shippingOrder = ShippingOrder(
+        id: orderId,
+        items: shippingItems,
+        startTime: DateTime.now(),
+        totalShippingTime: totalShippingTime,
         totalRevenue: contract.cashReward,
-      );
-      final newHistory = List<ShippingHistory>.from(_state.shippingHistory)
-        ..add(historyEntry);
-
-      _state = _state.copyWith(
-        products: newProducts,
-        money: newMoney,
-        corporateContracts: updatedContracts,
-        clientReputation: newReputation,
-        shippingHistory: newHistory,
+        contractId: contract.id,
       );
 
-      _persistenceService.markDirty('shipping');
-      _persistenceService.markDirty('reputation');
-    } else {
+      // Update contract status to shipping
+      final updatedContracts =
+          List<CorporateContract>.from(_state.corporateContracts);
       updatedContracts[index] = contract.copyWith(
-        deliveredQuantity: newDelivered,
-        status: ContractStatus.active,
+        status: ContractStatus.shipping,
+        shippingOrderId: orderId,
       );
+
+      // Add shipping order to active orders
+      final newShippingOrders =
+          List<ShippingOrder>.from(_state.activeShippingOrders)
+            ..add(shippingOrder);
+
       _state = _state.copyWith(
         products: newProducts,
         corporateContracts: updatedContracts,
+        activeShippingOrders: newShippingOrders,
       );
+
+      _persistenceService.markDirty('products');
+      _persistenceService.markDirty('contracts');
+      _persistenceService.markDirty('shipping');
+      notifyListeners();
+      _saveGameStateOptimized();
+      _startUpdateTimer();
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        GameLogger.error('Error shipping contract $contractId', e);
+      }
+      return false;
     }
-
-    _persistenceService.markDirty('products');
-    _persistenceService.markDirty('contracts');
-    notifyListeners();
-    _saveGameStateOptimized();
-
-    return true;
   }
 
-  /// Fulfill contract completely in one click if player has enough goods
-  bool fulfillContract(String contractId) {
-    final index =
-        _state.corporateContracts.indexWhere((c) => c.id == contractId);
-    if (index == -1) return false;
-    final contract = _state.corporateContracts[index];
-    final remaining = contract.requiredQuantity - contract.deliveredQuantity;
-    return deliverToContract(contractId, remaining);
+  /// Calculate shipping time for a B2B contract
+  double _calculateContractShippingTime(CorporateContract contract) {
+    double rawTime = 0;
+    for (final entry in contract.requiredProducts.entries) {
+      final product = GameData.getProduct(entry.key);
+      if (product != null) {
+        rawTime += product.calculateShippingTime(entry.value);
+      }
+    }
+
+    // Manufacturing gets 0.75x shipping time bonus (25% faster)
+    if (contract.contractType == ContractType.manufacturing) {
+      rawTime *= 0.75;
+    }
+
+    final fleet = GameData.getFleetTier(_state.fleetTier);
+    double effectiveSpeedMultiplier =
+        fleet.speedMultiplier * _state.logisticsSpeedMultiplier;
+
+    // Apply contract fast-track bonus if applicable
+    if (_state.hasCorporateContractFastTrack) {
+      effectiveSpeedMultiplier *= ResearchConstants.logisticsContractSpeedBonus;
+    }
+
+    return (rawTime / effectiveSpeedMultiplier).clamp(1.0, 86400.0);
   }
 
   /// Dev controls for contracts & rep
@@ -2852,12 +3347,28 @@ class ProductionGameService extends ChangeNotifier {
 
   void devRefreshContracts() {
     final list = <CorporateContract>[];
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < _state.maxContractSlots; i++) {
       final c = _generateNewContract(list);
       if (c != null) list.add(c);
     }
     _state = _state.copyWith(corporateContracts: list);
     _persistenceService.markDirty('contracts');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Toggle auto-ship for retail B2B contracts
+  void toggleAutoShipRetail() {
+    _state = _state.copyWith(autoShipRetail: !_state.autoShipRetail);
+    _persistenceService.markDirty('game_state');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Toggle auto-ship for manufacturing B2B contracts
+  void toggleAutoShipManufacturing() {
+    _state = _state.copyWith(autoShipManufacturing: !_state.autoShipManufacturing);
+    _persistenceService.markDirty('game_state');
     notifyListeners();
     _saveGameStateOptimized();
   }

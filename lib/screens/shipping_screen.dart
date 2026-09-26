@@ -6,8 +6,6 @@ import '../models/game_models.dart' as game;
 import '../widgets/screen_header.dart';
 import '../widgets/message_display.dart';
 import '../widgets/order_card.dart';
-import '../widgets/client_reputation_bar.dart';
-import '../widgets/corporate_contract_card.dart';
 import '../widgets/fleet_upgrade_card.dart';
 
 /// Phase 2: Upgraded Commercial Dispatch & B2B Logistics Center
@@ -36,10 +34,10 @@ class ShippingScreen extends StatelessWidget {
                   iconColor: Colors.orange[400]!,
                 ),
 
-                // Tab bar for Contracts, Fleet & Dispatch, and History
+                // Tab bar for Fleet Dispatch and History
                 Expanded(
                   child: DefaultTabController(
-                    length: 3,
+                    length: 2,
                     child: Column(
                       children: [
                         Container(
@@ -59,10 +57,6 @@ class ShippingScreen extends StatelessWidget {
                             indicatorSize: TabBarIndicatorSize.tab,
                             tabs: const [
                               Tab(
-                                icon: Icon(Icons.handshake_outlined, size: 18),
-                                text: 'B2B Contracts',
-                              ),
-                              Tab(
                                 icon: Icon(Icons.local_shipping_outlined, size: 18),
                                 text: 'Fleet Dispatch',
                               ),
@@ -77,7 +71,6 @@ class ShippingScreen extends StatelessWidget {
                         Expanded(
                           child: TabBarView(
                             children: [
-                              _buildContractsTab(context, gameService),
                               _buildFleetDispatchTab(gameService),
                               _buildHistoryTab(gameService),
                             ],
@@ -95,160 +88,7 @@ class ShippingScreen extends StatelessWidget {
     );
   }
 
-  /// Tab 1: Corporate B2B Contracts & Client Standing
-  Widget _buildContractsTab(BuildContext context, ProductionGameService gameService) {
-    final contracts = gameService.state.corporateContracts;
-
-    // Auto-sort contracts: active requisitions first, fulfilled/completed sink to bottom
-    final sortedContracts = List<game.CorporateContract>.from(contracts)
-      ..sort((a, b) {
-        final aCompleted = a.status == game.ContractStatus.completed;
-        final bCompleted = b.status == game.ContractStatus.completed;
-        if (aCompleted != bCompleted) {
-          return aCompleted ? 1 : -1;
-        }
-        // Active contracts: active before available, then by expiration
-        if (a.status != b.status) {
-          if (a.status == game.ContractStatus.active) return -1;
-          if (b.status == game.ContractStatus.active) return 1;
-        }
-        return a.expiresAt.compareTo(b.expiresAt);
-      });
-
-    final active = sortedContracts
-        .where((c) => c.status != game.ContractStatus.completed)
-        .toList();
-    final fulfilled = sortedContracts
-        .where((c) => c.status == game.ContractStatus.completed)
-        .toList();
-
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 24),
-      children: [
-        // Corporate Reputation & Standing Header
-        ClientReputationBar(gameService: gameService),
-
-        // Section Title with active contract count
-        Padding(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 4),
-          child: Row(
-            children: [
-              const Icon(Icons.assignment, color: Colors.cyanAccent, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                'Active Bulk Requisitions (${active.length})',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                'Auto-refills on completion',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        if (contracts.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 40),
-            child: MessageDisplay.empty(
-              icon: Icons.assignment_turned_in_outlined,
-              title: 'No Contracts Available',
-              subtitle: 'Corporate partners are preparing new bulk requisitions...',
-            ),
-          )
-        else ...[
-          if (active.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E2235),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white12),
-                ),
-                child: Center(
-                  child: Text(
-                    'All active requisitions fulfilled! Check completed archive below.',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-            )
-          else
-            ...active.map((c) => CorporateContractCard(
-                  key: ValueKey(c.id),
-                  contract: c,
-                  gameService: gameService,
-                )),
-
-          // Dedicated Lazy-Loaded Archive for Fulfilled Contracts
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                dividerColor: Colors.transparent,
-              ),
-              child: ExpansionTile(
-                initiallyExpanded: false,
-                maintainState: false,
-                tilePadding: const EdgeInsets.symmetric(horizontal: 18),
-                shape: const RoundedRectangleBorder(
-                  side: BorderSide.none,
-                ),
-                collapsedShape: const RoundedRectangleBorder(
-                  side: BorderSide.none,
-                ),
-                iconColor: Colors.greenAccent,
-                collapsedIconColor: Colors.grey[400],
-                leading: const Icon(
-                  Icons.check_circle_outline,
-                  color: Colors.greenAccent,
-                  size: 20,
-                ),
-                title: Text(
-                  'Completed Requisitions (${fulfilled.length})',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-                children: [
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    itemCount: fulfilled.length,
-                    itemBuilder: (context, index) {
-                      return CorporateContractCard(
-                        key: ValueKey(fulfilled[index].id),
-                        contract: fulfilled[index],
-                        gameService: gameService,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  /// Tab 2: Logistics Fleet Status & Active Shipments
+  /// Tab 1: Logistics Fleet Status & Active Shipments
   Widget _buildFleetDispatchTab(ProductionGameService gameService) {
     final activeOrders = gameService.state.activeShippingOrders;
     final currentTier = gameService.currentFleetTier;
@@ -312,15 +152,49 @@ class ShippingScreen extends StatelessWidget {
             ),
           )
         else
-          ...activeOrders.map((order) => Padding(
+          ...activeOrders.map((order) {
+            final card = OrderCard.active(order: order);
+            if (order.contractId == null) {
+              return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: OrderCard.active(order: order),
-              )),
+                child: card,
+              );
+            }
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: Colors.orangeAccent.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: const Text(
+                      '📋 B2B Contract',
+                      style: TextStyle(
+                        color: Colors.orangeAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                  card,
+                ],
+              ),
+            );
+          }),
       ],
     );
   }
 
-  /// Tab 3: Combined Shipping & Contract History
+  /// Tab 2: Combined Shipping & Contract History
   Widget _buildHistoryTab(ProductionGameService gameService) {
     final history = List<game.ShippingHistory>.from(
       gameService.state.shippingHistory.reversed,

@@ -423,6 +423,36 @@ class ItemCard extends StatelessWidget {
     // the build quantity preference and start production for the selected amount.
     if (!_isProduct) return const SizedBox.shrink();
 
+    // Check if auto-build is active for this tier
+    final autoBuildEnabled = gameService.state.autoBuildEnabled[_product.levelId.name] ?? false;
+    final machinesOwned = gameService.state.autoBuildMachinesOwned[_product.levelId.name] ?? 0;
+    if (autoBuildEnabled && machinesOwned > 0) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.blue.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.precision_manufacturing, color: Colors.blue, size: 16),
+            SizedBox(width: 8),
+            Text(
+              'Automated',
+              style: TextStyle(
+                color: Colors.blue,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final currentPreference = gameService.getBuildQuantityPreference(_product.id);
     final availableMaterials = gameService.state.hasMaterialsFor(_product.requiredMaterials);
 

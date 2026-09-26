@@ -569,6 +569,13 @@ class _ControlScreenState extends State<ControlScreen> {
           gameService: gameService,
         ),
 
+        const SizedBox(height: 14),
+
+        // 2. Auto-Sell Dispatchers Card (Phase 9B: Auto-Sell Dispatchers)
+        AutoSellMachineCard(
+          gameService: gameService,
+        ),
+
         const SizedBox(height: 16),
 
         // Section Sub-header for Auto-Build Assembly Tiers

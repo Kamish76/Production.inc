@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 // Production.INC Game Models
 
 // Material that can be bought
@@ -147,6 +149,7 @@ class ShippingOrder {
   final DateTime startTime;
   final double totalShippingTime;
   final double totalRevenue;
+  final String? contractId; // Links to CorporateContract.id for B2B shipments (null for regular sells)
 
   const ShippingOrder({
     required this.id,
@@ -154,6 +157,7 @@ class ShippingOrder {
     required this.startTime,
     required this.totalShippingTime,
     required this.totalRevenue,
+    this.contractId,
   });
 
   // Helper method to calculate shipping time using new formula
@@ -255,10 +259,19 @@ class CorporateClient {
   });
 }
 
+/// Defines the category of a B2B corporate contract.
+enum ContractType {
+  /// Premium finished goods, small quantities, single-product orders.
+  retail,
+  /// Bulk intermediate parts, large quantities, multi-product orders.
+  manufacturing,
+}
+
 // Status of a corporate contract
 enum ContractStatus {
   available, // Offered to player, countdown to accept/fulfill
-  active,    // Player accepted, active delivery timer running
+  active,    // Player accepted (kept for backward compatibility)
+  shipping,  // Items locked, fleet slot consumed, shipping timer active
   completed, // Fulfilled and rewards claimed
   expired,   // Time ran out
 }
@@ -269,28 +282,28 @@ class CorporateContract {
   final String clientId;
   final String title;
   final String description;
-  final String targetProductId;
-  final int requiredQuantity;
-  final int deliveredQuantity;
+  final ContractType contractType;
+  final Map<String, int> requiredProducts; // productId -> quantity required
   final double cashReward;
   final int repReward;
   final DateTime expiresAt;
   final ContractStatus status;
   final DateTime createdAt;
+  final String? shippingOrderId; // Links to ShippingOrder.id when in shipping status
 
   const CorporateContract({
     required this.id,
     required this.clientId,
     required this.title,
     required this.description,
-    required this.targetProductId,
-    required this.requiredQuantity,
-    this.deliveredQuantity = 0,
+    required this.contractType,
+    required this.requiredProducts,
     required this.cashReward,
     required this.repReward,
     required this.expiresAt,
     this.status = ContractStatus.available,
     required this.createdAt,
+    this.shippingOrderId,
   });
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
@@ -300,39 +313,48 @@ class CorporateContract {
     return diff.isNegative ? Duration.zero : diff;
   }
 
-  double get progress => requiredQuantity > 0
-      ? (deliveredQuantity / requiredQuantity).clamp(0.0, 1.0)
-      : 0.0;
+  /// Whether this contract is currently in the shipping pipeline.
+  bool get isShipping => status == ContractStatus.shipping;
 
-  bool get isReadyToComplete => deliveredQuantity >= requiredQuantity;
+  /// Total number of units required across all products.
+  int get totalRequiredUnits =>
+      requiredProducts.values.fold(0, (a, b) => a + b);
+
+  /// Whether all required products are available in the given inventory.
+  bool canFulfill(Map<String, int> inventory) {
+    for (final entry in requiredProducts.entries) {
+      if ((inventory[entry.key] ?? 0) < entry.value) return false;
+    }
+    return true;
+  }
 
   CorporateContract copyWith({
     String? id,
     String? clientId,
     String? title,
     String? description,
-    String? targetProductId,
-    int? requiredQuantity,
-    int? deliveredQuantity,
+    ContractType? contractType,
+    Map<String, int>? requiredProducts,
     double? cashReward,
     int? repReward,
     DateTime? expiresAt,
     ContractStatus? status,
     DateTime? createdAt,
+    String? shippingOrderId,
   }) {
     return CorporateContract(
       id: id ?? this.id,
       clientId: clientId ?? this.clientId,
       title: title ?? this.title,
       description: description ?? this.description,
-      targetProductId: targetProductId ?? this.targetProductId,
-      requiredQuantity: requiredQuantity ?? this.requiredQuantity,
-      deliveredQuantity: deliveredQuantity ?? this.deliveredQuantity,
+      contractType: contractType ?? this.contractType,
+      requiredProducts: requiredProducts ?? this.requiredProducts,
       cashReward: cashReward ?? this.cashReward,
       repReward: repReward ?? this.repReward,
       expiresAt: expiresAt ?? this.expiresAt,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      shippingOrderId: shippingOrderId ?? this.shippingOrderId,
     );
   }
 
@@ -342,14 +364,14 @@ class CorporateContract {
       'client_id': clientId,
       'title': title,
       'description': description,
-      'target_product_id': targetProductId,
-      'required_quantity': requiredQuantity,
-      'delivered_quantity': deliveredQuantity,
+      'contract_type': contractType.name,
+      'required_products': jsonEncode(requiredProducts),
       'cash_reward': cashReward,
       'rep_reward': repReward,
       'expires_at': expiresAt.millisecondsSinceEpoch,
       'status': status.name,
       'created_at': createdAt.millisecondsSinceEpoch,
+      'shipping_order_id': shippingOrderId,
     };
   }
 
@@ -361,14 +383,34 @@ class CorporateContract {
       return ContractStatus.available;
     }
 
+    // Auto-migration: if old format (target_product_id) detected, convert to new format
+    final Map<String, int> requiredProducts;
+    if (map.containsKey('required_products') && map['required_products'] != null) {
+      requiredProducts = Map<String, int>.from(
+        jsonDecode(map['required_products'] as String) as Map,
+      );
+    } else {
+      // Legacy migration: convert single targetProductId + requiredQuantity
+      requiredProducts = {
+        map['target_product_id'] as String: map['required_quantity'] as int,
+      };
+    }
+
+    // Auto-migration: default old contracts to retail type
+    final ContractType contractType;
+    if (map.containsKey('contract_type') && map['contract_type'] != null) {
+      contractType = ContractType.values.byName(map['contract_type'] as String);
+    } else {
+      contractType = ContractType.retail;
+    }
+
     return CorporateContract(
       id: map['id'] as String,
       clientId: map['client_id'] as String,
       title: map['title'] as String,
       description: map['description'] as String,
-      targetProductId: map['target_product_id'] as String,
-      requiredQuantity: map['required_quantity'] as int,
-      deliveredQuantity: (map['delivered_quantity'] as int?) ?? 0,
+      contractType: contractType,
+      requiredProducts: requiredProducts,
       cashReward: (map['cash_reward'] as num).toDouble(),
       repReward: map['rep_reward'] as int,
       expiresAt: DateTime.fromMillisecondsSinceEpoch(map['expires_at'] as int),
@@ -376,6 +418,7 @@ class CorporateContract {
       createdAt: DateTime.fromMillisecondsSinceEpoch(
         (map['created_at'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
       ),
+      shippingOrderId: map['shipping_order_id'] as String?,
     );
   }
 }

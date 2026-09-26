@@ -17,22 +17,39 @@ class CorporateContractCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final client = GameData.getCorporateClient(contract.clientId);
-    final product = GameData.getProduct(contract.targetProductId);
     final clientColor = client != null
         ? Color(client.primaryColorHex)
         : Colors.cyanAccent;
 
-    final inStock = gameService.state.getProductCount(contract.targetProductId);
-    final needed = contract.requiredQuantity - contract.deliveredQuantity;
-    final canDeliverSome = inStock > 0 && needed > 0;
-    final canFulfillAll = inStock >= needed && needed > 0;
+    final isRetail = contract.contractType == ContractType.retail;
+    final isCompleted = contract.status == ContractStatus.completed;
+    final isShipping = contract.status == ContractStatus.shipping;
+
+    final hasStock = contract.canFulfill(gameService.state.products);
+    final hasFleetCapacity = gameService.state.canShipMore(
+      gameService.state.activeShippingOrders.length,
+    );
+    final canShip = hasStock &&
+        hasFleetCapacity &&
+        !contract.isExpired &&
+        !isShipping &&
+        !isCompleted;
 
     final remaining = contract.remainingDuration;
-    final remainingText = remaining.inMinutes > 0
-        ? '${remaining.inMinutes}m remaining'
-        : '${remaining.inSeconds}s remaining';
+    final remainingText = contract.isExpired
+        ? 'Expired'
+        : (remaining.inMinutes > 0
+            ? '${remaining.inMinutes}m remaining'
+            : '${remaining.inSeconds}s remaining');
 
-    final isCompleted = contract.status == ContractStatus.completed;
+    Color borderColor;
+    if (isCompleted) {
+      borderColor = Colors.greenAccent.withValues(alpha: 0.6);
+    } else if (isShipping) {
+      borderColor = Colors.cyanAccent.withValues(alpha: 0.6);
+    } else {
+      borderColor = clientColor.withValues(alpha: 0.35);
+    }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -40,9 +57,7 @@ class CorporateContractCard extends StatelessWidget {
         color: const Color(0xFF1E2235),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isCompleted
-              ? Colors.greenAccent.withValues(alpha: 0.6)
-              : clientColor.withValues(alpha: 0.35),
+          color: borderColor,
           width: 1.5,
         ),
         boxShadow: [
@@ -70,14 +85,52 @@ class CorporateContractCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          client?.name ?? 'Corporate Partner',
-                          style: TextStyle(
-                            color: clientColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                client?.name ?? 'Corporate Partner',
+                                style: TextStyle(
+                                  color: clientColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isRetail
+                                    ? Colors.blue.withValues(alpha: 0.2)
+                                    : Colors.amber.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isRetail
+                                      ? Colors.lightBlueAccent.withValues(alpha: 0.6)
+                                      : Colors.amberAccent.withValues(alpha: 0.6),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                isRetail ? '🏷️ RETAIL' : '🏭 MANUFACTURING',
+                                style: TextStyle(
+                                  color: isRetail
+                                      ? Colors.lightBlueAccent
+                                      : Colors.amberAccent,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 2),
                         Text(
                           contract.title,
                           style: const TextStyle(
@@ -91,17 +144,26 @@ class CorporateContractCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: isCompleted
                           ? Colors.green.withValues(alpha: 0.2)
-                          : Colors.orange.withValues(alpha: 0.2),
+                          : (isShipping
+                              ? Colors.cyan.withValues(alpha: 0.2)
+                              : (contract.isExpired
+                                  ? Colors.red.withValues(alpha: 0.2)
+                                  : Colors.orange.withValues(alpha: 0.2))),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isCompleted
                             ? Colors.greenAccent.withValues(alpha: 0.5)
-                            : Colors.orangeAccent.withValues(alpha: 0.5),
+                            : (isShipping
+                                ? Colors.cyanAccent.withValues(alpha: 0.5)
+                                : (contract.isExpired
+                                    ? Colors.redAccent.withValues(alpha: 0.5)
+                                    : Colors.orangeAccent.withValues(alpha: 0.5))),
                         width: 1,
                       ),
                     ),
@@ -109,15 +171,37 @@ class CorporateContractCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          isCompleted ? Icons.check_circle : Icons.timer_outlined,
+                          isCompleted
+                              ? Icons.check_circle
+                              : (isShipping
+                                  ? Icons.local_shipping
+                                  : (contract.isExpired
+                                      ? Icons.timer_off_outlined
+                                      : Icons.timer_outlined)),
                           size: 12,
-                          color: isCompleted ? Colors.greenAccent : Colors.orangeAccent,
+                          color: isCompleted
+                              ? Colors.greenAccent
+                              : (isShipping
+                                  ? Colors.cyanAccent
+                                  : (contract.isExpired
+                                      ? Colors.redAccent
+                                      : Colors.orangeAccent)),
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          isCompleted ? 'Fulfilled' : remainingText,
+                          isCompleted
+                              ? 'Fulfilled'
+                              : (isShipping
+                                  ? 'In Transit'
+                                  : remainingText),
                           style: TextStyle(
-                            color: isCompleted ? Colors.greenAccent : Colors.orangeAccent,
+                            color: isCompleted
+                                ? Colors.greenAccent
+                                : (isShipping
+                                    ? Colors.cyanAccent
+                                    : (contract.isExpired
+                                        ? Colors.redAccent
+                                        : Colors.orangeAccent)),
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
@@ -134,77 +218,126 @@ class CorporateContractCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Requested Product Information
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF131726),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white12),
+                  // Required Products Section (B4)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 14,
+                          color: Colors.white.withValues(alpha: 0.7),
                         ),
-                        child: Text(
-                          product?.emoji ?? '📦',
-                          style: const TextStyle(fontSize: 28),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Required Products (${contract.totalRequiredUnits} units total):',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              product?.name ?? contract.targetProductId,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Target: ${contract.requiredQuantity} units (${contract.deliveredQuantity} delivered)',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'In Warehouse: $inStock units available',
-                              style: TextStyle(
-                                color: inStock >= needed
-                                    ? Colors.greenAccent
-                                    : (inStock > 0 ? Colors.amberAccent : Colors.white38),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Progress Bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: contract.progress,
-                      minHeight: 8,
-                      backgroundColor: Colors.white10,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isCompleted ? Colors.greenAccent : clientColor,
-                      ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(height: 14),
+                  // Required Products List (B4)
+                  ...contract.requiredProducts.entries.map((entry) {
+                    final productId = entry.key;
+                    final requiredQty = entry.value;
+                    final prod = GameData.getProduct(productId);
+                    final inStock = gameService.state.getProductCount(productId);
+                    final hasEnough = inStock >= requiredQty;
 
-                  // Rewards & Actions
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF131726),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: hasEnough
+                              ? Colors.greenAccent.withValues(alpha: 0.25)
+                              : Colors.white12,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              prod?.emoji ?? '📦',
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  prod?.name ?? productId,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Warehouse: $inStock / $requiredQty',
+                                  style: TextStyle(
+                                    color: hasEnough
+                                        ? Colors.greenAccent
+                                        : (inStock > 0
+                                            ? Colors.amberAccent
+                                            : Colors.white38),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: hasEnough
+                                  ? Colors.green.withValues(alpha: 0.15)
+                                  : Colors.white.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: hasEnough
+                                    ? Colors.greenAccent.withValues(alpha: 0.3)
+                                    : Colors.white12,
+                              ),
+                            ),
+                            child: Text(
+                              '$requiredQty units',
+                              style: TextStyle(
+                                color: hasEnough
+                                    ? Colors.greenAccent
+                                    : Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+
+                  const SizedBox(height: 10),
+
+                  // Rewards & Actions Row (B5)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -275,7 +408,7 @@ class CorporateContractCard extends StatelessWidget {
                         ],
                       ),
 
-                      // Action Button
+                      // Action Button (B5)
                       if (isCompleted)
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -288,6 +421,7 @@ class CorporateContractCard extends StatelessWidget {
                             border: Border.all(color: Colors.greenAccent),
                           ),
                           child: const Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 Icons.check,
@@ -306,64 +440,81 @@ class CorporateContractCard extends StatelessWidget {
                             ],
                           ),
                         )
-                      else if (contract.status == ContractStatus.available && !canDeliverSome)
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: clientColor.withValues(alpha: 0.2),
-                            foregroundColor: clientColor,
-                            side: BorderSide(color: clientColor),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                      else if (contract.status == ContractStatus.shipping)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
                           ),
-                          onPressed: () {
-                            gameService.acceptContract(contract.id);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Accepted ${contract.title}! Deliver units before timeout.'),
-                                backgroundColor: clientColor,
-                                duration: const Duration(seconds: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.cyan.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.cyanAccent),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.local_shipping,
+                                color: Colors.cyanAccent,
+                                size: 16,
                               ),
-                            );
-                          },
-                          icon: const Icon(Icons.check_circle_outline, size: 16),
-                          label: const Text('Accept'),
+                              SizedBox(width: 4),
+                              Text(
+                                'In Transit',
+                                style: TextStyle(
+                                  color: Colors.cyanAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
                         )
                       else
-                        ElevatedButton.icon(
+                        ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: canFulfillAll ? Colors.green[600] : Colors.orange[700],
+                            backgroundColor: canShip ? Colors.orange[600] : Colors.grey[800],
                             foregroundColor: Colors.white,
+                            disabledBackgroundColor: Colors.white12,
+                            disabledForegroundColor: Colors.white38,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
                           ),
-                          onPressed: canDeliverSome
+                          onPressed: canShip
                               ? () {
-                                  final success = gameService.fulfillContract(contract.id);
+                                  final success =
+                                      gameService.shipContract(contract.id);
                                   if (success && context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          canFulfillAll
-                                              ? '🎉 Contract Completed! Received \$${contract.cashReward.toStringAsFixed(0)} & +${contract.repReward} Rep!'
-                                              : 'Delivered $inStock units to contract!',
+                                          '🚚 Dispatched ${contract.title}! Shipment underway.',
                                         ),
-                                        backgroundColor: canFulfillAll ? Colors.green : Colors.orange,
+                                        backgroundColor: Colors.orange[800],
                                         duration: const Duration(seconds: 2),
                                       ),
                                     );
                                   }
                                 }
                               : null,
-                          icon: Icon(
-                            canFulfillAll ? Icons.done_all : Icons.local_shipping,
-                            size: 16,
-                          ),
-                          label: Text(
-                            canFulfillAll
-                                ? 'Fulfill All'
-                                : (canDeliverSome ? 'Deliver ($inStock)' : 'Need Goods'),
+                          child: Text(
+                            !hasStock
+                                ? 'Need Stock'
+                                : (!hasFleetCapacity
+                                    ? 'Fleet Full'
+                                    : (contract.isExpired
+                                        ? 'Expired'
+                                        : 'Ship Contract 🚚')),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                     ],

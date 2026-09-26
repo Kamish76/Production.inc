@@ -9,6 +9,8 @@ import '../widgets/message_display.dart';
 import '../widgets/tier_expansion_panel.dart';
 import '../widgets/item_card.dart';
 import '../widgets/game_dialog.dart';
+import '../widgets/client_reputation_bar.dart';
+import '../models/game_data.dart';
 
 class SellProductsScreen extends StatefulWidget {
   const SellProductsScreen({super.key});
@@ -17,14 +19,26 @@ class SellProductsScreen extends StatefulWidget {
   State<SellProductsScreen> createState() => _SellProductsScreenState();
 }
 
-class _SellProductsScreenState extends State<SellProductsScreen> {
+class _SellProductsScreenState extends State<SellProductsScreen>
+    with TickerProviderStateMixin {
   Map<String, bool> _tierExpanded = {};
   game.IndustryBranch? _selectedBranch;
+  late TabController _mainTabController;
+  late TabController _b2bSubTabController;
 
   @override
   void initState() {
     super.initState();
+    _mainTabController = TabController(length: 2, vsync: this);
+    _b2bSubTabController = TabController(length: 3, vsync: this);
     _loadTierPreferences();
+  }
+
+  @override
+  void dispose() {
+    _mainTabController.dispose();
+    _b2bSubTabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTierPreferences() async {
@@ -72,7 +86,7 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
   Widget _buildIndustryBranchFilterBar() {
     return Container(
       height: 42,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.only(left: 16, top: 4, bottom: 4),
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
@@ -179,84 +193,666 @@ class _SellProductsScreenState extends State<SellProductsScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                // Screen title with expand/collapse all button
+                // Screen title
                 ScreenHeader(
                   icon: Icons.attach_money,
-                  title: 'Sell Products',
+                  title: 'Sales Hub',
                   iconColor: Colors.purple[400]!,
-                  actions: [
-                    IconButton(
-                      onPressed: _toggleAllTiers,
-                      tooltip:
-                          _areAllTiersExpanded()
-                              ? 'Collapse All'
-                              : 'Expand All',
-                      icon: AnimatedRotation(
-                        turns: _areAllTiersExpanded() ? 0.5 : 0,
-                        duration: const Duration(milliseconds: 200),
-                        child: Icon(
-                          Icons.expand_more,
-                          color: Colors.purple[400],
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
 
-                // Phase 3: Industry Branch Filter Bar
-                _buildIndustryBranchFilterBar(),
-
-                const SizedBox(height: 6),
-
-                // Money and portfolio display
-                FinancialStatusDisplay(
-                  gameService: gameService,
-                  mode: FinancialDisplayMode.portfolio,
-                ),
-
-                const SizedBox(height: 12),
-
-                // Products inventory
-                if (gameService.state.products.isEmpty ||
-                    gameService.state.products.values.every(
-                      (count) => count == 0,
-                    ))
-                  const Expanded(
-                    child: MessageDisplay.empty(
-                      icon: Icons.inventory_2_outlined,
-                      title: 'No Products to Sell',
-                      subtitle: 'Build some products first to sell them here!',
-                    ),
-                  )
-                else
-                  // Products list - organized by tiers with enhanced grid layout
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.all(16),
-                      addAutomaticKeepAlives: false,
-                      addRepaintBoundaries: true,
-                      children: [
-                        // Build sections for each tier that has available products
-                        ...gameService.productsByTier.entries
-                            .map(
-                              (entry) => _buildEnhancedTierSection(
-                                context,
-                                gameService.getTierName(entry.key),
-                                entry.value,
-                                gameService,
-                              ),
-                            )
-                            .where((widget) => widget != null)
-                            .cast<Widget>(),
-                      ],
-                    ),
+                // Main TabBar: Storefront | B2B Contracts
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1F2438),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white12),
                   ),
+                  child: TabBar(
+                    controller: _mainTabController,
+                    indicator: BoxDecoration(
+                      color: Colors.purple[600],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.grey[400],
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    tabs: const [
+                      Tab(
+                        icon: Icon(Icons.storefront, size: 18),
+                        text: 'Storefront',
+                      ),
+                      Tab(
+                        icon: Icon(Icons.handshake_outlined, size: 18),
+                        text: 'B2B Contracts',
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Tab content
+                Expanded(
+                  child: TabBarView(
+                    controller: _mainTabController,
+                    children: [
+                      _buildStorefrontTab(gameService),
+                      _buildB2BContractsTab(context, gameService),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildStorefrontTab(ProductionGameService gameService) {
+    return Column(
+      children: [
+        // Phase 3: Industry Branch Filter Bar with expand/collapse toggle
+        Row(
+          children: [
+            Expanded(child: _buildIndustryBranchFilterBar()),
+            IconButton(
+              onPressed: _toggleAllTiers,
+              tooltip:
+                  _areAllTiersExpanded() ? 'Collapse All' : 'Expand All',
+              icon: AnimatedRotation(
+                turns: _areAllTiersExpanded() ? 0.5 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  Icons.expand_more,
+                  color: Colors.purple[400],
+                  size: 20,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+
+        const SizedBox(height: 6),
+
+        // Money and portfolio display
+        FinancialStatusDisplay(
+          gameService: gameService,
+          mode: FinancialDisplayMode.portfolio,
+        ),
+
+        const SizedBox(height: 12),
+
+        // Products inventory
+        if (gameService.state.products.isEmpty ||
+            gameService.state.products.values.every(
+              (count) => count == 0,
+            ))
+          const Expanded(
+            child: MessageDisplay.empty(
+              icon: Icons.inventory_2_outlined,
+              title: 'No Products to Sell',
+              subtitle: 'Build some products first to sell them here!',
+            ),
+          )
+        else
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              addAutomaticKeepAlives: false,
+              addRepaintBoundaries: true,
+              children: [
+                ...gameService.productsByTier.entries
+                    .map(
+                      (entry) => _buildEnhancedTierSection(
+                        context,
+                        gameService.getTierName(entry.key),
+                        entry.value,
+                        gameService,
+                      ),
+                    )
+                    .where((widget) => widget != null)
+                    .cast<Widget>(),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildB2BContractsTab(
+    BuildContext context,
+    ProductionGameService gameService,
+  ) {
+    return Column(
+      children: [
+        // Auto-Ship Toggle Header
+        _buildAutoShipToggles(gameService),
+
+        const SizedBox(height: 8),
+
+        // Client Reputation Bar
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: ClientReputationBar(gameService: gameService),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Subtab filter: All | Retail | Manufacturing
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          height: 36,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1E30),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: TabBar(
+            controller: _b2bSubTabController,
+            indicator: BoxDecoration(
+              color: Colors.purple[700],
+              borderRadius: BorderRadius.circular(6),
+            ),
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.grey[500],
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: const TextStyle(fontSize: 11),
+            tabs: const [
+              Tab(text: '📋 All'),
+              Tab(text: '🏷️ Retail'),
+              Tab(text: '🏭 Manufacturing'),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Contract list filtered by subtab
+        Expanded(
+          child: TabBarView(
+            controller: _b2bSubTabController,
+            children: [
+              _buildContractList(context, gameService, null),
+              _buildContractList(context, gameService, game.ContractType.retail),
+              _buildContractList(
+                context,
+                gameService,
+                game.ContractType.manufacturing,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAutoShipToggles(ProductionGameService gameService) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1F2438),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.autorenew, color: Colors.orange, size: 16),
+          const SizedBox(width: 8),
+          const Text(
+            'Auto-Ship:',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Retail toggle
+          Expanded(
+            child: InkWell(
+              onTap: () => gameService.toggleAutoShipRetail(),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: gameService.state.autoShipRetail
+                      ? Colors.blue.withValues(alpha: 0.2)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: gameService.state.autoShipRetail
+                        ? Colors.blue[400]!
+                        : Colors.white24,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '🏷️ Retail',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: gameService.state.autoShipRetail
+                            ? Colors.blue[300]
+                            : Colors.white54,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      gameService.state.autoShipRetail
+                          ? Icons.check_circle
+                          : Icons.circle_outlined,
+                      size: 14,
+                      color: gameService.state.autoShipRetail
+                          ? Colors.blue[400]
+                          : Colors.white38,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Manufacturing toggle
+          Expanded(
+            child: InkWell(
+              onTap: () => gameService.toggleAutoShipManufacturing(),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: gameService.state.autoShipManufacturing
+                      ? Colors.amber.withValues(alpha: 0.2)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: gameService.state.autoShipManufacturing
+                        ? Colors.amber[600]!
+                        : Colors.white24,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '🏭 Mfg',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: gameService.state.autoShipManufacturing
+                            ? Colors.amber[300]
+                            : Colors.white54,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      gameService.state.autoShipManufacturing
+                          ? Icons.check_circle
+                          : Icons.circle_outlined,
+                      size: 14,
+                      color: gameService.state.autoShipManufacturing
+                          ? Colors.amber[600]
+                          : Colors.white38,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContractList(
+    BuildContext context,
+    ProductionGameService gameService,
+    game.ContractType? filterType,
+  ) {
+    final contracts = gameService.state.corporateContracts;
+
+    // Filter by type if specified
+    final filtered = filterType == null
+        ? contracts
+        : contracts.where((c) => c.contractType == filterType).toList();
+
+    // Sort: available first (by expiry), then shipping, then completed
+    final sorted = List<game.CorporateContract>.from(filtered)
+      ..sort((a, b) {
+        final statusOrder = {
+          game.ContractStatus.available: 0,
+          game.ContractStatus.active: 1,
+          game.ContractStatus.shipping: 2,
+          game.ContractStatus.completed: 3,
+          game.ContractStatus.expired: 4,
+        };
+        final aOrder = statusOrder[a.status] ?? 5;
+        final bOrder = statusOrder[b.status] ?? 5;
+        if (aOrder != bOrder) return aOrder.compareTo(bOrder);
+        return a.expiresAt.compareTo(b.expiresAt);
+      });
+
+    final active = sorted
+        .where((c) => c.status != game.ContractStatus.completed)
+        .toList();
+    final completed = sorted
+        .where((c) => c.status == game.ContractStatus.completed)
+        .toList();
+
+    if (sorted.isEmpty) {
+      return const MessageDisplay.empty(
+        icon: Icons.handshake_outlined,
+        title: 'No Contracts Available',
+        subtitle: 'New contracts will appear shortly.',
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      addAutomaticKeepAlives: false,
+      addRepaintBoundaries: true,
+      children: [
+        // Slot info
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              Icon(Icons.assignment, color: Colors.purple[300], size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'Active Contracts (${active.length} / ${gameService.state.maxContractSlots})',
+                style: TextStyle(
+                  color: Colors.purple[300],
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '🚚 Fleet: ${gameService.state.activeShippingOrders.length} / ${gameService.state.maxSimultaneousShipments}',
+                style: const TextStyle(color: Colors.white54, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+
+        // Active contracts
+        ...active.map(
+          (contract) => _buildContractCard(context, contract, gameService),
+        ),
+
+        // Completed contracts accordion
+        if (completed.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          ExpansionTile(
+            initiallyExpanded: false,
+            maintainState: false,
+            title: Text(
+              'Completed Requisitions (${completed.length})',
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            iconColor: Colors.white54,
+            collapsedIconColor: Colors.white38,
+            children: completed
+                .map(
+                  (contract) =>
+                      _buildContractCard(context, contract, gameService),
+                )
+                .toList(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildContractCard(
+    BuildContext context,
+    game.CorporateContract contract,
+    ProductionGameService gameService,
+  ) {
+    final client = GameData.getCorporateClient(contract.clientId);
+    final isRetail = contract.contractType == game.ContractType.retail;
+    final badgeColor = isRetail ? Colors.blue : Colors.amber;
+    final badgeLabel = isRetail ? '🏷️ RETAIL' : '🏭 MFG';
+    final canFulfill = contract.canFulfill(gameService.state.products);
+    final hasFleetSlot = gameService.state.canShipMore(
+      gameService.state.activeShippingOrders.length,
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF1E2742),
+            Color(isRetail ? 0xFF1A2540 : 0xFF2A2520),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: contract.isShipping
+              ? Colors.orange.withValues(alpha: 0.5)
+              : badgeColor.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: Client + Badge + Timer
+            Row(
+              children: [
+                Text(client?.emoji ?? '📋', style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        contract.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        client?.name ?? '',
+                        style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                // Type badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
+                  ),
+                  child: Text(
+                    badgeLabel,
+                    style: TextStyle(
+                      color: badgeColor[300],
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            // Required products list
+            ...contract.requiredProducts.entries.map((entry) {
+              final product = GameData.getProduct(entry.key);
+              final owned = gameService.state.getProductCount(entry.key);
+              final needed = entry.value;
+              final hasEnough = owned >= needed;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    Text(product?.emoji ?? '📦', style: const TextStyle(fontSize: 14)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        '${product?.name ?? entry.key}: $needed needed',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: hasEnough
+                            ? Colors.green.withValues(alpha: 0.2)
+                            : Colors.red.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        hasEnough ? '$owned ✅' : '$owned / $needed ❌',
+                        style: TextStyle(
+                          color: hasEnough ? Colors.green[300] : Colors.red[300],
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+
+            const SizedBox(height: 10),
+
+            // Footer: Rewards + Timer/Status + Action Button
+            Row(
+              children: [
+                // Rewards
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '\$${contract.cashReward.toStringAsFixed(0)}',
+                    style: TextStyle(
+                      color: Colors.green[300],
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '+${contract.repReward} Rep',
+                    style: TextStyle(
+                      color: Colors.purple[300],
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                // Status / Action
+                if (contract.status == game.ContractStatus.completed)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.green, size: 14),
+                        SizedBox(width: 4),
+                        Text('Honored', style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  )
+                else if (contract.isShipping)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.local_shipping, color: Colors.orange, size: 14),
+                        SizedBox(width: 4),
+                        Text('In Transit', style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  )
+                else ...[
+                  // Timer
+                  Text(
+                    '${contract.remainingDuration.inMinutes}m',
+                    style: TextStyle(
+                      color: contract.remainingDuration.inMinutes < 5
+                          ? Colors.red[300]
+                          : Colors.white54,
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Ship button
+                  ElevatedButton.icon(
+                    onPressed: canFulfill && hasFleetSlot
+                        ? () => gameService.shipContract(contract.id)
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: canFulfill && hasFleetSlot
+                          ? Colors.green[700]
+                          : Colors.grey[800],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      minimumSize: Size.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.local_shipping, size: 14),
+                    label: Text(
+                      canFulfill
+                          ? (hasFleetSlot ? 'Ship' : 'Fleet Full')
+                          : 'Need Stock',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 

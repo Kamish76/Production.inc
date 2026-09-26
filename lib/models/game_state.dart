@@ -88,6 +88,15 @@ class GameState {
   final Map<String, int> autoBuildProductCapacity; // tier -> capacity setting (e.g., 'basicParts' -> 10)
   final Map<String, int> autoBuildThroughputLevel; // tier -> throughput level (Phase 8: High-Throughput Automation)
 
+  // Phase 9A: Auto-Ship toggles for B2B contracts
+  final bool autoShipRetail; // Auto-ship retail B2B contracts when fulfillable
+  final bool autoShipManufacturing; // Auto-ship manufacturing B2B contracts when fulfillable
+
+  // Phase 9B: Auto-Sell Dispatchers state
+  final int autoSellMachinesOwned; // Number of auto-sell dispatchers owned
+  final bool autoSellEnabled; // Master on/off toggle for auto-sell dispatchers
+  final int autoSellThroughputLevel; // Throughput level multiplier for auto-sell
+
   // Factory Tier progression state (Phase 1)
   final int factoryTier; // Current factory license tier (1: Garage, 2: Light Assembly, 3: Precision, 4: Megafactory)
 
@@ -133,6 +142,11 @@ class GameState {
     required this.lastAutoBuildTick, // Required - default to empty map
     required this.autoBuildProductCapacity, // Required - default to empty map
     this.autoBuildThroughputLevel = const {},
+    this.autoShipRetail = false,
+    this.autoShipManufacturing = false,
+    this.autoSellMachinesOwned = 0,
+    this.autoSellEnabled = false,
+    this.autoSellThroughputLevel = 1,
     this.factoryTier = 1, // Default to Tier 1: Garage Workshop
     this.fleetTier = 1, // Default to Tier 1: Courier Bikes
     this.clientReputation = const {},
@@ -172,6 +186,11 @@ class GameState {
     Map<String, DateTime?>? lastAutoBuildTick,
     Map<String, int>? autoBuildProductCapacity,
     Map<String, int>? autoBuildThroughputLevel,
+    bool? autoShipRetail,
+    bool? autoShipManufacturing,
+    int? autoSellMachinesOwned,
+    bool? autoSellEnabled,
+    int? autoSellThroughputLevel,
     int? factoryTier,
     int? fleetTier,
     Map<String, int>? clientReputation,
@@ -213,6 +232,13 @@ class GameState {
       lastAutoBuildTick: lastAutoBuildTick ?? this.lastAutoBuildTick,
       autoBuildProductCapacity: autoBuildProductCapacity ?? this.autoBuildProductCapacity,
       autoBuildThroughputLevel: autoBuildThroughputLevel ?? this.autoBuildThroughputLevel,
+      autoShipRetail: autoShipRetail ?? this.autoShipRetail,
+      autoShipManufacturing: autoShipManufacturing ?? this.autoShipManufacturing,
+      autoSellMachinesOwned:
+          autoSellMachinesOwned ?? this.autoSellMachinesOwned,
+      autoSellEnabled: autoSellEnabled ?? this.autoSellEnabled,
+      autoSellThroughputLevel:
+          autoSellThroughputLevel ?? this.autoSellThroughputLevel,
       factoryTier: factoryTier ?? this.factoryTier,
       fleetTier: fleetTier ?? this.fleetTier,
       clientReputation: clientReputation ?? this.clientReputation,
@@ -352,6 +378,17 @@ class GameState {
     return money >= nextTier.upgradeCost;
   }
 
+  /// Maximum number of concurrent B2B contract slots, scaling by factory tier.
+  int get maxContractSlots {
+    switch (factoryTier) {
+      case 1: return 3;
+      case 2: return 3;
+      case 3: return 4;
+      case 4: return 5;
+      default: return 3;
+    }
+  }
+
   // Phase 4: R&D Lab & Technology Tree Helpers
   int getTechLevel(String techId) => techLevels[techId] ?? 0;
 
@@ -465,6 +502,7 @@ class GameState {
     for (final count in autoBuildMachinesOwned.values) {
       total += count * AutoBuildConstants.machineCost;
     }
+    total += autoSellMachinesOwned * 1000.0;
     return total;
   }
 
@@ -532,6 +570,11 @@ class GameState {
           .map((k, v) => MapEntry(k, v?.toIso8601String())),
       'autoBuildProductCapacity': autoBuildProductCapacity,
       'autoBuildThroughputLevel': autoBuildThroughputLevel,
+      'autoShipRetail': autoShipRetail,
+      'autoShipManufacturing': autoShipManufacturing,
+      'autoSellMachinesOwned': autoSellMachinesOwned,
+      'autoSellEnabled': autoSellEnabled,
+      'autoSellThroughputLevel': autoSellThroughputLevel,
       'factoryTier': factoryTier,
       'fleetTier': fleetTier,
       'clientReputation': clientReputation,
@@ -631,6 +674,21 @@ class GameState {
                 (k, v) => MapEntry(k, (v as num).toInt()),
               ) ??
               const {},
+      autoShipRetail: json['autoShipRetail'] as bool? ??
+          json['auto_ship_retail'] as bool? ??
+          false,
+      autoShipManufacturing: json['autoShipManufacturing'] as bool? ??
+          json['auto_ship_manufacturing'] as bool? ??
+          false,
+      autoSellMachinesOwned: json['autoSellMachinesOwned'] as int? ??
+          json['auto_sell_machines_owned'] as int? ??
+          0,
+      autoSellEnabled: json['autoSellEnabled'] as bool? ??
+          json['auto_sell_enabled'] as bool? ??
+          false,
+      autoSellThroughputLevel: json['autoSellThroughputLevel'] as int? ??
+          json['auto_sell_throughput_level'] as int? ??
+          1,
       factoryTier: json['factoryTier'] as int? ??
           json['factory_tier'] as int? ??
           1,

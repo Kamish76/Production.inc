@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -12,7 +13,7 @@ class GamePersistenceService {
     static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      10; // Updated for Phase 5: Prestige / Initial Public Offering (IPO)
+      12; // Updated for Phase 9B: Auto-Sell Dispatchers
 
   Database? _database;
 
@@ -168,6 +169,14 @@ class GamePersistenceService {
       case 10:
         // Phase 5 migrations - Prestige & Initial Public Offering (IPO)
         await _migrateToVersion10(db);
+        break;
+      case 11:
+        // Phase 9A migrations - B2B Contract Overhaul
+        await _migrateToVersion11(db);
+        break;
+      case 12:
+        // Phase 9B migrations - Auto-Sell Dispatchers
+        await _migrateToVersion12(db);
         break;
       default:
         if (kDebugMode) {
@@ -631,6 +640,155 @@ class GamePersistenceService {
     ''');
   }
 
+  /// Migration to version 11 (Phase 9A: B2B Contract Overhaul)
+  Future<void> _migrateToVersion11(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 11 (B2B Contract Overhaul)');
+    }
+
+    // Add contract_type column to corporate_contracts
+    try {
+      await db.execute(
+        'ALTER TABLE corporate_contracts ADD COLUMN contract_type TEXT NOT NULL DEFAULT "retail"',
+      );
+      if (kDebugMode) print('Added column: contract_type');
+    } catch (e) {
+      if (kDebugMode) print('Migration warning (contract_type): $e');
+    }
+
+    // Add required_products column (JSON-encoded Map<String, int>)
+    try {
+      await db.execute(
+        'ALTER TABLE corporate_contracts ADD COLUMN required_products TEXT',
+      );
+      if (kDebugMode) print('Added column: required_products');
+    } catch (e) {
+      if (kDebugMode) print('Migration warning (required_products): $e');
+    }
+
+    // Add shipping_order_id column
+    try {
+      await db.execute(
+        'ALTER TABLE corporate_contracts ADD COLUMN shipping_order_id TEXT',
+      );
+      if (kDebugMode) print('Added column: shipping_order_id');
+    } catch (e) {
+      if (kDebugMode) print('Migration warning (shipping_order_id): $e');
+    }
+
+    // Migrate existing contract data: convert target_product_id/required_quantity to required_products JSON
+    try {
+      final contracts = await db.query('corporate_contracts');
+      for (final row in contracts) {
+        if (row['required_products'] == null) {
+          final productId = row['target_product_id'] as String;
+          final quantity = row['required_quantity'] as int;
+          final productsJson = jsonEncode({productId: quantity});
+          await db.update(
+            'corporate_contracts',
+            {'required_products': productsJson},
+            where: 'id = ?',
+            whereArgs: [row['id']],
+          );
+        }
+      }
+      if (kDebugMode) print('Migrated existing contracts to required_products format');
+    } catch (e) {
+      if (kDebugMode) print('Migration warning (contract data migration): $e');
+    }
+
+    // Add auto-ship toggle columns to game_state
+    final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+    final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+
+    if (!existingColumns.contains('auto_ship_retail')) {
+      try {
+        await db.execute(
+          'ALTER TABLE game_state ADD COLUMN auto_ship_retail INTEGER NOT NULL DEFAULT 0',
+        );
+        if (kDebugMode) print('Added column: auto_ship_retail');
+      } catch (e) {
+        if (kDebugMode) print('Migration warning (auto_ship_retail): $e');
+      }
+    }
+
+    if (!existingColumns.contains('auto_ship_manufacturing')) {
+      try {
+        await db.execute(
+          'ALTER TABLE game_state ADD COLUMN auto_ship_manufacturing INTEGER NOT NULL DEFAULT 0',
+        );
+        if (kDebugMode) print('Added column: auto_ship_manufacturing');
+      } catch (e) {
+        if (kDebugMode) print('Migration warning (auto_ship_manufacturing): $e');
+      }
+    }
+
+    // Add contract_id column to active_shipping_orders
+    try {
+      await db.execute(
+        'ALTER TABLE active_shipping_orders ADD COLUMN contract_id TEXT',
+      );
+      if (kDebugMode) print('Added column: contract_id to active_shipping_orders');
+    } catch (e) {
+      if (kDebugMode) print('Migration warning (shipping contract_id): $e');
+    }
+
+    if (kDebugMode) {
+      print('Migration to version 11 completed');
+    }
+  }
+
+  /// Migration to version 12 (Phase 9B: Auto-Sell Dispatchers)
+  Future<void> _migrateToVersion12(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 12 (Auto-Sell Dispatchers)');
+    }
+
+    final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+    final existingColumns =
+        tableInfo.map((row) => row['name'] as String).toSet();
+
+    if (!existingColumns.contains('auto_sell_machines_owned')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_sell_machines_owned INTEGER NOT NULL DEFAULT 0
+        ''');
+        if (kDebugMode) print('Added column: auto_sell_machines_owned');
+      } catch (e) {
+        if (kDebugMode) print('Migration warning (auto_sell_machines_owned): $e');
+      }
+    }
+
+    if (!existingColumns.contains('auto_sell_enabled')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_sell_enabled INTEGER NOT NULL DEFAULT 0
+        ''');
+        if (kDebugMode) print('Added column: auto_sell_enabled');
+      } catch (e) {
+        if (kDebugMode) print('Migration warning (auto_sell_enabled): $e');
+      }
+    }
+
+    if (!existingColumns.contains('auto_sell_throughput_level')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_sell_throughput_level INTEGER NOT NULL DEFAULT 1
+        ''');
+        if (kDebugMode) print('Added column: auto_sell_throughput_level');
+      } catch (e) {
+        if (kDebugMode) print('Migration warning (auto_sell_throughput_level): $e');
+      }
+    }
+
+    if (kDebugMode) {
+      print('Migration to version 12 completed');
+    }
+  }
+
   /// Create backup of existing database before major operations
   Future<void> _createDatabaseBackup() async {
     if (_database == null) return;
@@ -775,6 +933,9 @@ class GamePersistenceService {
         auto_buy_enabled INTEGER DEFAULT 0,
         auto_buy_last_tick INTEGER,
         auto_buy_resource_capacity INTEGER DEFAULT 10,
+        auto_sell_machines_owned INTEGER NOT NULL DEFAULT 0,
+        auto_sell_enabled INTEGER NOT NULL DEFAULT 0,
+        auto_sell_throughput_level INTEGER NOT NULL DEFAULT 1,
         factory_tier INTEGER NOT NULL DEFAULT 1,
         fleet_tier INTEGER NOT NULL DEFAULT 1,
         research_points INTEGER NOT NULL DEFAULT 0,
@@ -822,7 +983,8 @@ class GamePersistenceService {
         id TEXT PRIMARY KEY,
         start_time INTEGER NOT NULL,
         total_shipping_time REAL NOT NULL,
-        total_revenue REAL NOT NULL
+        total_revenue REAL NOT NULL,
+        contract_id TEXT
       )
     ''');
 
@@ -926,14 +1088,17 @@ class GamePersistenceService {
         client_id TEXT NOT NULL,
         title TEXT NOT NULL,
         description TEXT NOT NULL,
-        target_product_id TEXT NOT NULL,
-        required_quantity INTEGER NOT NULL,
-        delivered_quantity INTEGER NOT NULL DEFAULT 0,
+        contract_type TEXT NOT NULL DEFAULT 'retail',
+        target_product_id TEXT,
+        required_quantity INTEGER,
+        delivered_quantity INTEGER DEFAULT 0,
+        required_products TEXT,
         cash_reward REAL NOT NULL,
         rep_reward INTEGER NOT NULL,
         expires_at INTEGER NOT NULL,
         status TEXT NOT NULL,
-        created_at INTEGER NOT NULL
+        created_at INTEGER NOT NULL,
+        shipping_order_id TEXT
       )
     ''');
 
@@ -968,6 +1133,9 @@ class GamePersistenceService {
       'last_saved': DateTime.now().millisecondsSinceEpoch,
       'factory_tier': 1,
       'fleet_tier': 1,
+      'auto_sell_machines_owned': 0,
+      'auto_sell_enabled': 0,
+      'auto_sell_throughput_level': 1,
       'research_points': 0,
       'overclock_active': 0,
       'maintenance_wear': 1.0,
@@ -1010,6 +1178,9 @@ class GamePersistenceService {
         'auto_buy_enabled': state.autoBuyEnabled ? 1 : 0,
         'auto_buy_last_tick': state.lastAutoBuyTick?.millisecondsSinceEpoch,
         'auto_buy_resource_capacity': state.autoBuyResourceCapacity,
+        'auto_sell_machines_owned': state.autoSellMachinesOwned,
+        'auto_sell_enabled': state.autoSellEnabled ? 1 : 0,
+        'auto_sell_throughput_level': state.autoSellThroughputLevel,
         'factory_tier': state.factoryTier,
         'fleet_tier': state.fleetTier,
         'research_points': state.researchPoints,
@@ -1180,6 +1351,7 @@ class GamePersistenceService {
         'start_time': order.startTime.millisecondsSinceEpoch,
         'total_shipping_time': order.totalShippingTime,
         'total_revenue': order.totalRevenue,
+        'contract_id': order.contractId,
       });
 
       // Save order items
@@ -1258,6 +1430,9 @@ class GamePersistenceService {
         ? DateTime.fromMillisecondsSinceEpoch(autoBuyLastTickMs) 
         : null;
     final autoBuyResourceCapacity = (row['auto_buy_resource_capacity'] as int?) ?? 10;
+    final autoSellMachinesOwned = (row['auto_sell_machines_owned'] as int?) ?? 0;
+    final autoSellEnabled = ((row['auto_sell_enabled'] as int?) ?? 0) == 1;
+    final autoSellThroughputLevel = (row['auto_sell_throughput_level'] as int?) ?? 1;
     final factoryTier = (row['factory_tier'] as int?) ?? 1;
     final fleetTier = (row['fleet_tier'] as int?) ?? 1;
     final researchPoints = (row['research_points'] as int?) ?? 0;
@@ -1302,6 +1477,9 @@ class GamePersistenceService {
       autoBuildEnabled: autoBuildData.enabled,
       lastAutoBuildTick: autoBuildData.lastTick,
       autoBuildProductCapacity: autoBuildData.capacity,
+      autoSellMachinesOwned: autoSellMachinesOwned,
+      autoSellEnabled: autoSellEnabled,
+      autoSellThroughputLevel: autoSellThroughputLevel,
       factoryTier: factoryTier,
       fleetTier: fleetTier,
       corporateContracts: corporateContracts,
@@ -1487,6 +1665,7 @@ class GamePersistenceService {
           ),
           totalShippingTime: orderRow['total_shipping_time'] as double,
           totalRevenue: orderRow['total_revenue'] as double,
+          contractId: orderRow['contract_id'] as String?,
         ),
       );
     }
