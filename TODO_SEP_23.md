@@ -492,3 +492,137 @@ Verify mutual compatibility and concurrency between all operational pipelines:
 - [ ] Modernize outdated pre-Phase-8 test expectations so the entire repository test suite (`flutter test`) passes 100% green.
 - [ ] Confirm clean `flutter analyze` with 0 warnings and verify hot reload stability on running application.
 
+---
+
+## 🚀 Phase 13: General Final Version 2.0 (v2.0) Publication & Google Play Store Release (📋 Planned)
+
+### 🎯 Objective & Overview
+Phase 13 prepares and finalizes **Production.INC Version 2.0.0 (`2.0.0+20`)** for commercial distribution on the **Google Play Store**. It consolidates all mandatory technical requirements, security configurations, store listing assets, compliance disclosures, performance baselines, and release track rollout procedures into an actionable publication pipeline.
+
+```mermaid
+flowchart TD
+    subgraph Build [1. Build & Packaging Pipeline]
+        V[Version Bump: 2.0.0+20] --> Sign[Release Keystore Signing]
+        Sign --> Obf[R8 Shrinking & Symbol Obfuscation]
+        Obf --> AAB[Release Android App Bundle .aab]
+    end
+
+    subgraph Compliance [2. Google Play Policy & Security]
+        AAB --> Perm[Permissions Audit: Zero Dangerous Perms]
+        Perm --> DS[Data Safety: 100% Offline / No Tracking]
+        DS --> Privacy[Hosted Privacy Policy URL]
+        Privacy --> IARC[IARC Content Rating: PEGI 3 / Everyone]
+    end
+
+    subgraph Store [3. Store Listing Deliverables]
+        Icon[512x512 Adaptive Icon] --> PlayConsole[Google Play Console Listing]
+        Feature[1024x500 Feature Graphic] --> PlayConsole
+        Screenshots[8x Phone & Tablet Screenshots] --> PlayConsole
+        Copy[Title, Short & Long Descriptions] --> PlayConsole
+    end
+
+    subgraph Rollout [4. Release Track Deployment]
+        PlayConsole --> Internal[Internal Test Track]
+        Internal --> Closed[Closed Alpha / Beta Testers]
+        Closed --> Prod[Staged Production Rollout: 10% to 100%]
+    end
+```
+
+---
+
+### 📋 Phase 13 Core Verification Pillars & Specifications
+
+#### 1. 📦 Android Build Configuration & App Bundle Packaging
+- **Version Bump**:
+  - `pubspec.yaml`: Update to `version: 2.0.0+20`.
+  - [`android/app/build.gradle.kts`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/android/app/build.gradle.kts): Update `versionCode = 20`, `versionName = "2.0.0"`.
+- **Target SDK Compliance**:
+  - `compileSdk = 36`, `targetSdk = 36`, `minSdk = 24` (exceeds Google Play's minimum requirement of API 34+).
+  - Java 17 toolchain compatibility and core library desugaring enabled.
+- **Production Keystore & Signing Configuration**:
+  - Configure `android/key.properties` for release signing (`keyAlias`, `keyPassword`, `storeFile`, `storePassword`).
+  - Fallback to CI environment variables (`KEY_ALIAS`, `KEY_PASSWORD`, `STORE_FILE`).
+- **Code Shrinking, Obfuscation & Size Optimization**:
+  - Enable R8 code minification and resource shrinking in `build.gradle.kts`:
+    ```kotlin
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
+    ```
+  - App bundle build command:
+    ```bash
+    flutter build appbundle --release --obfuscate --split-debug-info=build/app/outputs/symbols
+    ```
+  - Size target: Total download size $\le \text{25 MB}$.
+
+#### 2. 🛡️ Google Play Policy, Privacy & Regulatory Compliance
+- **Data Safety Form Declarations**:
+  - **Data Collection**: None. *Production.INC* is a 100% offline single-player game.
+  - **Data Sharing**: None. No user data leaves the device.
+  - **Data Security**: All progress is stored locally in device sandbox via SQLite (`app_database.db`) and `SharedPreferences`.
+  - **Account Deletion**: Not applicable (no account registration or cloud login required).
+- **Privacy Policy URL**:
+  - Host public privacy policy page (GitHub Pages or hosted URL).
+  - Link privacy policy directly inside [`SettingsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/settings_screen.dart) for full in-app transparency.
+- **Permissions Audit**:
+  - Manifest contains only benign permissions:
+    - `android.permission.VIBRATE` (tactile haptic feedback on UI interactions).
+    - `android.permission.WAKE_LOCK` (optional screen wake lock during active factory runs).
+    - Zero dangerous runtime permissions requested (no location, camera, microphone, or storage access).
+- **IARC Content Rating Questionnaire**:
+  - Violence: None.
+  - Gambling / Loot boxes: None (pure simulation economy, no real-money wagering).
+  - Rating Target: **Everyone (ESRB) / PEGI 3 / USK 0**.
+
+#### 3. 🎨 Store Listing Assets & Visual Deliverables
+- **App Icon Deliverables**:
+  - High-resolution store icon: 512x512 PNG (32-bit color, no transparency).
+  - Adaptive mipmap icons (`mipmap-hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) with Android 13+ monochrome icon layer.
+- **Feature Graphic Banner**:
+  - 1024x500 PNG (no transparency) featuring industrial factory machinery and carrier transport fleet.
+- **Screenshot Deliverables** (Min 4, Target 8 portrait screenshots at 1080x2400):
+  1. **Factory Production Floor**: Automated assembly lines, real-time machining, and tier badges.
+  2. **Sales Hub & Staged Manifest Cart**: Consolidated multi-product bulk selling with live progress bar.
+  3. **Logistics Fleet Operations**: Courier Bikes $\to$ Delivery Vans $\to$ Freight Trucks $\to$ Cargo Planes.
+  4. **Control Center Automation**: Auto-Buy, Auto-Build, and Auto-Sell Dispatchers with live telemetry.
+  5. **B2B Corporate Contracts**: Retail vs Manufacturing requisitions and client reputation bonuses.
+  6. **R&D Laboratory**: Technological breakthroughs, speed multipliers, and efficiency perks.
+  7. **Prestige IPO & Wall Street**: Valuation scaling, investor shares, and factory tier resets.
+  8. **Offline Gameplay**: 100% playable anywhere without an internet connection.
+- **Store Listing Copywriting**:
+  - **App Title**: `Production.INC: Factory Tycoon` (30 characters max).
+  - **Short Description**: `Build, automate, and ship! Run an industrial tycoon manufacturing empire.` (80 characters max).
+  - **Full Description**: Catchy 4,000-character description highlighting industrial mechanics, automation loops, zero ads during core gameplay, and offline capability.
+
+#### 4. ⚡ Performance, Offline & Crash Safety Audit
+- **Offline Playability Guarantee**:
+  - Verify that the game boots, loads saved databases, executes production loops, ships orders, and unlocks achievements in complete Airplane Mode with zero network access.
+- **Battery Optimization & App Lifecycle**:
+  - Verify update timer cleanly pauses when app is paused/backgrounded (`AppLifecycleListener`), eliminating background battery drain.
+- **Crashlytics / Error Boundary**:
+  - Global error catching via `FlutterError.onError` and `PlatformDispatcher.instance.onError` to prevent silent app crashes.
+
+#### 5. 🚀 Staged Rollout & Release Pipeline
+- **Track Progression**:
+  1. **Internal Testing**: Verification on physical Android devices across multiple screen sizes.
+  2. **Closed Testing (Alpha)**: Community/tester feedback verification.
+  3. **Production Track**: Staged percentage rollout:
+     $$\text{Day 1: 10\%} \to \text{Day 3: 25\%} \to \text{Day 5: 50\%} \to \text{Day 7: 100\%}$$
+
+---
+
+### 📋 Phase 13 Implementation Checklist
+- [ ] Bump version to `2.0.0+20` in `pubspec.yaml` and `android/app/build.gradle.kts`.
+- [ ] Validate release signing configuration (`key.properties`) and test release AAB build generation (`flutter build appbundle --release`).
+- [ ] Verify R8 code shrinking and ProGuard rules with zero runtime symbol breakage.
+- [ ] Verify 100% offline playability in Airplane Mode.
+- [ ] Prepare store listing graphics (512x512 icon, 1024x500 banner, and 8 promotional screenshots).
+- [ ] Draft store listing metadata (Title, Short Description, Full Description, and Release Notes).
+- [ ] Complete Google Play Data Safety form and privacy policy URL hosting.
+- [ ] Execute pre-launch smoke test on physical Android device and verify internal test track upload.
+
