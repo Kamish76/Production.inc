@@ -10,6 +10,7 @@ import '../widgets/tier_expansion_panel.dart';
 import '../widgets/item_card.dart';
 import '../widgets/game_dialog.dart';
 import '../widgets/client_reputation_bar.dart';
+import '../widgets/shipping_manifest_tray.dart';
 import '../models/game_data.dart';
 
 class SellProductsScreen extends StatefulWidget {
@@ -300,7 +301,12 @@ class _SellProductsScreenState extends State<SellProductsScreen>
         else
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                gameService.stagedManifest.isNotEmpty ? 80 : 16,
+              ),
               addAutomaticKeepAlives: false,
               addRepaintBoundaries: true,
               children: [
@@ -318,6 +324,9 @@ class _SellProductsScreenState extends State<SellProductsScreen>
               ],
             ),
           ),
+
+        // Phase 11: Docked Commercial Dispatch Manifest Tray
+        const ShippingManifestTray(),
       ],
     );
   }

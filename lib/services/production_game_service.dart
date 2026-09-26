@@ -78,6 +78,25 @@ class ProductionGameService extends ChangeNotifier {
   bool get isAppPaused => _isAppPaused;
   bool get isTestMode => _isTestMode;
 
+  // Phase 11: Staged Shipping Manifest (Bulk Sell Cart)
+  final Map<String, int> _stagedManifest = <String, int>{};
+
+  Map<String, int> get stagedManifest => Map.unmodifiable(_stagedManifest);
+  int get manifestTotalUnits => _stagedManifest.values.fold(0, (sum, q) => sum + q);
+  int get manifestVarietyCount => _stagedManifest.length;
+  int getStagedQuantity(String productId) => _stagedManifest[productId] ?? 0;
+
+  double get manifestTotalRevenue {
+    double total = 0.0;
+    for (final entry in _stagedManifest.entries) {
+      try {
+        final product = GameData.products.firstWhere((p) => p.id == entry.key);
+        total += product.sellPrice * entry.value;
+      } catch (_) {}
+    }
+    return total;
+  }
+
   ProductionGameService({bool testMode = false}) {
     _isTestMode = testMode;
     _initializeGame();
@@ -741,6 +760,265 @@ class ProductionGameService extends ChangeNotifier {
       }
       return false;
     }
+  }
+
+  // =========================================================================
+  // Phase 11: Staged Shipping Manifest Methods (Bulk Sell Cart)
+  // =========================================================================
+
+  /// Calculate shipping time for the staged manifest (Phase 11)
+  /// Formula:
+  /// Base Transit Time = max_{p in Manifest}(baseTime(p)) * (1 + 0.04 * (Total Units - 1))^0.5
+  /// Actual Shipping Time = Base Transit Time / (Fleet Speed Multiplier * Tech Multipliers)
+  double calculateManifestShippingTime() {
+    if (_stagedManifest.isEmpty) return 0.0;
+
+    double maxBaseTime = 0.0;
+    int totalUnits = 0;
+
+    for (final entry in _stagedManifest.entries) {
+      try {
+        final product = GameData.products.firstWhere((p) => p.id == entry.key);
+        if (product.baseShippingTimeSeconds > maxBaseTime) {
+          maxBaseTime = product.baseShippingTimeSeconds;
+        }
+        totalUnits += entry.value;
+      } catch (_) {}
+    }
+
+    if (totalUnits <= 0) return 0.0;
+
+    final baseTransitTime = maxBaseTime * math.sqrt(1.0 + 0.04 * (totalUnits - 1));
+
+    final fleet = currentFleetTier;
+    double effectiveSpeedMultiplier =
+        fleet.speedMultiplier * _state.logisticsSpeedMultiplier;
+    final hasActiveContract = _state.corporateContracts.any(
+      (c) => c.status == ContractStatus.active || c.status == ContractStatus.shipping,
+    );
+    if (hasActiveContract && _state.hasCorporateContractFastTrack) {
+      effectiveSpeedMultiplier *= ResearchConstants.logisticsContractSpeedBonus;
+    }
+
+    return (baseTransitTime / effectiveSpeedMultiplier).clamp(1.0, 86400.0);
+  }
+
+  /// Adds a quantity of product to the staged manifest.
+  /// Hard guards against fleet caps (varieties, per-type, total payload) and available stock.
+  bool addToManifest(String productId, int quantity) {
+    if (quantity <= 0) return false;
+
+    // Check product exists
+    final product = GameData.getProduct(productId);
+    if (product == null) return false;
+
+    final currentStaged = _stagedManifest[productId] ?? 0;
+    final availableInInventory = state.getProductCount(productId);
+    if (currentStaged + quantity > availableInInventory) return false;
+
+    final fleet = currentFleetTier;
+    final isNewVariety = !_stagedManifest.containsKey(productId);
+
+    // Variety cap check
+    if (isNewVariety && _stagedManifest.length >= fleet.maxProductVarieties) {
+      return false;
+    }
+
+    // Per-type cap check
+    if (currentStaged + quantity > fleet.maxUnitsPerType) {
+      return false;
+    }
+
+    // Total payload capacity check
+    if (manifestTotalUnits + quantity > fleet.maxPayloadUnits) {
+      return false;
+    }
+
+    _stagedManifest[productId] = currentStaged + quantity;
+    notifyListeners();
+    return true;
+  }
+
+  /// Removes a product from the staged manifest completely.
+  void removeFromManifest(String productId) {
+    if (_stagedManifest.containsKey(productId)) {
+      _stagedManifest.remove(productId);
+      notifyListeners();
+    }
+  }
+
+  /// Updates quantity of a staged product. If newQuantity <= 0, removes the product.
+  bool updateManifestQuantity(String productId, int newQuantity) {
+    if (newQuantity <= 0) {
+      removeFromManifest(productId);
+      return true;
+    }
+
+    final fleet = currentFleetTier;
+    if (newQuantity > fleet.maxUnitsPerType) return false;
+
+    final isNewVariety = !_stagedManifest.containsKey(productId);
+    if (isNewVariety && _stagedManifest.length >= fleet.maxProductVarieties) {
+      return false;
+    }
+
+    final currentStaged = _stagedManifest[productId] ?? 0;
+    final newTotalPayload = manifestTotalUnits - currentStaged + newQuantity;
+    if (newTotalPayload > fleet.maxPayloadUnits) return false;
+
+    final available = state.getProductCount(productId);
+    if (newQuantity > available) return false;
+
+    _stagedManifest[productId] = newQuantity;
+    notifyListeners();
+    return true;
+  }
+
+  /// Sets the staged quantity for a product to the maximum possible within available stock and fleet caps.
+  void setManifestMaxForProduct(String productId) {
+    final available = state.getProductCount(productId);
+    if (available <= 0) return;
+
+    final fleet = currentFleetTier;
+    final isNewVariety = !_stagedManifest.containsKey(productId);
+    if (isNewVariety && _stagedManifest.length >= fleet.maxProductVarieties) {
+      return;
+    }
+
+    final currentStaged = _stagedManifest[productId] ?? 0;
+    final remainingPayload = fleet.maxPayloadUnits - (manifestTotalUnits - currentStaged);
+    final maxPerType = fleet.maxUnitsPerType;
+
+    final maxPossible = [available, maxPerType, remainingPayload].reduce(math.min);
+    if (maxPossible > 0) {
+      _stagedManifest[productId] = maxPossible;
+      notifyListeners();
+    }
+  }
+
+  /// Clears all staged items in the manifest.
+  void clearManifest() {
+    if (_stagedManifest.isNotEmpty) {
+      _stagedManifest.clear();
+      notifyListeners();
+    }
+  }
+
+  /// Dispatches the consolidated shipping manifest as a single ShippingOrder taking 1 fleet slot.
+  /// If inventory dropped prior to dispatch (e.g. from Auto-Sell), quantities are auto-clamped.
+  bool dispatchManifest({void Function(String message)? onStockAdjusted}) {
+    if (_stagedManifest.isEmpty) return false;
+
+    if (!_state.canShipMore(_state.activeShippingOrders.length)) {
+      if (kDebugMode) {
+        GameLogger.warning(
+          'Logistics fleet at capacity: ${_state.activeShippingOrders.length} / ${_state.maxSimultaneousShipments}',
+        );
+      }
+      return false;
+    }
+
+    // Auto-clamp to current inventory stock
+    final clampedManifest = <String, int>{};
+    bool wasAdjusted = false;
+
+    for (final entry in _stagedManifest.entries) {
+      final available = _state.getProductCount(entry.key);
+      if (available <= 0) {
+        wasAdjusted = true;
+        continue;
+      }
+      final clampedQty = math.min(entry.value, available);
+      if (clampedQty < entry.value) {
+        wasAdjusted = true;
+      }
+      clampedManifest[entry.key] = clampedQty;
+    }
+
+    if (clampedManifest.isEmpty) {
+      _stagedManifest.clear();
+      notifyListeners();
+      if (wasAdjusted && onStockAdjusted != null) {
+        onStockAdjusted('Manifest items are no longer available in inventory.');
+      }
+      return false;
+    }
+
+    double maxBaseTime = 0.0;
+    int totalUnits = 0;
+    double totalRevenue = 0.0;
+    final shippingItems = <ShippingItem>[];
+    final newProducts = Map<String, int>.from(_state.products);
+
+    for (final entry in clampedManifest.entries) {
+      final product = GameData.products.firstWhere((p) => p.id == entry.key);
+      if (product.baseShippingTimeSeconds > maxBaseTime) {
+        maxBaseTime = product.baseShippingTimeSeconds;
+      }
+      totalUnits += entry.value;
+      totalRevenue += product.sellPrice * entry.value;
+      shippingItems.add(ShippingItem(productId: entry.key, quantity: entry.value));
+
+      final remaining = (newProducts[entry.key] ?? 0) - entry.value;
+      if (remaining <= 0) {
+        newProducts.remove(entry.key);
+      } else {
+        newProducts[entry.key] = remaining;
+      }
+    }
+
+    final baseTransitTime = maxBaseTime * math.sqrt(1.0 + 0.04 * (totalUnits - 1));
+    final fleet = currentFleetTier;
+    double effectiveSpeedMultiplier =
+        fleet.speedMultiplier * _state.logisticsSpeedMultiplier;
+    final hasActiveContract = _state.corporateContracts.any(
+      (c) => c.status == ContractStatus.active || c.status == ContractStatus.shipping,
+    );
+    if (hasActiveContract && _state.hasCorporateContractFastTrack) {
+      effectiveSpeedMultiplier *= ResearchConstants.logisticsContractSpeedBonus;
+    }
+
+    final totalShippingTime =
+        (baseTransitTime / effectiveSpeedMultiplier).clamp(1.0, 86400.0);
+
+    final shippingOrder = ShippingOrder(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      items: shippingItems,
+      startTime: DateTime.now(),
+      totalShippingTime: totalShippingTime,
+      totalRevenue: totalRevenue,
+    );
+
+    final newShippingOrders = List<ShippingOrder>.from(_state.activeShippingOrders)
+      ..add(shippingOrder);
+
+    _state = _state.copyWith(
+      products: newProducts,
+      activeShippingOrders: newShippingOrders,
+    );
+
+    _stagedManifest.clear();
+
+    _persistenceService.markDirty('products');
+    _persistenceService.markDirty('shipping');
+
+    notifyListeners();
+    _saveGameStateOptimized();
+    _startUpdateTimer();
+
+    if (wasAdjusted && onStockAdjusted != null) {
+      onStockAdjusted('Manifest quantities were adjusted to match available inventory.');
+    }
+
+    return true;
+  }
+
+  /// Helper for unit tests to directly set the manifest state
+  @visibleForTesting
+  void testSetManifest(Map<String, int> manifest) {
+    _stagedManifest.clear();
+    _stagedManifest.addAll(manifest);
+    notifyListeners();
   }
 
   /// Main update method - coordinates all production and shipping updates

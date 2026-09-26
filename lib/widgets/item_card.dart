@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/game_constants.dart';
@@ -356,21 +357,153 @@ class ItemCard extends StatelessWidget {
     final available = gameService.state.getProductCount(_product.id);
     final currentPreference = gameService.getSellQuantityPreference(_product.id);
     final maxTierQty = gameService.currentFleetTier.maxUnitsPerType;
-    
-    return Row(
+    final stagedQty = gameService.getStagedQuantity(_product.id);
+    final fleet = gameService.currentFleetTier;
+    final canStageMore = stagedQty < available &&
+        stagedQty < fleet.maxUnitsPerType &&
+        gameService.manifestTotalUnits < fleet.maxPayloadUnits &&
+        (stagedQty > 0 || gameService.manifestVarietyCount < fleet.maxProductVarieties);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: _buildQuantitySelectorButton(context, 1, currentPreference, available),
+        Row(
+          children: [
+            Expanded(
+              child: _buildQuantitySelectorButton(context, 1, currentPreference, available),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildQuantitySelectorButton(context, 5, currentPreference, available),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildQuantitySelectorButton(context, maxTierQty, currentPreference, available),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildQuantitySelectorButton(context, 5, currentPreference, available),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildQuantitySelectorButton(context, maxTierQty, currentPreference, available),
-        ),
+        const SizedBox(height: 6),
+        _buildManifestControls(context, stagedQty, canStageMore, available),
       ],
+    );
+  }
+
+  Widget _buildManifestControls(
+    BuildContext context,
+    int stagedQty,
+    bool canStageMore,
+    int available,
+  ) {
+    if (stagedQty <= 0) {
+      return InkWell(
+        onTap: canStageMore && available > 0
+            ? () {
+                HapticFeedback.lightImpact();
+                final pref = gameService.getSellQuantityPreference(_product.id);
+                final qtyToAdd = math.min(pref, available);
+                gameService.addToManifest(_product.id, math.max(1, qtyToAdd));
+              }
+            : null,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          width: double.infinity,
+          height: 26,
+          decoration: BoxDecoration(
+            color: canStageMore && available > 0
+                ? Colors.purple.withValues(alpha: 0.15)
+                : Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: canStageMore && available > 0
+                  ? Colors.purple.withValues(alpha: 0.4)
+                  : Colors.white12,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.add_shopping_cart,
+                size: 13,
+                color: canStageMore && available > 0
+                    ? Colors.purple[300]
+                    : Colors.white30,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '+ Manifest',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: canStageMore && available > 0
+                      ? Colors.purple[200]
+                      : Colors.white30,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Staged > 0: highlighted badge pill with stepper and quick action
+    return Container(
+      width: double.infinity,
+      height: 26,
+      decoration: BoxDecoration(
+        color: Colors.purple.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: Colors.purple[300]!.withValues(alpha: 0.7),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              gameService.updateManifestQuantity(_product.id, stagedQty - 1);
+            },
+            borderRadius: const BorderRadius.horizontal(left: Radius.circular(5)),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Icon(Icons.remove, size: 12, color: Colors.white),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                '🛒 $stagedQty Staged',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.purple[100],
+                ),
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: canStageMore
+                ? () {
+                    HapticFeedback.lightImpact();
+                    gameService.updateManifestQuantity(_product.id, stagedQty + 1);
+                  }
+                : null,
+            borderRadius: const BorderRadius.horizontal(right: Radius.circular(5)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Icon(
+                Icons.add,
+                size: 12,
+                color: canStageMore ? Colors.white : Colors.white24,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

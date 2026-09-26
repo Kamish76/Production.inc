@@ -358,7 +358,7 @@ Phase 10 gives physical meaning to carrier fleet tiers (**Courier Bikes $\to$ De
 
 ---
 
-## 🛒 Phase 11: Commercial Dispatch Manifest: Multi-Product Bulk Selling UI (📋 Planned)
+## 🛒 Phase 11: Commercial Dispatch Manifest: Multi-Product Bulk Selling UI (✅ Completed)
 
 ### 🎯 Objective & Overview
 Phase 11 delivers the user-facing **Shipping Manifest Builder (Bulk Sell Cart)** on the Sell Products Screen. Players can stage multiple product varieties into a single shipment, adjust quantities, review projected revenue, and dispatch a consolidated carrier.
@@ -393,9 +393,9 @@ $$\text{Actual Shipping Time} = \frac{\text{Base Transit Time}}{\text{Fleet Spee
 ---
 
 ### 📋 Phase 11 Implementation Checklist
-- [ ] Implement manifest state and methods in `ProductionGameService`.
-- [ ] Build `ShippingManifestTray` widget for `SellProductsScreen`.
-- [ ] Build `ShippingManifestDrawer` bottom sheet with stepper controls.
-- [ ] Update `ItemCard` in Sell mode with "Add to Manifest" chips and staged count pills.
-- [ ] Create `test/phase11_bulk_manifest_test.dart` validating staging, dispatch, and settlement.
+- [x] Implement manifest state and methods in `ProductionGameService`.
+- [x] Build `ShippingManifestTray` widget for `SellProductsScreen`.
+- [x] Build `ShippingManifestDrawer` bottom sheet with stepper controls.
+- [x] Update `ItemCard` in Sell mode with "Add to Manifest" chips and staged count pills.
+- [x] Create `test/phase11_bulk_manifest_test.dart` validating staging, dispatch, and settlement.
 
