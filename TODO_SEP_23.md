@@ -323,7 +323,7 @@ Phase 9B completes the industrial automation loop (**Auto-Buy $\to$ Auto-Build $
 ---
 
 
-## 🚚 Phase 10: Logistics Fleet Overhaul: Payload Capacities & Variety Caps (📋 Planned)
+## 🚚 Phase 10: Logistics Fleet Overhaul: Payload Capacities & Variety Caps (✅ Completed)
 
 ### 🎯 Objective & Overview
 Phase 10 gives physical meaning to carrier fleet tiers (**Courier Bikes $\to$ Delivery Vans $\to$ Freight Trucks $\to$ Cargo Planes**). It implements **Carrier Payload Capacity** and **Product Variety Caps**, preventing early-game mass dumping and making fleet upgrades essential for moving high-volume factory output.
@@ -350,11 +350,11 @@ Phase 10 gives physical meaning to carrier fleet tiers (**Courier Bikes $\to$ De
 ---
 
 ### 📋 Phase 10 Implementation Checklist
-- [ ] Add `maxPayloadUnits`, `maxProductVarieties`, and `maxUnitsPerType` fields to [`LogisticsFleetTier`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_models.dart).
-- [ ] Update `GameData.fleetTiers` with calibrated payload limits.
-- [ ] Update `FleetUpgradeCard` UI with visual payload badges.
-- [ ] Enforce payload limits in `sellProduct` validation logic.
-- [ ] Unit tests for fleet payload limits and upgrade transitions.
+- [x] Add `maxPayloadUnits`, `maxProductVarieties`, and `maxUnitsPerType` fields to [`LogisticsFleetTier`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_models.dart).
+- [x] Update `GameData.fleetTiers` with calibrated payload limits.
+- [x] Update `FleetUpgradeCard` UI with visual payload badges.
+- [x] Enforce payload limits in `sellProduct` validation logic.
+- [x] Unit tests for fleet payload limits and upgrade transitions.
 
 ---
 

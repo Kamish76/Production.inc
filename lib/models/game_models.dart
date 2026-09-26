@@ -432,6 +432,9 @@ class LogisticsFleetTier {
   final double upgradeCost;
   final double speedMultiplier; // e.g. 1.0, 1.25, 1.6, 2.5
   final int maxSimultaneousShipments; // e.g. 2, 4, 7, 12
+  final int maxPayloadUnits; // e.g. 20, 60, 200, 600 (Phase 10)
+  final int maxProductVarieties; // e.g. 2, 4, 7, 12 (Phase 10)
+  final int maxUnitsPerType; // e.g. 10, 20, 50, 100 (Phase 10)
   final List<String> perkHighlights;
 
   const LogisticsFleetTier({
@@ -442,6 +445,9 @@ class LogisticsFleetTier {
     required this.upgradeCost,
     required this.speedMultiplier,
     required this.maxSimultaneousShipments,
+    required this.maxPayloadUnits,
+    required this.maxProductVarieties,
+    required this.maxUnitsPerType,
     required this.perkHighlights,
   });
 }

@@ -84,7 +84,7 @@ class ItemCard extends StatelessWidget {
               ] else ...[
                 const SizedBox(height: 2),
               ],
-              if (mode != ItemCardMode.build || _canProduce) _buildActionButtons(),
+              if (mode != ItemCardMode.build || _canProduce) _buildActionButtons(context),
             ],
           ),
         ),
@@ -187,12 +187,12 @@ class ItemCard extends StatelessWidget {
 
   // Description moved to long-press details sheet.
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(BuildContext context) {
     switch (mode) {
       case ItemCardMode.buy:
         return _buildBuyButtons();
       case ItemCardMode.sell:
-        return _buildSellButtons();
+        return _buildSellButtons(context);
       case ItemCardMode.build:
         return _buildBuildQuantityButtons();
     }
@@ -352,34 +352,42 @@ class ItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSellButtons() {
+  Widget _buildSellButtons(BuildContext context) {
     final available = gameService.state.getProductCount(_product.id);
     final currentPreference = gameService.getSellQuantityPreference(_product.id);
+    final maxTierQty = gameService.currentFleetTier.maxUnitsPerType;
     
     return Row(
       children: [
         Expanded(
-          child: _buildQuantitySelectorButton(1, currentPreference, available),
+          child: _buildQuantitySelectorButton(context, 1, currentPreference, available),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _buildQuantitySelectorButton(5, currentPreference, available),
+          child: _buildQuantitySelectorButton(context, 5, currentPreference, available),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _buildQuantitySelectorButton(10, currentPreference, available),
+          child: _buildQuantitySelectorButton(context, maxTierQty, currentPreference, available),
         ),
       ],
     );
   }
 
-  Widget _buildQuantitySelectorButton(int quantity, int currentPreference, int available) {
+  Widget _buildQuantitySelectorButton(
+    BuildContext context,
+    int quantity,
+    int currentPreference,
+    int available,
+  ) {
     final revenue = _product.sellPrice * quantity;
     final isSelected = currentPreference == quantity;
-    final canSell = available >= quantity;
+    final withinCarrierCap = quantity <= gameService.currentFleetTier.maxUnitsPerType &&
+        quantity <= gameService.currentFleetTier.maxPayloadUnits;
+    final canSell = available >= quantity && withinCarrierCap;
 
     return GestureDetector(
-      onTap: () => _handleSellQuantitySelection(quantity),
+      onTap: () => _handleSellQuantitySelection(context, quantity),
       child: Container(
         height: 36,
         decoration: BoxDecoration(
@@ -734,6 +742,11 @@ class ItemCard extends StatelessWidget {
       case ItemCardMode.sell:
         final quantity = gameService.getSellQuantityPreference(_product.id);
         final available = gameService.state.getProductCount(_product.id);
+        final fleet = gameService.currentFleetTier;
+        if (quantity > fleet.maxUnitsPerType || quantity > fleet.maxPayloadUnits) {
+          HapticFeedback.lightImpact();
+          break;
+        }
         if (available >= quantity) {
           HapticFeedback.mediumImpact();
           gameService.sellProduct(_product.id, quantity);
@@ -767,9 +780,26 @@ class ItemCard extends StatelessWidget {
     }
   }
 
-  void _handleSellQuantitySelection(int quantity) {
+  void _handleSellQuantitySelection(BuildContext context, int quantity) {
     final available = gameService.state.getProductCount(_product.id);
-    
+    final fleet = gameService.currentFleetTier;
+    final withinCarrierCap = quantity <= fleet.maxUnitsPerType &&
+        quantity <= fleet.maxPayloadUnits;
+
+    if (!withinCarrierCap) {
+      HapticFeedback.lightImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '⚠️ Exceeds ${fleet.name} capacity (max ${fleet.maxUnitsPerType} units/type).',
+          ),
+          backgroundColor: Colors.orange[800],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     if (available >= quantity) {
       HapticFeedback.mediumImpact();
       gameService.sellProduct(_product.id, quantity);

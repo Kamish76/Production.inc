@@ -150,6 +150,43 @@ class FleetUpgradeCard extends StatelessWidget {
             ],
           ),
 
+          const SizedBox(height: 10),
+
+          // Phase 10: Carrier Payload & Variety Limit Badges
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF131726),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildPayloadBadge(
+                  icon: Icons.inventory_2_outlined,
+                  label: 'Payload',
+                  value: '${currentTier.maxPayloadUnits} Max',
+                  color: Colors.amberAccent,
+                ),
+                Container(width: 1, height: 24, color: Colors.white10),
+                _buildPayloadBadge(
+                  icon: Icons.category_outlined,
+                  label: 'Varieties',
+                  value: '${currentTier.maxProductVarieties} Types',
+                  color: Colors.cyanAccent,
+                ),
+                Container(width: 1, height: 24, color: Colors.white10),
+                _buildPayloadBadge(
+                  icon: Icons.format_list_numbered,
+                  label: 'Single-Type',
+                  value: '${currentTier.maxUnitsPerType} Max',
+                  color: Colors.purpleAccent,
+                ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 14),
 
           // Upgrade Section
@@ -180,7 +217,7 @@ class FleetUpgradeCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${nextTier.maxSimultaneousShipments} slots • ${(nextTier.speedMultiplier * 100).round()}% speed',
+                          '${nextTier.maxSimultaneousShipments} slots • ${(nextTier.speedMultiplier * 100).round()}% speed • ${nextTier.maxPayloadUnits} cap (${nextTier.maxUnitsPerType}/type)',
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 11,
@@ -205,7 +242,7 @@ class FleetUpgradeCard extends StatelessWidget {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    '🚚 Upgraded to ${nextTier.name}! Dispatch capacity expanded to ${nextTier.maxSimultaneousShipments} slots.',
+                                    '🚚 Upgraded to ${nextTier.name}! Capacity expanded to ${nextTier.maxSimultaneousShipments} slots & ${nextTier.maxPayloadUnits} payload.',
                                   ),
                                   backgroundColor: Colors.orange[700],
                                   duration: const Duration(seconds: 3),
@@ -253,6 +290,43 @@ class FleetUpgradeCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildPayloadBadge({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 5),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 9,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

@@ -638,6 +638,26 @@ class ProductionGameService extends ChangeNotifier {
         return false;
       }
 
+      // Check for carrier payload capacity and single-type limit (Phase 10)
+      final fleet = GameData.getFleetTier(_state.fleetTier);
+      if (quantity > fleet.maxUnitsPerType) {
+        if (kDebugMode) {
+          GameLogger.warning(
+            'Sell quantity exceeds carrier per-type limit: $quantity > ${fleet.maxUnitsPerType} (${fleet.name})',
+          );
+        }
+        return false;
+      }
+
+      if (quantity > fleet.maxPayloadUnits) {
+        if (kDebugMode) {
+          GameLogger.warning(
+            'Sell quantity exceeds carrier payload capacity: $quantity > ${fleet.maxPayloadUnits} (${fleet.name})',
+          );
+        }
+        return false;
+      }
+
       // Check for active shipping order limit based on fleet tier (Phase 2)
       if (!_state.canShipMore(_state.activeShippingOrders.length)) {
         if (kDebugMode) {
@@ -649,7 +669,6 @@ class ProductionGameService extends ChangeNotifier {
       }
 
       // Calculate shipping time using the formula scaled by fleet speed multiplier
-      final fleet = GameData.getFleetTier(_state.fleetTier);
       final rawShippingTime = product.calculateShippingTime(quantity);
 
       double effectiveSpeedMultiplier =
@@ -1416,6 +1435,12 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   @visibleForTesting
+  void testSetState(GameState state) {
+    _state = state;
+    notifyListeners();
+  }
+
+  @visibleForTesting
   void addDummyShippingOrderForTest() {
     final order = ShippingOrder(
       id: 'dummy_${DateTime.now().microsecondsSinceEpoch}',
@@ -1884,14 +1909,21 @@ class ProductionGameService extends ChangeNotifier {
     _saveGameStateOptimized();
   }
 
-  // V1.4.11 Sell Quantity Preference Management
+  // V1.4.11 Sell Quantity Preference Management (Phase 10: auto-clamped to carrier limit)
   int getSellQuantityPreference(String productId) {
-    return _state.sellQuantityPreferences[productId] ?? 1;
+    final maxAllowed = currentFleetTier.maxUnitsPerType;
+    final savedPref = _state.sellQuantityPreferences[productId] ?? 1;
+    return savedPref.clamp(1, maxAllowed);
   }
 
   void setSellQuantityPreference(String productId, int quantity) {
-    if (quantity != 1 && quantity != 5 && quantity != 10) {
-      return; // Only allow 1, 5, or 10
+    final maxAllowed = currentFleetTier.maxUnitsPerType;
+    if (quantity <= 0 || quantity > maxAllowed) {
+      return;
+    }
+    // Allow 1, 5, or the tier's maximum per-type capacity
+    if (quantity != 1 && quantity != 5 && quantity != maxAllowed) {
+      return;
     }
 
     final newPreferences = Map<String, int>.from(
@@ -2856,6 +2888,21 @@ class ProductionGameService extends ChangeNotifier {
     final next = nextFleetTier;
     if (next == null) return false;
     return _state.canUpgradeFleet(next);
+  }
+
+  /// Checks if the current logistics fleet carrier can hold the given shipment specification (Phase 10)
+  bool canCarrierHold({
+    required int totalUnits,
+    int varietyCount = 1,
+    int maxUnitsInSingleType = 0,
+  }) {
+    final fleet = currentFleetTier;
+    if (totalUnits > fleet.maxPayloadUnits) return false;
+    if (varietyCount > fleet.maxProductVarieties) return false;
+    final maxSingle =
+        maxUnitsInSingleType > 0 ? maxUnitsInSingleType : totalUnits;
+    if (maxSingle > fleet.maxUnitsPerType) return false;
+    return true;
   }
 
   /// Upgrades fleet to next tier

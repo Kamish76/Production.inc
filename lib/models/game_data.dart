@@ -954,9 +954,13 @@ class GameData {
       upgradeCost: 0.0,
       speedMultiplier: 1.0,
       maxSimultaneousShipments: 2,
+      maxPayloadUnits: 20,
+      maxProductVarieties: 2,
+      maxUnitsPerType: 10,
       perkHighlights: [
         'Starting delivery fleet',
         '2 concurrent shipping dispatches',
+        'Max 20 units payload (10/type, 2 varieties)',
       ],
     ),
     LogisticsFleetTier(
@@ -967,9 +971,13 @@ class GameData {
       upgradeCost: 1500.0,
       speedMultiplier: 1.25,
       maxSimultaneousShipments: 4,
+      maxPayloadUnits: 60,
+      maxProductVarieties: 4,
+      maxUnitsPerType: 20,
       perkHighlights: [
         '+25% shipping speed',
         '4 concurrent shipping dispatches',
+        'Max 60 units payload (20/type, 4 varieties)',
       ],
     ),
     LogisticsFleetTier(
@@ -981,9 +989,13 @@ class GameData {
       upgradeCost: 12500.0,
       speedMultiplier: 1.6,
       maxSimultaneousShipments: 7,
+      maxPayloadUnits: 200,
+      maxProductVarieties: 7,
+      maxUnitsPerType: 50,
       perkHighlights: [
         '+60% shipping speed',
         '7 concurrent shipping dispatches',
+        'Max 200 units payload (50/type, 7 varieties)',
       ],
     ),
     LogisticsFleetTier(
@@ -995,9 +1007,13 @@ class GameData {
       upgradeCost: 75000.0,
       speedMultiplier: 2.5,
       maxSimultaneousShipments: 12,
+      maxPayloadUnits: 600,
+      maxProductVarieties: 12,
+      maxUnitsPerType: 100,
       perkHighlights: [
         '+150% shipping speed',
         '12 concurrent shipping dispatches',
+        'Max 600 units payload (100/type, 12 varieties)',
       ],
     ),
   ];
