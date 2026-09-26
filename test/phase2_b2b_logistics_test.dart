@@ -189,61 +189,37 @@ void main() {
     });
 
     group('Corporate Contracts System', () {
-      test('Contract acceptance and state transition', () async {
-        await Future.delayed(const Duration(milliseconds: 50));
-        gameService.devRefreshContracts();
+      test('Contract shipping and Lock & Ship state transition', () async {
+        final contract = CorporateContract(
+          id: 'test_c_1',
+          clientId: 'nova_robotics',
+          title: 'Robotics Sensors',
+          description: 'Provide sensory chips',
+          contractType: ContractType.retail,
+          requiredProducts: const {'box': 5},
+          cashReward: 500.0,
+          repReward: 50,
+          expiresAt: DateTime.now().add(const Duration(hours: 2)),
+          status: ContractStatus.available,
+          createdAt: DateTime.now(),
+        );
+        gameService.addContractForTest(contract);
 
         expect(gameService.state.corporateContracts.isNotEmpty, isTrue);
-        final contract = gameService.state.corporateContracts.first;
         expect(contract.status, ContractStatus.available);
 
-        // Accept contract
-        final success = gameService.acceptContract(contract.id);
-        expect(success, isTrue);
-
-        final accepted = gameService.state.corporateContracts.firstWhere((c) => c.id == contract.id);
-        expect(accepted.status, ContractStatus.active);
-      });
-
-      test('Contract partial delivery and full completion awards cash, rep, and shipping history', () async {
-        await Future.delayed(const Duration(milliseconds: 50));
-        gameService.devRefreshContracts();
-
-        final contract = gameService.state.corporateContracts.first;
-        gameService.acceptContract(contract.id);
-
-        // Stock up inventory with target product
-        final needed = contract.requiredQuantity;
-        gameService.addProductToInventory(contract.targetProductId, needed);
-        expect(gameService.state.getProductCount(contract.targetProductId), needed);
-
-        // Partial delivery: 1 item (if requiredQuantity > 1)
-        if (needed > 1) {
-          final partialSuccess = gameService.deliverToContract(contract.id, 1);
-          expect(partialSuccess, isTrue);
-          final inProgress = gameService.state.corporateContracts.firstWhere((c) => c.id == contract.id);
-          expect(inProgress.deliveredQuantity, 1);
-          expect(inProgress.status, ContractStatus.active);
+        // Stock up inventory with required products
+        for (final entry in contract.requiredProducts.entries) {
+          gameService.addProductToInventory(entry.key, entry.value);
         }
 
-        final initialMoney = gameService.state.money;
-        final initialRep = gameService.state.clientReputation[contract.clientId] ?? 0;
+        // Ship contract (Lock & Ship)
+        final success = gameService.shipContract(contract.id);
+        expect(success, isTrue);
 
-        // Fulfill the rest
-        final completeSuccess = gameService.fulfillContract(contract.id);
-        expect(completeSuccess, isTrue);
-
-        final completed = gameService.state.corporateContracts.firstWhere((c) => c.id == contract.id);
-        expect(completed.status, ContractStatus.completed);
-        expect(completed.deliveredQuantity, contract.requiredQuantity);
-
-        // Verify rewards awarded
-        expect(gameService.state.money, greaterThan(initialMoney));
-        expect(gameService.state.clientReputation[contract.clientId], initialRep + contract.repReward);
-
-        // Verify shipping history entry logged
-        final history = gameService.state.shippingHistory;
-        expect(history.any((h) => h.id == 'contract_${contract.id}'), isTrue);
+        final shipped = gameService.state.corporateContracts.firstWhere((c) => c.id == contract.id);
+        expect(shipped.status, ContractStatus.shipping);
+        expect(shipped.shippingOrderId, isNotNull);
       });
     });
 
@@ -274,13 +250,12 @@ void main() {
           clientId: 'nova_robotics',
           title: 'Robotics Sensors',
           description: 'Provide sensory chips',
-          targetProductId: 'circuits',
-          requiredQuantity: 20,
-          deliveredQuantity: 5,
+          contractType: ContractType.retail,
+          requiredProducts: const {'circuits': 20},
           cashReward: 1500.0,
           repReward: 100,
           expiresAt: DateTime.now().add(const Duration(hours: 2)),
-          status: ContractStatus.active,
+          status: ContractStatus.available,
           createdAt: DateTime.now(),
         );
 
@@ -310,10 +285,9 @@ void main() {
         final loadedContract = loadedState.corporateContracts.first;
         expect(loadedContract.id, 'contract_db_test_1');
         expect(loadedContract.clientId, 'nova_robotics');
-        expect(loadedContract.targetProductId, 'circuits');
-        expect(loadedContract.requiredQuantity, 20);
-        expect(loadedContract.deliveredQuantity, 5);
-        expect(loadedContract.status, ContractStatus.active);
+        expect(loadedContract.requiredProducts['circuits'], 20);
+        expect(loadedContract.contractType, ContractType.retail);
+        expect(loadedContract.status, ContractStatus.available);
       });
     });
   });

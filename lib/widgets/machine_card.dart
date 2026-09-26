@@ -278,7 +278,7 @@ class MachineCard extends StatelessWidget {
     final throughputLevel = gameService.getAutoSellThroughputLevel();
     final throughputCost = gameService.getAutoSellThroughputUpgradeCost();
     final canUpgradeThroughput = state.money >= throughputCost;
-    final throughputLabel = '$throughputLevel Units/Machine';
+    final throughputLabel = '$throughputLevel Units/Tick';
 
     String telemetry;
     if (machineCount > 0) {
@@ -297,7 +297,7 @@ class MachineCard extends StatelessWidget {
       key: key,
       icon: Icons.storefront,
       title: 'Auto-Sell Dispatchers',
-      subtitle: 'Automates finished goods sales (consumes fleet capacity)',
+      subtitle: 'Automates finished goods walk-in sales (0 fleet slots)',
       accentColor: const Color(0xFFAB47BC), // Purple accent
       isEnabled: isEnabled,
       machineCount: machineCount,

@@ -1300,11 +1300,6 @@ class ProductionGameService extends ChangeNotifier {
       }
     }
 
-    // Check fleet slot availability
-    if (!_state.canShipMore(_state.activeShippingOrders.length)) {
-      return; // Fleet is full, wait for next tick
-    }
-
     // Capacity calculation: machines * throughputLevel
     int unitsToSellRemaining =
         _state.autoSellMachinesOwned * _state.autoSellThroughputLevel;
@@ -1324,8 +1319,6 @@ class ProductionGameService extends ChangeNotifier {
     final productsCopy = Map<String, int>.from(_state.products);
     double totalRevenue = 0.0;
     int totalUnitsSold = 0;
-    double rawShippingTime = 0.0;
-    final shippingItems = <ShippingItem>[];
 
     for (final tier in tierOrder) {
       if (unitsToSellRemaining <= 0) break;
@@ -1350,8 +1343,6 @@ class ProductionGameService extends ChangeNotifier {
         unitsToSellRemaining -= quantityToSell;
         totalUnitsSold += quantityToSell;
         totalRevenue += quantityToSell * product.sellPrice;
-        rawShippingTime += product.calculateShippingTime(quantityToSell);
-        shippingItems.add(ShippingItem(productId: product.id, quantity: quantityToSell));
       }
     }
 
@@ -1375,52 +1366,27 @@ class ProductionGameService extends ChangeNotifier {
         unitsToSellRemaining -= quantityToSell;
         totalUnitsSold += quantityToSell;
         totalRevenue += quantityToSell * sellPrice;
-        if (prod != null) {
-          rawShippingTime += prod.calculateShippingTime(quantityToSell);
-        } else {
-          rawShippingTime += quantityToSell * 1.0;
-        }
-        shippingItems.add(ShippingItem(productId: entry.key, quantity: quantityToSell));
       }
     }
 
     _lastAutoSellTick = now;
 
     if (totalUnitsSold > 0) {
-      // Calculate effective shipping time
-      final fleet = GameData.getFleetTier(_state.fleetTier);
-      double effectiveSpeedMultiplier = fleet.speedMultiplier * _state.logisticsSpeedMultiplier;
-      final hasActiveContract = _state.corporateContracts.any((c) => c.status == ContractStatus.active || c.status == ContractStatus.shipping);
-      if (hasActiveContract && _state.hasCorporateContractFastTrack) {
-        effectiveSpeedMultiplier *= ResearchConstants.logisticsContractSpeedBonus;
-      }
-      final totalShippingTime = (rawShippingTime / effectiveSpeedMultiplier).clamp(1.0, 86400.0);
-
-      // Create shipping order
-      final shippingOrder = ShippingOrder(
-        id: '${DateTime.now().microsecondsSinceEpoch}_autosell',
-        items: shippingItems,
-        startTime: DateTime.now(),
-        totalShippingTime: totalShippingTime,
-        totalRevenue: totalRevenue,
-      );
-
-      final newShippingOrders = List<ShippingOrder>.from(_state.activeShippingOrders);
-      newShippingOrders.add(shippingOrder);
+      final newMoney =
+          _addRevenueWithOverflowProtection(_state.money, totalRevenue);
 
       _state = _state.copyWith(
         products: productsCopy,
-        activeShippingOrders: newShippingOrders,
+        money: newMoney,
       );
 
       _persistenceService.markDirty('products');
-      _persistenceService.markDirty('shipping');
       notifyListeners();
       _saveGameStateOptimized();
 
       if (kDebugMode) {
         GameLogger.info(
-          'Auto-sell tick: queued $totalUnitsSold units for \$${totalRevenue.toStringAsFixed(2)} (consumed 1 fleet slot)',
+          'Auto-sell tick: sold $totalUnitsSold units directly for \$${totalRevenue.toStringAsFixed(2)} (0 fleet slots)',
         );
       }
     }
@@ -1430,6 +1396,46 @@ class ProductionGameService extends ChangeNotifier {
   @visibleForTesting
   void processAutoSellTickForTest({bool force = true}) {
     _processAutoSellTick(force: force);
+  }
+
+  /// Phase 9A test helpers
+  @visibleForTesting
+  void setAutoShipRetail(bool value) {
+    _state = _state.copyWith(autoShipRetail: value);
+  }
+
+  @visibleForTesting
+  void setAutoShipManufacturing(bool value) {
+    _state = _state.copyWith(autoShipManufacturing: value);
+  }
+
+  @visibleForTesting
+  void addContractForTest(CorporateContract contract) {
+    final list = List<CorporateContract>.from(_state.corporateContracts)..add(contract);
+    _state = _state.copyWith(corporateContracts: list);
+  }
+
+  @visibleForTesting
+  void addDummyShippingOrderForTest() {
+    final order = ShippingOrder(
+      id: 'dummy_${DateTime.now().microsecondsSinceEpoch}',
+      items: const [ShippingItem(productId: 'box', quantity: 1)],
+      startTime: DateTime.now(),
+      totalShippingTime: 60.0,
+      totalRevenue: 10.0,
+    );
+    final orders = List<ShippingOrder>.from(_state.activeShippingOrders)..add(order);
+    _state = _state.copyWith(activeShippingOrders: orders);
+  }
+
+  @visibleForTesting
+  double calculateContractShippingTimeForTest(CorporateContract contract) {
+    return _calculateContractShippingTime(contract);
+  }
+
+  @visibleForTesting
+  void processContractsTickForTest() {
+    _processContractsTick();
   }
 
   /// Apply completed operations to game state

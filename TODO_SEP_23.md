@@ -189,7 +189,7 @@ $$\text{Purchases Per Tick} = \left\lfloor \text{Machines Owned} \times 5 \times
 
 ---
 
-## 📦 Phase 9A: B2B Contract Overhaul: Retail & Manufacturing Types (📋 Planned)
+## 📦 Phase 9A: B2B Contract Overhaul: Retail & Manufacturing Types (✅ Completed)
 
 ### 🎯 Objective & Overview
 Phase 9A overhauls the B2B contract system by introducing two distinct contract categories (**Retail** and **Manufacturing**), replacing the current incremental delivery model with a **Lock & Ship** fulfillment flow (no partial deliveries), integrating contract completion into the fleet shipping pipeline, and relocating the B2B Contracts tab to the Sell Products Screen.
@@ -271,21 +271,21 @@ Move the **entire B2B Contracts tab** from the **Shipping Screen** to the **Sell
 ---
 
 ### 📋 Phase 9A Implementation Checklist
-- [ ] Add `ContractType` enum (`retail` / `manufacturing`) and `contractType` field to [`CorporateContract`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_models.dart).
-- [ ] Add `shipping` to `ContractStatus` enum and `shippingOrderId` field to `CorporateContract`.
-- [ ] Refactor `CorporateContract` from `targetProductId`/`requiredQuantity` to `requiredProducts` (`Map<String, int>`).
-- [ ] Implement Lock & Ship fulfillment in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) (deduct all items, create shipping order, consume fleet slot).
-- [ ] Scale contract slots by factory tier (3 → 5).
-- [ ] Update contract generation to produce both Retail and Manufacturing types with tier-based ratio shifting.
-- [ ] Add per-type auto-ship toggles (`autoShipRetail`, `autoShipManufacturing`) to [`GameState`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_state.dart).
-- [ ] Apply 0.75x shipping time bonus for Manufacturing contracts.
-- [ ] Relocate B2B Contracts tab from Shipping Screen to Sell Products Screen.
-- [ ] Add visual badges (🏷️ Retail / 🏭 Manufacturing) to contract cards.
-- [ ] Unit tests for Lock & Ship flow, fleet slot consumption, multi-product fulfillment, and auto-ship toggles.
+- [x] Add `ContractType` enum (`retail` / `manufacturing`) and `contractType` field to [`CorporateContract`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_models.dart).
+- [x] Add `shipping` to `ContractStatus` enum and `shippingOrderId` field to `CorporateContract`.
+- [x] Refactor `CorporateContract` from `targetProductId`/`requiredQuantity` to `requiredProducts` (`Map<String, int>`).
+- [x] Implement Lock & Ship fulfillment in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) (deduct all items, create shipping order, consume fleet slot).
+- [x] Scale contract slots by factory tier (3 → 5).
+- [x] Update contract generation to produce both Retail and Manufacturing types with tier-based ratio shifting.
+- [x] Add per-type auto-ship toggles (`autoShipRetail`, `autoShipManufacturing`) to [`GameState`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_state.dart).
+- [x] Apply 0.75x shipping time bonus for Manufacturing contracts.
+- [x] Relocate B2B Contracts tab from Shipping Screen to Sell Products Screen.
+- [x] Add visual badges (🏷️ Retail / 🏭 Manufacturing) to contract cards.
+- [x] Unit tests for Lock & Ship flow, fleet slot consumption, multi-product fulfillment, and auto-ship toggles.
 
 ---
 
-## 🏪 Phase 9B: Auto-Sell Dispatchers: Storefront Automation (📋 Planned)
+## 🏪 Phase 9B: Auto-Sell Dispatchers: Storefront Automation (✅ Completed)
 
 ### 🎯 Objective & Overview
 Phase 9B completes the industrial automation loop (**Auto-Buy $\to$ Auto-Build $\to$ Auto-Sell**). It introduces **Auto-Sell Dispatchers** to automate finished goods sales via direct local storefront walk-in sales, featuring an early Tier 1 unlock with a gentle, timid baseline.
@@ -315,10 +315,10 @@ Phase 9B completes the industrial automation loop (**Auto-Buy $\to$ Auto-Build $
 ---
 
 ### 📋 Phase 9B Implementation Checklist
-- [ ] Add `autoSellMachinesOwned`, `autoSellEnabled`, and `autoSellThroughputLevel` to [`GameState`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_state.dart).
-- [ ] Add `_processAutoSellTick` loop in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) selling eligible inventory per cycle tick.
-- [ ] Create `AutoSellMachineCard` using unified `MachineCard` widget in `Machines` tab of [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart).
-- [ ] Unit tests verifying auto-sell execution, zero-fleet-slot isolation, and inventory reserve safety.
+- [x] Add `autoSellMachinesOwned`, `autoSellEnabled`, and `autoSellThroughputLevel` to [`GameState`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/models/game_state.dart).
+- [x] Add `_processAutoSellTick` loop in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) selling eligible inventory per cycle tick.
+- [x] Create `AutoSellMachineCard` using unified `MachineCard` widget in `Machines` tab of [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart).
+- [x] Unit tests verifying auto-sell execution, zero-fleet-slot isolation, and inventory reserve safety.
 
 ---
 
