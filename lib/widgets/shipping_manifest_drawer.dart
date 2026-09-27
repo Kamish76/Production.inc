@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/game_data.dart';
 import '../models/game_models.dart';
 import '../services/production_game_service.dart';
+import 'game_icon.dart';
 
 /// Modal bottom sheet for inspecting, adjusting, and dispatching
 /// the multi-product Commercial Dispatch Manifest (Bulk Sell Cart).
@@ -297,9 +298,10 @@ class ShippingManifestDrawer extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     alignment: Alignment.center,
-                                    child: Text(
-                                      productEmoji,
-                                      style: const TextStyle(fontSize: 22),
+                                    child: GameIcon(
+                                      itemId: productId,
+                                      fallbackEmoji: productEmoji,
+                                      size: 28,
                                     ),
                                   ),
                                   const SizedBox(width: 10),

@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="9" flood-color="#081014" flood-opacity="0.5"/>
+    </filter>
+    <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+    </filter>
+    <linearGradient id="caseTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#546E7A"/>
+      <stop offset="50%" stop-color="#455A64"/>
+      <stop offset="100%" stop-color="#37474F"/>
+    </linearGradient>
+    <linearGradient id="caseLeft" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#37474F"/>
+      <stop offset="100%" stop-color="#21272B"/>
+    </linearGradient>
+    <linearGradient id="caseRight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#263238"/>
+      <stop offset="100%" stop-color="#14191C"/>
+    </linearGradient>
+    <linearGradient id="cyanAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E0F7FA"/>
+      <stop offset="40%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#00B0FF"/>
+    </linearGradient>
+    <linearGradient id="recessGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14181B"/>
+      <stop offset="100%" stop-color="#263238"/>
+    </linearGradient>
+  </defs>
+  <!-- Ground Drop Shadow -->
+  <ellipse cx="128" cy="208" rx="92" ry="24" fill="#081014" opacity="0.45" filter="blur(7px)"/>
+  <g filter="url(#shadow)">
+    <!-- Base Lower Shell (Lower Half) -->
+    <polygon points="52,126 128,168 128,198 52,156" fill="#21272B" stroke="#14191C" stroke-width="1"/>
+    <polygon points="128,168 204,126 204,156 128,198" fill="#14191C" stroke="#0D1012" stroke-width="1"/>
+    <!-- Parting Line / Seam Groove between Upper & Lower Halves -->
+    <polygon points="50,123 128,166 206,123 206,126 128,169 50,126" fill="#0D1113"/>
+    <!-- Upper Shell (Top Clamshell Halves) -->
+    <polygon points="52,106 128,148 128,166 52,124" fill="url(#caseLeft)" stroke="#263238" stroke-width="1"/>
+    <polygon points="128,148 204,106 204,124 128,166" fill="url(#caseRight)" stroke="#1A2023" stroke-width="1"/>
+    <polygon points="128,64 204,106 128,148 52,106" fill="url(#caseTop)" stroke="#455A64" stroke-width="1.2"/>
+    <!-- Perimeter Bevel Highlights -->
+    <polyline points="52,106 128,64 204,106" fill="none" stroke="#90A4AE" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+    <line x1="128" y1="148" x2="128" y2="198" stroke="#78909C" stroke-width="1.2" opacity="0.75"/>
+    <!-- Recessed Molded Top Tray / Screen Window Bezel -->
+    <polygon points="128,80 180,108 128,136 76,108" fill="url(#recessGrad)" stroke="#1A2024" stroke-width="1.2"/>
+    <polygon points="128,82 177,108 128,134 79,108" fill="#181F23"/>
+    <!-- Luminous Cyan Status LED Stripe / Accent Trim -->
+    <polygon points="128,92 165,112 159,115 128,98" fill="url(#cyanAccent)" filter="url(#cyanGlow)"/>
+    <polygon points="128,92 165,112 159,115 128,98" fill="#FFFFFF" opacity="0.75"/>
+    <!-- 4 Molded Corner Screw Bosses / Hex Screws -->
+    <g transform="translate(128, 72)">
+      <circle cx="0" cy="0" r="3.8" fill="#21272B" stroke="#607D8B" stroke-width="0.8"/>
+      <circle cx="0" cy="0" r="1.8" fill="#14191C"/>
+      <line x1="-1.2" y1="-1.2" x2="1.2" y2="1.2" stroke="#90A4AE" stroke-width="0.6"/>
+    </g>
+    <g transform="translate(192, 106)">
+      <circle cx="0" cy="0" r="3.8" fill="#21272B" stroke="#607D8B" stroke-width="0.8"/>
+      <circle cx="0" cy="0" r="1.8" fill="#14191C"/>
+      <line x1="-1.2" y1="-1.2" x2="1.2" y2="1.2" stroke="#90A4AE" stroke-width="0.6"/>
+    </g>
+    <g transform="translate(128, 140)">
+      <circle cx="0" cy="0" r="3.8" fill="#21272B" stroke="#607D8B" stroke-width="0.8"/>
+      <circle cx="0" cy="0" r="1.8" fill="#14191C"/>
+      <line x1="-1.2" y1="-1.2" x2="1.2" y2="1.2" stroke="#90A4AE" stroke-width="0.6"/>
+    </g>
+    <g transform="translate(64, 106)">
+      <circle cx="0" cy="0" r="3.8" fill="#21272B" stroke="#607D8B" stroke-width="0.8"/>
+      <circle cx="0" cy="0" r="1.8" fill="#14191C"/>
+      <line x1="-1.2" y1="-1.2" x2="1.2" y2="1.2" stroke="#90A4AE" stroke-width="0.6"/>
+    </g>
+    <!-- Side Snap-Fit Clip Indentations on Left Face -->
+    <polygon points="76,132 94,142 94,146 76,136" fill="#181D20"/>
+    <polygon points="102,146 120,156 120,160 102,150" fill="#181D20"/>
+    <!-- Front Port Opening (USB / Cable Interface cutout on Right Face) -->
+    <polygon points="144,158 172,142 172,150 144,166" fill="#0D1012" stroke="#37474F" stroke-width="0.8"/>
+    <polygon points="147,159 169,147 169,149 147,161" fill="#00E5FF" opacity="0.85"/>
+  </g>
+</svg>

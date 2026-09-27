@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="9" flood-color="#040D07" flood-opacity="0.55"/>
+    </filter>
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1" result="blur"/>
+    </filter>
+    <linearGradient id="pcbTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E676"/>
+      <stop offset="35%" stop-color="#00C853"/>
+      <stop offset="70%" stop-color="#00A844"/>
+      <stop offset="100%" stop-color="#007E33"/>
+    </linearGradient>
+    <linearGradient id="pcbSideLeft" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#007E33"/>
+      <stop offset="100%" stop-color="#004D20"/>
+    </linearGradient>
+    <linearGradient id="pcbSideRight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#005A24"/>
+      <stop offset="100%" stop-color="#003314"/>
+    </linearGradient>
+    <linearGradient id="goldTrace" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="40%" stop-color="#FFD700"/>
+      <stop offset="75%" stop-color="#FFA000"/>
+      <stop offset="100%" stop-color="#FF8F00"/>
+    </linearGradient>
+    <linearGradient id="chipTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#37474F"/>
+      <stop offset="60%" stop-color="#263238"/>
+      <stop offset="100%" stop-color="#1A2024"/>
+    </linearGradient>
+    <linearGradient id="chipSideLeft" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#21272B"/>
+      <stop offset="100%" stop-color="#14181B"/>
+    </linearGradient>
+    <linearGradient id="chipSideRight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#181D20"/>
+      <stop offset="100%" stop-color="#0D1012"/>
+    </linearGradient>
+    <linearGradient id="silverPin" x1="0%" y1="0%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#CFD8DC"/>
+      <stop offset="100%" stop-color="#90A4AE"/>
+    </linearGradient>
+  </defs>
+  <!-- Ground Shadow -->
+  <ellipse cx="128" cy="180" rx="92" ry="28" fill="#040D07" opacity="0.45" filter="blur(8px)"/>
+  <polygon points="54,124 128,172 202,124 128,80" fill="#040D07" opacity="0.25" filter="blur(6px)"/>
+  <g filter="url(#shadow)">
+    <!-- PCB Left Thickness Side -->
+    <polygon points="58.7,114 128,154 128,168 58.7,128" fill="url(#pcbSideLeft)" stroke="#004D20" stroke-width="1"/>
+    <!-- PCB Right Thickness Side -->
+    <polygon points="128,154 197.3,114 197.3,128 128,168" fill="url(#pcbSideRight)" stroke="#003314" stroke-width="1"/>
+    <line x1="128" y1="154" x2="128" y2="168" stroke="#00E676" stroke-width="1.2" opacity="0.8"/>
+    <!-- PCB Top Face -->
+    <polygon points="128,74 197.3,114 128,154 58.7,114" fill="url(#pcbTop)" stroke="#00C853" stroke-width="1.5"/>
+    <!-- Edge Highlight Lines -->
+    <polyline points="58.7,114 128,74 197.3,114" fill="none" stroke="#B9F6CA" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+    <polyline points="58.7,114 128,154 197.3,114" fill="none" stroke="#005A24" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Gold Traces & Vias -->
+    <path d="M 80 114 L 95 114 L 105 108 L 112 108" fill="none" stroke="url(#goldTrace)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 72 120 L 86 128 L 96 128 L 108 121" fill="none" stroke="url(#goldTrace)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 88 100 L 100 100 L 110 105" fill="none" stroke="url(#goldTrace)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 148 108 L 155 108 L 165 114 L 178 114" fill="none" stroke="url(#goldTrace)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 148 121 L 158 128 L 170 128 L 180 122" fill="none" stroke="url(#goldTrace)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 146 105 L 156 100 L 168 100" fill="none" stroke="url(#goldTrace)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 128 85 L 128 98" fill="none" stroke="url(#goldTrace)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M 128 132 L 128 145" fill="none" stroke="url(#goldTrace)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M 122 131 L 118 136 L 118 143" fill="none" stroke="url(#goldTrace)" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M 134 131 L 138 136 L 138 143" fill="none" stroke="url(#goldTrace)" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="80" cy="114" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="80" cy="114" r="1.3" fill="#003D18"/>
+    <circle cx="72" cy="120" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="72" cy="120" r="1.3" fill="#003D18"/>
+    <circle cx="88" cy="100" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="88" cy="100" r="1.3" fill="#003D18"/>
+    <circle cx="178" cy="114" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="178" cy="114" r="1.3" fill="#003D18"/>
+    <circle cx="180" cy="122" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="180" cy="122" r="1.3" fill="#003D18"/>
+    <circle cx="168" cy="100" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="168" cy="100" r="1.3" fill="#003D18"/>
+    <circle cx="128" cy="85" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="128" cy="85" r="1.3" fill="#003D18"/>
+    <circle cx="128" cy="145" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="128" cy="145" r="1.3" fill="#003D18"/>
+    <circle cx="118" cy="143" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="118" cy="143" r="1.3" fill="#003D18"/>
+    <circle cx="138" cy="143" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="138" cy="143" r="1.3" fill="#003D18"/>
+    <circle cx="100" cy="88" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="100" cy="88" r="1.3" fill="#003D18"/>
+    <circle cx="156" cy="88" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="156" cy="88" r="1.3" fill="#003D18"/>
+    <circle cx="105" cy="140" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="105" cy="140" r="1.3" fill="#003D18"/>
+    <circle cx="151" cy="140" r="2.8" fill="url(#goldTrace)"/>
+    <circle cx="151" cy="140" r="1.3" fill="#003D18"/>
+    <!-- SMD Resistors / Capacitors -->
+    <g transform="translate(90, 126)">
+      <polygon points="0,0 8,-4 14,0 6,4" fill="#003D18"/>
+      <polygon points="1,-0.5 7,-3.5 13,-0.5 7,2.5" fill="#37474F"/>
+      <polygon points="1,-0.5 3,-1.5 5,0 3,1" fill="url(#silverPin)"/>
+      <polygon points="9,1 11,2 13,-0.5 11,-1.5" fill="url(#silverPin)"/>
+    </g>
+    <g transform="translate(160, 126)">
+      <polygon points="0,0 8,-4 14,0 6,4" fill="#003D18"/>
+      <polygon points="1,-0.5 7,-3.5 13,-0.5 7,2.5" fill="#C62828"/>
+      <polygon points="1,-0.5 3,-1.5 5,0 3,1" fill="url(#silverPin)"/>
+      <polygon points="9,1 11,2 13,-0.5 11,-1.5" fill="url(#silverPin)"/>
+    </g>
+    <!-- Microchip Silver Pins -->
+    <line x1="105.1" y1="113.2" x2="110.1" y2="110.3" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="110.0" y1="110.4" x2="115.0" y2="107.5" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="114.8" y1="107.6" x2="119.8" y2="104.7" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="119.7" y1="104.8" x2="124.7" y2="101.9" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="131.3" y1="101.9" x2="136.3" y2="104.8" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="136.2" y1="104.7" x2="141.2" y2="107.6" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="141.0" y1="107.5" x2="146.0" y2="110.4" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="145.9" y1="110.3" x2="150.9" y2="113.2" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="105.1" y1="114.8" x2="110.1" y2="117.7" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="110.0" y1="117.6" x2="115.0" y2="120.5" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="114.8" y1="120.4" x2="119.8" y2="123.3" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="119.7" y1="123.2" x2="124.7" y2="126.1" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="131.3" y1="126.1" x2="136.3" y2="123.2" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="136.2" y1="123.3" x2="141.2" y2="120.4" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="141.0" y1="120.5" x2="146.0" y2="117.6" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <line x1="145.9" y1="117.7" x2="150.9" y2="114.8" stroke="url(#silverPin)" stroke-width="2" stroke-linecap="round"/>
+    <!-- Microchip Body -->
+    <polygon points="103.8,114 128,128 128,134 103.8,120" fill="url(#chipSideLeft)" stroke="#14181B" stroke-width="0.8"/>
+    <polygon points="128,128 152.2,114 152.2,120 128,134" fill="url(#chipSideRight)" stroke="#0D1012" stroke-width="0.8"/>
+    <polygon points="128,100 152.2,114 128,128 103.8,114" fill="url(#chipTop)" stroke="#455A64" stroke-width="1.2"/>
+    <polyline points="103.8,114 128,100 152.2,114" fill="none" stroke="#78909C" stroke-width="1.2" stroke-linecap="round" opacity="0.8"/>
+    <circle cx="112" cy="114" r="2.2" fill="#14181B" stroke="#455A64" stroke-width="0.6"/>
+    <!-- Chip Gold Emblem / Die Core -->
+    <polygon points="128,110 134,114 128,118 122,114" fill="url(#goldTrace)" opacity="0.9"/>
+    <polygon points="128,112 131,114 128,116 125,114" fill="#263238"/>
+  </g>
+</svg>

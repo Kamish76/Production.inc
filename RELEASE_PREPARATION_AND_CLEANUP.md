@@ -209,15 +209,15 @@ assets/
 └── images/
     ├── AppIcon.png
     └── icons/
-        ├── materials/      # mat_cardboard.png, mat_basic_metals.png, etc.
-        ├── products/       # prod_box.png, prod_wires.png, etc.
-        ├── machines/       # mach_auto_buy.png, mach_build_basic.png, etc.
-        ├── fleet/          # fleet_courier_bike.png, fleet_delivery_van.png, etc.
-        ├── tiers/          # tier1_garage.png, tier2_workshop.png, etc.
-        ├── research/       # tech_overclock.png, tech_discount.png, etc.
-        ├── clients/        # client_orbit.png, client_apex.png, etc.
-        ├── prestige/       # golden_share.png, ipo_bell.png, etc.
-        └── ui/             # ui_manifest_cart.png, ui_portfolio.png, etc.
+        ├── materials/      # mat_cardboard.svg, mat_basic_metals.svg, etc.
+        ├── products/       # prod_box.svg, prod_wires.svg, etc.
+        ├── machines/       # mach_auto_buy.svg, mach_build_basic.svg, etc.
+        ├── fleet/          # fleet_courier_bike.svg, fleet_delivery_van.svg, etc.
+        ├── tiers/          # tier1_garage.svg, tier2_workshop.svg, etc.
+        ├── research/       # tech_overclock.svg, tech_discount.svg, etc.
+        ├── clients/        # client_orbit.svg, client_apex.svg, etc.
+        ├── prestige/       # golden_share.svg, ipo_bell.svg, etc.
+        └── ui/             # ui_manifest_cart.svg, ui_portfolio.svg, etc.
 ```
 
 #### Pubspec Asset Registration:
@@ -238,11 +238,11 @@ flutter:
     - assets/images/icons/ui/
 ```
 
-#### Fail-Safe Visual Component (`GameAssetIcon`):
+#### Fail-Safe Visual Component (`GameIcon` via `flutter_svg`):
 To prevent missing-asset runtime errors or layout breaks while individual icon batches are finalized:
-- [ ] Create a reusable widget `GameAssetIcon(assetPath: '...', fallbackIcon: Icons.precision_manufacturing, fallbackEmoji: '📦')`.
-- [ ] Wire `errorBuilder` to render the fallback icon/emoji smoothly if an image file hasn't been copied to the bundle yet.
-- [ ] Update card widgets (`ItemCard`, `MachineCard`, `FleetCard`, `TechTreeCard`, `CorporateContractCard`) to support both asset images and fallback glyphs.
+- [x] Create a centralized widget `GameIcon(assetPath: '...', fallbackEmoji: '📦')` rendering vector assets via `flutter_svg` (`SvgPicture.asset`). (✅ **Completed**)
+- [x] Wire `placeholderBuilder` and `errorBuilder` to render the fallback glyph smoothly if an asset file hasn't been copied to the bundle yet. (✅ **Completed**)
+- [x] Connect custom icons into `RawMaterialCard`, `ProductCard`, `OrderItemsList`, `ShippingManifestDrawer`, and `RecipeRow`. (✅ **Completed**)
 
 ---
 
@@ -384,11 +384,11 @@ Execute the following verification suite prior to tagging `v2.0.0`:
 
 ### Phase B: App Icon & Asset Integration
 - [ ] Run `dart run flutter_launcher_icons` and verify all Android mipmap densities and adaptive icons.
-- [ ] Create `assets/images/icons/` subdirectories (`materials`, `products`, `machines`, `fleet`, `tiers`, `research`, `clients`, `prestige`, `ui`).
-- [ ] Register new asset folders under `flutter.assets` in `pubspec.yaml`.
-- [ ] Add created icon PNG files into their respective subdirectories.
-- [ ] Implement `GameAssetIcon` helper widget with graceful fallback to emojis/Material icons.
-- [ ] Connect custom icons into `ItemCard`, `MachineCard`, `FleetCard`, and `TechTreeCard`.
+- [x] Create `assets/images/icons/` subdirectories (`materials`, `products`, `machines`, `fleet`, `tiers`, `research`, `clients`, `prestige`, `ui`). (✅ **Completed**)
+- [x] Register new asset folders under `flutter.assets` in `pubspec.yaml` and install `flutter_svg: ^2.3.0`. (✅ **Completed**)
+- [x] Add created icon SVG files into their respective subdirectories (Batch 1: Core Foundation 10 icons complete with clean alpha transparency and SVG packaging). (✅ **Completed**)
+- [x] Implement `GameIcon` helper widget with `flutter_svg` and graceful fallback to emojis/Material icons. (✅ **Completed**)
+- [x] Connect custom icons into `RawMaterialCard`, `ProductCard`, `OrderItemsList`, `ShippingManifestDrawer`, and `RecipeRow`. (✅ **Completed**)
 
 ### Phase C: Google Play Console Release Prep
 - [ ] Verify version `2.0.0+20` in `pubspec.yaml` and `android/app/build.gradle.kts`.

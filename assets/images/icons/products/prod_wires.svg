@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#070E14" flood-opacity="0.5"/>
+    </filter>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+    </filter>
+    <linearGradient id="frontFlangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#37474F"/>
+      <stop offset="35%" stop-color="#21272B"/>
+      <stop offset="70%" stop-color="#181D20"/>
+      <stop offset="100%" stop-color="#0E1214"/>
+    </linearGradient>
+    <linearGradient id="frontFlangeRim" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#78909C"/>
+      <stop offset="30%" stop-color="#37474F"/>
+      <stop offset="70%" stop-color="#1E2428"/>
+      <stop offset="100%" stop-color="#101416"/>
+    </linearGradient>
+    <linearGradient id="backFlangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#455A64"/>
+      <stop offset="50%" stop-color="#263238"/>
+      <stop offset="100%" stop-color="#12171A"/>
+    </linearGradient>
+    <linearGradient id="boreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080B0D"/>
+      <stop offset="60%" stop-color="#141A1E"/>
+      <stop offset="100%" stop-color="#263238"/>
+    </linearGradient>
+    <linearGradient id="wireCylGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF5252"/>
+      <stop offset="18%" stop-color="#FF8A80"/>
+      <stop offset="35%" stop-color="#FF3D00"/>
+      <stop offset="70%" stop-color="#D50000"/>
+      <stop offset="100%" stop-color="#850000"/>
+    </linearGradient>
+    <linearGradient id="wireSheen" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFCDD2" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#FFCDD2" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="silverConductor" x1="0%" y1="0%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="30%" stop-color="#CFD8DC"/>
+      <stop offset="65%" stop-color="#90A4AE"/>
+      <stop offset="100%" stop-color="#546E7A"/>
+    </linearGradient>
+  </defs>
+  <!-- Ambient Ground Shadow -->
+  <ellipse cx="132" cy="222" rx="96" ry="20" fill="#060A0E" opacity="0.45" filter="blur(7px)"/>
+  <ellipse cx="140" cy="216" rx="75" ry="14" fill="#060A0E" opacity="0.6" filter="blur(4px)"/>
+  <g filter="url(#shadow)">
+    <!-- Back Flange -->
+    <g transform="translate(78, 84)">
+      <ellipse cx="0" cy="0" rx="66" ry="33" transform="rotate(113)" fill="#101416" stroke="#263238" stroke-width="1.5"/>
+    </g>
+    <g transform="translate(82, 86)">
+      <ellipse cx="0" cy="0" rx="64" ry="32" transform="rotate(113)" fill="url(#backFlangeGrad)" stroke="#37474F" stroke-width="1.5"/>
+    </g>
+    <!-- Wire Windings on Spool Barrel -->
+    <g transform="translate(86.0, 88.0)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(92.8, 90.9)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(99.7, 93.8)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(106.5, 96.8)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(113.3, 99.7)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(120.2, 102.6)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(127.0, 105.5)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(133.8, 108.4)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(140.7, 111.3)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(147.5, 114.2)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(154.3, 117.2)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(161.2, 120.1)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <g transform="translate(168.0, 123.0)">
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#D50000" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="0" cy="0" rx="55" ry="27.5" transform="rotate(113)" fill="none" stroke="#FF5252" stroke-width="3" stroke-linecap="round"/>
+      <path d="M -15 -27.5 A 55 27.5 0 0 1 25 -24" transform="rotate(113)" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    </g>
+    <!-- Longitudinal Specular Light Band -->
+    <path d="M 68 62 Q 126 84 165 98 L 163 107 Q 124 93 66 71 Z" fill="url(#wireSheen)" opacity="0.6" filter="url(#softGlow)"/>
+    <!-- Front Flange Outer Body -->
+    <g transform="translate(172, 124)">
+      <ellipse cx="0" cy="0" rx="66" ry="33" transform="rotate(113)" fill="#101416" stroke="#181D20" stroke-width="2"/>
+    </g>
+    <g transform="translate(176, 126)">
+      <ellipse cx="0" cy="0" rx="65" ry="32.5" transform="rotate(113)" fill="url(#frontFlangeGrad)" stroke="url(#frontFlangeRim)" stroke-width="2.5"/>
+      <ellipse cx="0" cy="0" rx="62" ry="31" transform="rotate(113)" fill="none" stroke="#455A64" stroke-width="1" opacity="0.6"/>
+      <ellipse cx="0" cy="0" rx="26" ry="13" transform="rotate(113)" fill="none" stroke="#263238" stroke-width="2"/>
+      <ellipse cx="0" cy="0" rx="24" ry="12" transform="rotate(113)" fill="url(#boreGrad)"/>
+      <path d="M -12 11 A 24 12 0 0 0 16 9" transform="rotate(113)" fill="none" stroke="#546E7A" stroke-width="1.5" opacity="0.75"/>
+    </g>
+    <!-- Unspooled Wire Lead Emerging from the Bottom -->
+    <path d="M 85 152 C 60 175 32 195 28 214 C 26 223 38 227 55 227 L 115 226 Q 135 226 140 224" fill="none" stroke="#060A0E" stroke-width="6" opacity="0.45" filter="url(#softGlow)"/>
+    <path d="M 88 146 C 65 170 34 192 30 212 C 28 220 38 224 55 224 L 115 223" fill="none" stroke="#4A0000" stroke-width="7.5" stroke-linecap="round"/>
+    <path d="M 88 146 C 65 170 34 192 30 212 C 28 220 38 224 55 224 L 115 223" fill="none" stroke="url(#wireCylGrad)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 88 145 C 65 169 34 191 31 210 C 29 218 39 222 55 222 L 115 221" fill="none" stroke="#FFA7A7" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+    <path d="M 40 221 L 110 221" fill="none" stroke="#FFFFFF" stroke-width="0.9" stroke-linecap="round" opacity="0.6"/>
+    <ellipse cx="115" cy="222" rx="1.8" ry="3.0" fill="#7F0000" stroke="#FF5252" stroke-width="0.8"/>
+    <!-- Stripped Conductor Core -->
+    <path d="M 115 220.5 L 138 219.5 Q 141 222 139 224.5 L 115 223.5 Z" fill="#546E7A"/>
+    <line x1="115" y1="220.5" x2="138" y2="219.0" stroke="#ECEFF1" stroke-width="1.4" stroke-linecap="round"/>
+    <line x1="115" y1="222.0" x2="141" y2="221.5" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="115" y1="223.5" x2="138" y2="223.5" stroke="#B0BEC5" stroke-width="1.4" stroke-linecap="round"/>
+    <line x1="115" y1="221.0" x2="135" y2="220.0" stroke="#FFAB91" stroke-width="0.9" stroke-linecap="round"/>
+    <line x1="115" y1="222.8" x2="136" y2="222.5" stroke="#FFCCBC" stroke-width="0.9" stroke-linecap="round"/>
+    <circle cx="141" cy="221.5" r="1.1" fill="#FFFFFF"/>
+    <circle cx="138" cy="219.0" r="0.9" fill="#FFFFFF"/>
+    <circle cx="138" cy="223.5" r="0.8" fill="#FFFFFF"/>
+  </g>
+</svg>

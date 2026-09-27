@@ -21,6 +21,7 @@ dependencies:
   android_intent_plus: ^6.0.0
   logger: ^2.6.2
   path: ^1.9.0
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -33,6 +34,15 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/icons/materials/
+    - assets/images/icons/products/
+    - assets/images/icons/machines/
+    - assets/images/icons/fleet/
+    - assets/images/icons/tiers/
+    - assets/images/icons/research/
+    - assets/images/icons/clients/
+    - assets/images/icons/prestige/
+    - assets/images/icons/ui/
 
 flutter_launcher_icons:
   android: "launcher_icon"

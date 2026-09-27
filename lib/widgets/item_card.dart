@@ -5,6 +5,7 @@ import '../constants/game_constants.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
 import '../models/game_data.dart' as data;
+import 'game_icon.dart';
 import 'quantity_selector_button.dart';
 
 /// Consolidated card widget for materials and products across buy/sell/build modes
@@ -103,11 +104,10 @@ class ItemCard extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               Center(
-                child: Text(
-                  _isMaterial ? _material.emoji : _product.emoji,
-                  style: const TextStyle(fontSize: 24),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: GameIcon(
+                  itemId: _isMaterial ? _material.id : _product.id,
+                  fallbackEmoji: _isMaterial ? _material.emoji : _product.emoji,
+                  size: 32,
                 ),
               ),
               // Buildable indicator: small check/X near the icon (still visible)
@@ -289,9 +289,10 @@ class ItemCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       if (emoji.isNotEmpty)
-                        Text(
-                          emoji,
-                          style: const TextStyle(fontSize: 10),
+                        GameIcon(
+                          itemId: id,
+                          fallbackEmoji: emoji,
+                          size: 14,
                         ),
                       if (emoji.isNotEmpty) const SizedBox(width: 4),
                       Expanded(
@@ -740,7 +741,12 @@ class ItemCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (emoji.isNotEmpty) Text(emoji, style: const TextStyle(fontSize: 12)),
+                    if (emoji.isNotEmpty)
+                      GameIcon(
+                        itemId: id,
+                        fallbackEmoji: emoji,
+                        size: 14,
+                      ),
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
@@ -789,7 +795,11 @@ class ItemCard extends StatelessWidget {
           child: Row(
             children: [
               if (emoji.isNotEmpty)
-                Text(emoji, style: const TextStyle(fontSize: 14)),
+                GameIcon(
+                  itemId: id,
+                  fallbackEmoji: emoji,
+                  size: 16,
+                ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

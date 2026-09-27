@@ -3,6 +3,7 @@ import '../constants/game_constants.dart';
 import '../models/game_models.dart';
 import '../models/game_data.dart';
 import 'common_widgets.dart';
+import 'game_icon.dart';
 
 /// Enhanced product card with consistent styling and animations
 ///
@@ -143,7 +144,11 @@ class ProductCard extends StatelessWidget {
           child: Row(
             children: [
               if (product.emoji.isNotEmpty) ...[
-                Text(product.emoji, style: const TextStyle(fontSize: 24)),
+                GameIcon.forProduct(
+                  id: product.id,
+                  fallbackEmoji: product.emoji,
+                  size: 28,
+                ),
                 const SizedBox(width: UIConstants.standardSpacing),
               ],
               Expanded(
@@ -300,7 +305,11 @@ class ProductCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (emoji.isNotEmpty) ...[
-                        Text(emoji, style: const TextStyle(fontSize: 12)),
+                        GameIcon(
+                          itemId: materialId,
+                          fallbackEmoji: emoji,
+                          size: 14,
+                        ),
                         const SizedBox(width: 4),
                       ],
                       Text(

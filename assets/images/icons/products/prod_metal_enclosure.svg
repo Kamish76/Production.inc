@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="9" flood-color="#0A1014" flood-opacity="0.5"/>
+    </filter>
+    <linearGradient id="alumTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="35%" stop-color="#ECEFF1"/>
+      <stop offset="70%" stop-color="#CFD8DC"/>
+      <stop offset="100%" stop-color="#B0BEC5"/>
+    </linearGradient>
+    <linearGradient id="alumLeft" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#90A4AE"/>
+      <stop offset="50%" stop-color="#78909C"/>
+      <stop offset="100%" stop-color="#546E7A"/>
+    </linearGradient>
+    <linearGradient id="alumRight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#607D8B"/>
+      <stop offset="50%" stop-color="#455A64"/>
+      <stop offset="100%" stop-color="#263238"/>
+    </linearGradient>
+    <linearGradient id="ventSlot" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#182024"/>
+      <stop offset="100%" stop-color="#263238"/>
+    </linearGradient>
+    <linearGradient id="metalScrew" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#B0BEC5"/>
+      <stop offset="100%" stop-color="#455A64"/>
+    </linearGradient>
+  </defs>
+  <!-- Ground Drop Shadow -->
+  <ellipse cx="128" cy="208" rx="94" ry="24" fill="#0A1014" opacity="0.45" filter="blur(8px)"/>
+  <g filter="url(#shadow)">
+    <!-- Base Extruded Mounting Flanges -->
+    <polygon points="42,126 58,135 58,143 42,134" fill="#546E7A" stroke="#37474F" stroke-width="0.8"/>
+    <circle cx="50" cy="132" r="2.5" fill="#21272B"/>
+    <polygon points="198,135 214,126 214,134 198,143" fill="#37474F" stroke="#263238" stroke-width="0.8"/>
+    <circle cx="206" cy="132" r="2.5" fill="#14191C"/>
+    <!-- Main Chassis Box Body -->
+    <polygon points="54,106 128,148 128,198 54,156" fill="url(#alumLeft)" stroke="#546E7A" stroke-width="1"/>
+    <polygon points="128,148 202,106 202,156 128,198" fill="url(#alumRight)" stroke="#37474F" stroke-width="1"/>
+    <polygon points="128,64 202,106 128,148 54,106" fill="url(#alumTop)" stroke="#CFD8DC" stroke-width="1.2"/>
+    <!-- Polished Bevel / Chamfer Highlight Lines -->
+    <polyline points="54,106 128,64 202,106" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="128" y1="148" x2="128" y2="198" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" opacity="0.9"/>
+    <polyline points="54,106 128,148 202,106" fill="none" stroke="#CFD8DC" stroke-width="1.2"/>
+    <!-- CNC Machined Ventilation Grilles / Heat Dissipation Slots on Right Side -->
+    <g>
+      <polygon points="140,140 186,114 186,118 140,144" fill="url(#ventSlot)"/>
+      <line x1="140" y1="144" x2="186" y2="118" stroke="#78909C" stroke-width="0.8"/>
+      <polygon points="140,148 186,122 186,126 140,152" fill="url(#ventSlot)"/>
+      <line x1="140" y1="152" x2="186" y2="126" stroke="#78909C" stroke-width="0.8"/>
+      <polygon points="140,156 186,130 186,134 140,160" fill="url(#ventSlot)"/>
+      <line x1="140" y1="160" x2="186" y2="134" stroke="#78909C" stroke-width="0.8"/>
+      <polygon points="140,164 186,138 186,142 140,168" fill="url(#ventSlot)"/>
+      <line x1="140" y1="168" x2="186" y2="142" stroke="#78909C" stroke-width="0.8"/>
+      <polygon points="140,172 186,146 186,150 140,176" fill="url(#ventSlot)"/>
+      <line x1="140" y1="176" x2="186" y2="150" stroke="#78909C" stroke-width="0.8"/>
+    </g>
+    <!-- Front Industrial Interface on Left Face -->
+    <polygon points="68,124 82,132 82,148 68,140" fill="#37474F" stroke="#263238" stroke-width="0.8"/>
+    <polygon points="70,126 80,132 80,138 70,132" fill="#00E5FF"/>
+    <circle cx="75" cy="133" r="1.5" fill="#FFFFFF"/>
+    <!-- Recessed Display / Communication Bezel -->
+    <polygon points="88,138 116,154 116,170 88,154" fill="#21272B" stroke="#1A2024" stroke-width="0.8"/>
+    <polygon points="90,140 114,154 114,166 90,152" fill="#14191C"/>
+    <line x1="93" y1="146" x2="108" y2="155" stroke="#76FF03" stroke-width="1.2"/>
+    <line x1="93" y1="150" x2="102" y2="155" stroke="#00E5FF" stroke-width="1.2"/>
+    <!-- 4 Industrial Machine Screws on Top Panel -->
+    <g transform="translate(128, 72)">
+      <circle cx="0" cy="0" r="3.2" fill="url(#metalScrew)" stroke="#546E7A" stroke-width="0.6"/>
+      <line x1="-1.5" y1="0" x2="1.5" y2="0" stroke="#263238" stroke-width="0.8"/>
+      <line x1="0" y1="-1.5" x2="0" y2="1.5" stroke="#263238" stroke-width="0.8"/>
+    </g>
+    <g transform="translate(192, 106)">
+      <circle cx="0" cy="0" r="3.2" fill="url(#metalScrew)" stroke="#546E7A" stroke-width="0.6"/>
+      <line x1="-1.5" y1="0" x2="1.5" y2="0" stroke="#263238" stroke-width="0.8"/>
+      <line x1="0" y1="-1.5" x2="0" y2="1.5" stroke="#263238" stroke-width="0.8"/>
+    </g>
+    <g transform="translate(128, 140)">
+      <circle cx="0" cy="0" r="3.2" fill="url(#metalScrew)" stroke="#546E7A" stroke-width="0.6"/>
+      <line x1="-1.5" y1="0" x2="1.5" y2="0" stroke="#263238" stroke-width="0.8"/>
+      <line x1="0" y1="-1.5" x2="0" y2="1.5" stroke="#263238" stroke-width="0.8"/>
+    </g>
+    <g transform="translate(64, 106)">
+      <circle cx="0" cy="0" r="3.2" fill="url(#metalScrew)" stroke="#546E7A" stroke-width="0.6"/>
+      <line x1="-1.5" y1="0" x2="1.5" y2="0" stroke="#263238" stroke-width="0.8"/>
+      <line x1="0" y1="-1.5" x2="0" y2="1.5" stroke="#263238" stroke-width="0.8"/>
+    </g>
+  </g>
+</svg>

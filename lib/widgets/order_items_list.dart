@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/game_models.dart' as game;
 import '../models/game_data.dart';
+import 'game_icon.dart';
 
 class OrderItemsList extends StatelessWidget {
   final List<game.ShippingItem> items;
@@ -27,9 +28,10 @@ class OrderItemsList extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: verticalPadding),
           child: Row(
             children: [
-              Text(
-                product.emoji, 
-                style: TextStyle(fontSize: emojiSize),
+              GameIcon.forProduct(
+                id: product.id,
+                fallbackEmoji: product.emoji,
+                size: emojiSize,
               ),
               const SizedBox(width: 8),
               Text(
