@@ -134,6 +134,28 @@ class GameIcon extends StatelessWidget {
     'prod_speaker': 'assets/images/icons/products/prod_speaker.svg',
     'power_bank': 'assets/images/icons/products/prod_power_bank.svg',
     'prod_power_bank': 'assets/images/icons/products/prod_power_bank.svg',
+
+    // Batch 4: Advanced Consumer Electronics & Optics
+    'camera': 'assets/images/icons/products/prod_camera.svg',
+    'prod_camera': 'assets/images/icons/products/prod_camera.svg',
+    'e_reader': 'assets/images/icons/products/prod_e_reader.svg',
+    'prod_e_reader': 'assets/images/icons/products/prod_e_reader.svg',
+    'electric_scooter': 'assets/images/icons/products/prod_electric_scooter.svg',
+    'prod_electric_scooter': 'assets/images/icons/products/prod_electric_scooter.svg',
+    'gaming_console': 'assets/images/icons/products/prod_gaming_console.svg',
+    'prod_gaming_console': 'assets/images/icons/products/prod_gaming_console.svg',
+    'laptop': 'assets/images/icons/products/prod_laptop.svg',
+    'prod_laptop': 'assets/images/icons/products/prod_laptop.svg',
+    'smartphone': 'assets/images/icons/products/prod_smartphone.svg',
+    'prod_smartphone': 'assets/images/icons/products/prod_smartphone.svg',
+    'smartwatch': 'assets/images/icons/products/prod_smartwatch.svg',
+    'prod_smartwatch': 'assets/images/icons/products/prod_smartwatch.svg',
+    'solar_panel': 'assets/images/icons/products/prod_solar_panel.svg',
+    'prod_solar_panel': 'assets/images/icons/products/prod_solar_panel.svg',
+    'telescope': 'assets/images/icons/products/prod_telescope.svg',
+    'prod_telescope': 'assets/images/icons/products/prod_telescope.svg',
+    'vr_headset': 'assets/images/icons/products/prod_vr_headset.svg',
+    'prod_vr_headset': 'assets/images/icons/products/prod_vr_headset.svg',
   };
 
   // Batch 2: Factory Machinery & Logistics Fleet

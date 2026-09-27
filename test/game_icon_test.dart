@@ -94,6 +94,49 @@ void main() {
       );
     });
 
+    test('Resolves all Batch 4 products correctly as SVG', () {
+      expect(
+        GameIcon.resolveAssetPath('camera'),
+        'assets/images/icons/products/prod_camera.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('e_reader'),
+        'assets/images/icons/products/prod_e_reader.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('electric_scooter'),
+        'assets/images/icons/products/prod_electric_scooter.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('gaming_console'),
+        'assets/images/icons/products/prod_gaming_console.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('laptop'),
+        'assets/images/icons/products/prod_laptop.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('smartphone'),
+        'assets/images/icons/products/prod_smartphone.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('smartwatch'),
+        'assets/images/icons/products/prod_smartwatch.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('solar_panel'),
+        'assets/images/icons/products/prod_solar_panel.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('telescope'),
+        'assets/images/icons/products/prod_telescope.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('vr_headset'),
+        'assets/images/icons/products/prod_vr_headset.svg',
+      );
+    });
+
     test('Resolves all Batch 2 machines correctly as SVG', () {
       expect(
         GameIcon.resolveAssetPath('buyer'),
@@ -185,6 +228,10 @@ void main() {
         GameIcon.resolveAssetPath('prod_battery'),
         'assets/images/icons/products/prod_battery.svg',
       );
+      expect(
+        GameIcon.resolveAssetPath('prod_smartphone'),
+        'assets/images/icons/products/prod_smartphone.svg',
+      );
     });
 
     test('Returns null for uncreated / future assets', () {
@@ -202,6 +249,10 @@ void main() {
       expect(GameIcon.hasAsset('fleet_1'), isTrue);
       expect(GameIcon.hasAsset('battery'), isTrue);
       expect(GameIcon.hasAsset('speaker'), isTrue);
+      expect(GameIcon.hasAsset('smartphone'), isTrue);
+      expect(GameIcon.hasAsset('camera'), isTrue);
+      expect(GameIcon.hasAsset('solar_panel'), isTrue);
+      expect(GameIcon.hasAsset('vr_headset'), isTrue);
       expect(GameIcon.hasAsset('quantum_core'), isFalse);
     });
   });

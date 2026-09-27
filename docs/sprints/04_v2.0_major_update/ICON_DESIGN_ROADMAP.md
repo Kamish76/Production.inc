@@ -15,12 +15,12 @@ Track your overall asset completion progress across all batches:
 | **Batch 1** | **Core Foundation: Raw Materials & Starter Parts** | **10** | Tier 1: Garage Workshop | ✅ Complete | `10 / 10` |
 | **Batch 2** | **Factory Machinery & Logistics Fleet** | **11** | Core Automation & Shipping | ✅ Complete | `11 / 11` |
 | **Batch 3** | **Tier 2 Intermediates & Early Retail** | **10** | Tier 2: Light Assembly Facility | ✅ Complete | `10 / 10` |
-| **Batch 4** | **Specialized Branches: Robotics & Clean Energy** | **10** | Branch Specialization | 📋 Ready | `0 / 10` |
-| **Batch 5** | **Complex Parts, Flagships & Factory Tiers** | **11** | Tier 3–4: Precision & Megafactory | 📋 Ready | `0 / 11` |
+| **Batch 4** | **Advanced Consumer Electronics & Optics** | **10** | Tier 3: High-Tech Retail & Optics | ✅ Complete | `10 / 10` |
+| **Batch 5** | **Specialized Branches & Factory Tiers** | **11** | Tier 3–4: Precision & Megafactory | 📋 Ready | `0 / 11` |
 | **Batch 6** | **R&D Tech Tree, Lab Systems & Corporate Clients** | **10** | Phase 4: R&D & B2B Contracts | 📋 Ready | `0 / 10` |
 | **Batch 7** | **Prestige IPO & Quantum Prototypes** | **8** | Phase 5: Wall Street Prestige | 📋 Ready | `0 / 8` |
 | **Batch 8** | **UI HUD, Navigation & Action Badges** | **10** | System Polish & Navigation | 📋 Ready | `0 / 10` |
-| **TOTAL** | **Complete Game Asset Suite** | **80** | **All Game Phases** | 🎨 **In Progress** | **`31 / 80` (38.8%)** |
+| **TOTAL** | **Complete Game Asset Suite** | **80** | **All Game Phases** | 🎨 **In Progress** | **`41 / 80` (51.3%)** |
 
 ---
 
@@ -122,22 +122,22 @@ Use these standard accent highlights so players intuitively identify product fam
 
 ---
 
-## 🤖 Batch 4: Specialized Branches — Robotics & Clean Energy (Priority: ★★★★☆)
+## 📱 Batch 4: Advanced Consumer Electronics & Optics (Priority: ★★★★☆)
 
-> **Goal**: Support the Phase 3 industry branch choice (Robotics & Mechatronics vs. Renewable Energy & Storage).
+> **Goal**: High-tier consumer electronics, personal mobility, gaming, and precision optical instruments.
 
 | Done | File Target | Item Name (`id`) | Current | Category | Visual Concept & Art Description | Dominant Color |
 | :---: | :--- | :--- | :---: | :---: | :--- | :--- |
-| [ ] | `icons/products/prod_silicon_wafer.svg` | **Silicon Wafer**<br>`silicon_wafer` | 💿 | Basic (Robotics) | Mirror-polished circular silicon ingot disc with iridescent rainbow diffraction pattern. | Rainbow Holographic (`#B388FF`) |
-| [ ] | `icons/products/prod_copper_coils.svg` | **Copper Coils**<br>`copper_coils` | 🧲 | Basic (Robotics) | Tightly wound electromagnetic copper magnet wire spool with exposed enameled terminals. | Polished Copper (`#D84315`) |
-| [ ] | `icons/products/prod_servo_motor.svg` | **Servo Motor**<br>`servo_motor` | 🦾 | Intermediate (Robotics) | High-torque micro metal-gear servo actuator with three-wire harness and spline output horn. | Mechatronics Blue & Silver (`#0288D1`) |
-| [ ] | `icons/products/prod_microcontroller.svg` | **Microcontroller**<br>`microcontroller` | 🔲 | Intermediate (Robotics) | Quad-flat package (QFP) IC chip mounted on breakout board with blinking status LED. | Microchip Violet (`#651FFF`) |
-| [ ] | `icons/products/prod_chassis_alloy.svg` | **Chassis Alloy**<br>`chassis_alloy` | 🛡️ | Intermediate (Robotics) | Hydroformed structural carbon-titanium skeletal beam with hexagonal weight-saving cutouts. | Aerospace Titanium (`#78909C`) |
-| [ ] | `icons/products/prod_inverter_unit.svg` | **Inverter Unit**<br>`inverter_unit` | ⚡ | Intermediate (Clean Energy) | Pure sine wave DC-to-AC power converter unit with aluminum cooling fins and LED voltage display. | High-Voltage Amber (`#FF9100`) |
-| [ ] | `icons/products/prod_storage_cell.svg` | **Storage Cell**<br>`storage_cell` | 🪫 | Intermediate (Clean Energy) | Prismatic heavy-duty solid-state battery block with laser-welded busbar terminals. | Emerald Storage (`#00C853`) |
-| [ ] | `icons/products/prod_wall_clock.svg` | **Analog Wall Clock**<br>`wall_clock` | 🕰️ | Retail Product | Minimalist Bauhaus wall clock with visible skeleton gear movement and sweep second hand. | Clockmaker Brass (`#A1887F`) |
-| [ ] | `icons/products/prod_toy_robot.svg` | **Toy Robot**<br>`toy_robot` | 🤖 | Retail (Robotics) | Retro-futuristic walking wind-up tin/plastic robot with illuminated dome head and gripper arms. | Cyber Turquoise (`#00BCD4`) |
-| [ ] | `icons/products/prod_cleaning_drone.svg` | **Cleaning Drone**<br>`cleaning_drone` | 🛸 | Retail (Robotics) | Sleek circular robotic vacuum and lidar mapping drone with glowing laser sensor turret. | Pearl White & Gloss Black (`#ECEFF1`) |
+| [x] | `icons/products/prod_camera.svg` | **Digital Camera**<br>`camera` | 📹 | Retail Product | Compact mirrorless digital camera body with knurled exposure dial, LCD preview, and prime lens. | Magnesium Black (`#263238`) |
+| [x] | `icons/products/prod_e_reader.svg` | **E-Reader**<br>`e_reader` | 📖 | Retail Product | Slim e-ink paper-display tablet with leatherette case and crisp typography preview. | Paper White & Slate (`#ECEFF1`) |
+| [x] | `icons/products/prod_electric_scooter.svg` | **Electric Scooter**<br>`electric_scooter` | 🛴 | Retail Product | Aerodynamic urban commuter electric scooter with LED stem headlight and digital speedometer. | Cyber Yellow & Dark Grey (`#FFD54F`) |
+| [x] | `icons/products/prod_gaming_console.svg` | **Gaming Console**<br>`gaming_console` | 🎮 | Retail Product | Next-gen ergonomic gaming console with glowing LED cooling intake and wireless controller. | Polar White & Neon Blue (`#2979FF`) |
+| [x] | `icons/products/prod_laptop.svg` | **Laptop Computer**<br>`laptop` | 💻 | Retail Product | Ultra-thin aluminum unibody clamshell laptop with illuminated keyboard and bezel-less display. | Space Grey Aluminum (`#78909C`) |
+| [x] | `icons/products/prod_smartphone.svg` | **Smartphone**<br>`smartphone` | 📱 | Retail Product | Bezel-less flagship glass-slab smartphone with holographic edge screen and triple camera bump. | Sleek Sapphire (`#1A237E`) |
+| [x] | `icons/products/prod_smartwatch.svg` | **Smartwatch**<br>`smartwatch` | ⌚ | Retail Product | High-end biometric smartwatch with curved OLED face, silicone sport band, and pulse monitor. | Midnight Sport (`#212121`) |
+| [x] | `icons/products/prod_solar_panel.svg` | **Solar Panel**<br>`solar_panel` | 🌞 | Retail (Clean Energy) | Rigid aluminum-framed photovoltaic solar module angled on rooftop mounting brackets. | Deep Space Blue (`#0D47A1`) |
+| [x] | `icons/products/prod_telescope.svg` | **Optical Telescope**<br>`telescope` | 🔭 | Retail Product | Professional astronomical refractor telescope on equatorial tripod mount with brass focus knob. | Celestial Brass & Midnight (`#1A237E`) |
+| [x] | `icons/products/prod_vr_headset.svg` | **VR Headset**<br>`vr_headset` | 🥽 | Retail Product | Ergonomic standalone spatial computing VR headset with perimeter tracking cameras and halo strap. | Matte Carbon & Cyan Glow (`#00E5FF`) |
 
 ---
 
@@ -311,7 +311,7 @@ This guarantees:
 ---
 
 ## 🎯 Recommended Next Step
-Batch 1, Batch 2, & Batch 3 are **100% complete, vectorized, and integrated**! Next focus is **Batch 4: Specialized Branches — Robotics & Clean Energy (10 icons)**:
+Batch 1, Batch 2, Batch 3, & Batch 4 are **100% complete, vectorized, and integrated**! Next focus is **Batch 5: Specialized Branches & Factory Tiers (11 icons)**:
 1. `icons/products/prod_silicon_wafer.svg` (Silicon Wafer)
 2. `icons/products/prod_copper_coils.svg` (Copper Coils)
 3. `icons/products/prod_servo_motor.svg` (Servo Motor)
@@ -322,6 +322,7 @@ Batch 1, Batch 2, & Batch 3 are **100% complete, vectorized, and integrated**! N
 8. `icons/products/prod_wall_clock.svg` (Analog Wall Clock)
 9. `icons/products/prod_toy_robot.svg` (Toy Robot)
 10. `icons/products/prod_cleaning_drone.svg` (Cleaning Drone)
+11. `icons/products/prod_image_sensor.svg` (Image Sensor)
 
-Completing Batch 4 will unlock the specialized mechatronics, robotics, and clean energy storage tech branches!
+Completing Batch 5 will unlock specialized robotics, clean energy branches, and factory tier progression!
 
