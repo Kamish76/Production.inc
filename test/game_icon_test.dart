@@ -51,6 +51,76 @@ void main() {
       );
     });
 
+    test('Resolves all Batch 2 machines correctly as SVG', () {
+      expect(
+        GameIcon.resolveAssetPath('buyer'),
+        'assets/images/icons/machines/mach_auto_buy.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('mach_auto_buy'),
+        'assets/images/icons/machines/mach_auto_buy.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('basic_assembler'),
+        'assets/images/icons/machines/mach_build_basic.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('intermediate_assembler'),
+        'assets/images/icons/machines/mach_build_intermediate.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('complex_assembler'),
+        'assets/images/icons/machines/mach_build_complex.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('basic_seller'),
+        'assets/images/icons/machines/mach_auto_sell.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('tool_maintenance'),
+        'assets/images/icons/machines/tool_maintenance.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('tool_salvage'),
+        'assets/images/icons/machines/tool_salvage.svg',
+      );
+    });
+
+    test('Resolves all Batch 2 logistics fleet correctly as SVG', () {
+      expect(
+        GameIcon.resolveAssetPath('courier_bike'),
+        'assets/images/icons/fleet/fleet_courier_bike.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('fleet_1'),
+        'assets/images/icons/fleet/fleet_courier_bike.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('delivery_van'),
+        'assets/images/icons/fleet/fleet_delivery_van.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('fleet_2'),
+        'assets/images/icons/fleet/fleet_delivery_van.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('freight_truck'),
+        'assets/images/icons/fleet/fleet_freight_truck.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('fleet_3'),
+        'assets/images/icons/fleet/fleet_freight_truck.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('cargo_plane'),
+        'assets/images/icons/fleet/fleet_cargo_plane.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('fleet_4'),
+        'assets/images/icons/fleet/fleet_cargo_plane.svg',
+      );
+    });
+
     test('Handles prefixed IDs gracefully', () {
       expect(
         GameIcon.resolveAssetPath('mat_cardboard'),
@@ -59,6 +129,14 @@ void main() {
       expect(
         GameIcon.resolveAssetPath('prod_box'),
         'assets/images/icons/products/prod_box.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('mach_buyer'),
+        'assets/images/icons/machines/mach_auto_buy.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('fleet_courier_bike'),
+        'assets/images/icons/fleet/fleet_courier_bike.svg',
       );
     });
 
@@ -72,7 +150,8 @@ void main() {
     test('hasAsset correctly identifies registered icons', () {
       expect(GameIcon.hasAsset('cardboard'), isTrue);
       expect(GameIcon.hasAsset('box'), isTrue);
-      expect(GameIcon.hasAsset('wires'), isTrue);
+      expect(GameIcon.hasAsset('buyer'), isTrue);
+      expect(GameIcon.hasAsset('fleet_1'), isTrue);
       expect(GameIcon.hasAsset('quantum_core'), isFalse);
     });
   });
@@ -134,6 +213,16 @@ void main() {
                   fallbackEmoji: '🔌',
                   size: 28,
                 ),
+                GameIcon.forMachine(
+                  id: 'buyer',
+                  fallbackEmoji: '🤖',
+                  size: 28,
+                ),
+                GameIcon.forFleet(
+                  id: 'fleet_1',
+                  fallbackEmoji: '🚲',
+                  size: 28,
+                ),
               ],
             ),
           ),
@@ -141,9 +230,11 @@ void main() {
       );
 
       final svgs = tester.widgetList<SvgPicture>(find.byType(SvgPicture)).toList();
-      expect(svgs.length, 2);
+      expect(svgs.length, 4);
       expect(svgs[0].width, 28);
       expect(svgs[1].width, 28);
+      expect(svgs[2].width, 28);
+      expect(svgs[3].width, 28);
     });
   });
 }

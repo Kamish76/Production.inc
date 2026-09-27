@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/production_game_service.dart';
+import 'game_icon.dart';
 
 /// Card widget displaying the player's Logistics Fleet status and upgrade options
 class FleetUpgradeCard extends StatelessWidget {
@@ -48,7 +49,11 @@ class FleetUpgradeCard extends StatelessWidget {
                     color: Colors.orangeAccent.withValues(alpha: 0.4),
                   ),
                 ),
-                child: Text(currentTier.emoji, style: const TextStyle(fontSize: 26)),
+                child: GameIcon.forFleet(
+                  id: 'fleet_${currentTier.tierNumber}',
+                  fallbackEmoji: currentTier.emoji,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -202,7 +207,11 @@ class FleetUpgradeCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Text(nextTier.emoji, style: const TextStyle(fontSize: 20)),
+                  GameIcon.forFleet(
+                    id: 'fleet_${nextTier.tierNumber}',
+                    fallbackEmoji: nextTier.emoji,
+                    size: 22,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(

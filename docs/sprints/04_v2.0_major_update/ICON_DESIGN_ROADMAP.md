@@ -13,14 +13,14 @@ Track your overall asset completion progress across all batches:
 | Batch | Theme / Domain | Icons | Game Progression Phase | Status | Progress |
 | :---: | :--- | :---: | :--- | :---: | :---: |
 | **Batch 1** | **Core Foundation: Raw Materials & Starter Parts** | **10** | Tier 1: Garage Workshop | ✅ Complete | `10 / 10` |
-| **Batch 2** | **Factory Machinery & Logistics Fleet** | **11** | Core Automation & Shipping | 📋 Ready | `0 / 11` |
+| **Batch 2** | **Factory Machinery & Logistics Fleet** | **11** | Core Automation & Shipping | ✅ Complete | `11 / 11` |
 | **Batch 3** | **Tier 2 Intermediates & Early Retail** | **10** | Tier 2: Light Assembly Facility | 📋 Ready | `0 / 10` |
 | **Batch 4** | **Specialized Branches: Robotics & Clean Energy** | **10** | Branch Specialization | 📋 Ready | `0 / 10` |
 | **Batch 5** | **Complex Parts, Flagships & Factory Tiers** | **11** | Tier 3–4: Precision & Megafactory | 📋 Ready | `0 / 11` |
 | **Batch 6** | **R&D Tech Tree, Lab Systems & Corporate Clients** | **10** | Phase 4: R&D & B2B Contracts | 📋 Ready | `0 / 10` |
 | **Batch 7** | **Prestige IPO & Quantum Prototypes** | **8** | Phase 5: Wall Street Prestige | 📋 Ready | `0 / 8` |
 | **Batch 8** | **UI HUD, Navigation & Action Badges** | **10** | System Polish & Navigation | 📋 Ready | `0 / 10` |
-| **TOTAL** | **Complete Game Asset Suite** | **80** | **All Game Phases** | 🎨 **In Progress** | **`10 / 80` (12.5%)** |
+| **TOTAL** | **Complete Game Asset Suite** | **80** | **All Game Phases** | 🎨 **In Progress** | **`21 / 80` (26.3%)** |
 
 ---
 
@@ -89,17 +89,17 @@ Use these standard accent highlights so players intuitively identify product fam
 
 | Done | File Target | Asset Name (`id`) | Current | Category | Visual Concept & Art Description | Dominant Color |
 | :---: | :--- | :--- | :---: | :---: | :--- | :--- |
-| [ ] | `icons/machines/mach_auto_buy.svg` | **Auto-Buy Machine**<br>`buyer` | 🤖 | Automation Machine | Automated warehouse robotic procurement drone holding a barcode scanner and cargo pallet. | Supply Amber & Teal (`#FFB300`) |
-| [ ] | `icons/machines/mach_build_basic.svg` | **Basic Assembler**<br>`basic_assembler` | 🏭 | Automation Machine | Compact industrial assembly bench with hydraulic press arm and green cycle status LED. | Factory Blue (`#2196F3`) |
-| [ ] | `icons/machines/mach_build_intermediate.svg` | **Intermediate Assembler** | 🏭 | Automation Machine | Twin robotic arm workcell soldering precision circuit boards under an overhead clean light. | Precision Violet (`#7C4DFF`) |
-| [ ] | `icons/machines/mach_build_complex.svg` | **Complex Assembler** | 🔬 | Automation Machine | High-grade cleanroom chamber with vacuum suction manipulator and laser alignment beam. | Cleanroom Cyan (`#00E5FF`) |
-| [ ] | `icons/machines/mach_auto_sell.svg` | **Auto-Sell Dispatcher**<br>`basic_seller` | 🛒 | Automation Machine | Automated storefront fulfillment conveyor with checkout barcode laser and currency badge. | Commercial Emerald (`#00E676`) |
-| [ ] | `icons/machines/tool_maintenance.svg` | **Maintenance Checkup** | 🔧 | Tool / Diagnostics | High-tech adjustable torque wrench crossed with electronic oscilloscope diagnostic probe. | Warning Amber (`#FFA000`) |
-| [ ] | `icons/machines/tool_salvage.svg` | **Machine Salvage** | ♻️ | Tool / Decommission | Circular recycling arrows enclosing a disassembled gear and reclaim cash coin. | Eco Green & Silver (`#66BB6A`) |
-| [ ] | `icons/fleet/fleet_courier_bike.svg` | **Courier Bike (Tier 1)** | 🚲 | Logistics Fleet | Modern fixed-gear cargo bicycle with oversized insulated front rack and courier parcel bag. | Vibrant Orange (`#FF6E40`) |
-| [ ] | `icons/fleet/fleet_delivery_van.svg` | **Delivery Van (Tier 2)** | 🚐 | Logistics Fleet | Sleek electric commercial delivery van with side sliding door and corporate livery stripe. | Fleet Cobalt (`#1E88E5`) |
-| [ ] | `icons/fleet/fleet_freight_truck.svg` | **Freight Truck (Tier 3)** | 🚚 | Logistics Fleet | Heavy-duty 18-wheeler semi-truck cab with aerodynamic wind fairings and cargo container. | Heavy Industrial Crimson (`#E53935`) |
-| [ ] | `icons/fleet/fleet_cargo_plane.svg` | **Cargo Plane (Tier 4)** | ✈️ | Logistics Fleet | Twin-engine commercial airfreight cargo jet with nose cargo loading ramp open. | Aero Sky & Gold (`#00B0FF`) |
+| [x] | `icons/machines/mach_auto_buy.svg` | **Auto-Buy Machine**<br>`buyer` | 🤖 | Automation Machine | Automated warehouse robotic procurement drone holding a barcode scanner and cargo pallet. | Supply Amber & Teal (`#FFB300`) |
+| [x] | `icons/machines/mach_build_basic.svg` | **Basic Assembler**<br>`basic_assembler` | 🏭 | Automation Machine | Compact industrial assembly bench with hydraulic press arm and green cycle status LED. | Factory Blue (`#2196F3`) |
+| [x] | `icons/machines/mach_build_intermediate.svg` | **Intermediate Assembler** | 🏭 | Automation Machine | Twin robotic arm workcell soldering precision circuit boards under an overhead clean light. | Precision Violet (`#7C4DFF`) |
+| [x] | `icons/machines/mach_build_complex.svg` | **Complex Assembler** | 🔬 | Automation Machine | High-grade cleanroom chamber with vacuum suction manipulator and laser alignment beam. | Cleanroom Cyan (`#00E5FF`) |
+| [x] | `icons/machines/mach_auto_sell.svg` | **Auto-Sell Dispatcher**<br>`basic_seller` | 🛒 | Automation Machine | Automated storefront fulfillment conveyor with checkout barcode laser and currency badge. | Commercial Emerald (`#00E676`) |
+| [x] | `icons/machines/tool_maintenance.svg` | **Maintenance Checkup** | 🔧 | Tool / Diagnostics | High-tech adjustable torque wrench crossed with electronic oscilloscope diagnostic probe. | Warning Amber (`#FFA000`) |
+| [x] | `icons/machines/tool_salvage.svg` | **Machine Salvage** | ♻️ | Tool / Decommission | Circular recycling arrows enclosing a disassembled gear and reclaim cash coin. | Eco Green & Silver (`#66BB6A`) |
+| [x] | `icons/fleet/fleet_courier_bike.svg` | **Courier Bike (Tier 1)** | 🚲 | Logistics Fleet | Modern fixed-gear cargo bicycle with oversized insulated front rack and courier parcel bag. | Vibrant Orange (`#FF6E40`) |
+| [x] | `icons/fleet/fleet_delivery_van.svg` | **Delivery Van (Tier 2)** | 🚐 | Logistics Fleet | Sleek electric commercial delivery van with side sliding door and corporate livery stripe. | Fleet Cobalt (`#1E88E5`) |
+| [x] | `icons/fleet/fleet_freight_truck.svg` | **Freight Truck (Tier 3)** | 🚚 | Logistics Fleet | Heavy-duty 18-wheeler semi-truck cab with aerodynamic wind fairings and cargo container. | Heavy Industrial Crimson (`#E53935`) |
+| [x] | `icons/fleet/fleet_cargo_plane.svg` | **Cargo Plane (Tier 4)** | ✈️ | Logistics Fleet | Twin-engine commercial airfreight cargo jet with nose cargo loading ramp open. | Aero Sky & Gold (`#00B0FF`) |
 
 ---
 
@@ -311,17 +311,18 @@ This guarantees:
 ---
 
 ## 🎯 Recommended Next Step
-Batch 1 is **100% complete, vectorized, and integrated**! Next focus is **Batch 2: Factory Machinery & Logistics Fleet (11 icons)**:
-1. `mach_auto_buy.svg` (Auto-Buy Machine / Procurement Drone)
-2. `mach_build_basic.svg` (Basic Assembler)
-3. `mach_build_intermediate.svg` (Intermediate Assembler)
-4. `mach_build_complex.svg` (Complex Assembler)
-5. `mach_auto_sell.svg` (Auto-Sell Dispatcher)
-6. `tool_maintenance.svg` (Maintenance Checkup)
-7. `tool_salvage.svg` (Machine Salvage)
-8. `fleet_courier_bike.svg` (Courier Bike - Tier 1)
-9. `fleet_delivery_van.svg` (Delivery Van - Tier 2)
-10. `fleet_freight_truck.svg` (Freight Truck - Tier 3)
-11. `fleet_cargo_plane.svg` (Cargo Plane - Tier 4)
+Batch 1 & Batch 2 are **100% complete, vectorized, and integrated**! Next focus is **Batch 3: Tier 2 Intermediates & Early Retail (11 icons)**:
+1. `item_copper_wire.svg` (Copper Wire - Spool of braided copper wire)
+2. `item_glass_sheet.svg` (Glass Sheet - Polished architectural glass pane)
+3. `item_reinforced_alloy.svg` (Reinforced Alloy - Composite titanium-steel ingot)
+4. `item_electronic_components.svg` (Electronic Components - PCB board with microchips)
+5. `item_electric_motor.svg` (Electric Motor - Stator, copper coiled rotor, drive shaft)
+6. `item_hydraulic_pump.svg` (Hydraulic Pump - Compact fluid pump with pressure dial)
+7. `item_appliance.svg` (Kitchen Appliance - Premium microwave / smart toaster)
+8. `item_electric_scooter.svg` (Electric Scooter - Sleek commuter scooter)
+9. `item_drone.svg` (Commercial Drone - 4-rotor delivery drone with camera)
+10. `item_smartphone.svg` (Smartphone - Edge-to-edge glass display)
+11. `item_power_tools.svg` (Power Tool Set - Cordless brushless drill with battery pack)
 
-Completing Batch 2 will transform the Control Screen (Machines tab) and Logistics Fleet screen with bespoke custom machinery and vehicle artwork!
+Completing Batch 3 will unlock the intermediate manufacturing and consumer technology retail tiers!
+

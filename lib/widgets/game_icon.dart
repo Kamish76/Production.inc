@@ -55,8 +55,43 @@ class GameIcon extends StatelessWidget {
     );
   }
 
-  // --- Registered Asset Mappings (Batch 1: Core Foundation) ---
+  /// Factory constructor for an automation machine or tool.
+  factory GameIcon.forMachine({
+    Key? key,
+    required String id,
+    required String fallbackEmoji,
+    double size = 24.0,
+    BoxFit fit = BoxFit.contain,
+  }) {
+    return GameIcon(
+      key: key,
+      itemId: id,
+      fallbackEmoji: fallbackEmoji,
+      size: size,
+      fit: fit,
+    );
+  }
 
+  /// Factory constructor for a logistics fleet carrier.
+  factory GameIcon.forFleet({
+    Key? key,
+    required String id,
+    required String fallbackEmoji,
+    double size = 24.0,
+    BoxFit fit = BoxFit.contain,
+  }) {
+    return GameIcon(
+      key: key,
+      itemId: id,
+      fallbackEmoji: fallbackEmoji,
+      size: size,
+      fit: fit,
+    );
+  }
+
+  // --- Registered Asset Mappings ---
+
+  // Batch 1: Core Foundation (Materials & Starter Products)
   static const Map<String, String> _materialAssetMap = {
     'cardboard': 'assets/images/icons/materials/mat_cardboard.svg',
     'basic_metals': 'assets/images/icons/materials/mat_basic_metals.svg',
@@ -73,10 +108,61 @@ class GameIcon extends StatelessWidget {
     'metal_enclosure': 'assets/images/icons/products/prod_metal_enclosure.svg',
   };
 
-  /// Resolves an item ID (material or product) to its asset path if registered.
+  // Batch 2: Factory Machinery & Logistics Fleet
+  static const Map<String, String> _machineAssetMap = {
+    'mach_auto_buy': 'assets/images/icons/machines/mach_auto_buy.svg',
+    'auto_buy': 'assets/images/icons/machines/mach_auto_buy.svg',
+    'buyer': 'assets/images/icons/machines/mach_auto_buy.svg',
+    'mach_build_basic': 'assets/images/icons/machines/mach_build_basic.svg',
+    'build_basic': 'assets/images/icons/machines/mach_build_basic.svg',
+    'basic_assembler': 'assets/images/icons/machines/mach_build_basic.svg',
+    'basicParts': 'assets/images/icons/machines/mach_build_basic.svg',
+    'mach_build_intermediate': 'assets/images/icons/machines/mach_build_intermediate.svg',
+    'build_intermediate': 'assets/images/icons/machines/mach_build_intermediate.svg',
+    'intermediate_assembler': 'assets/images/icons/machines/mach_build_intermediate.svg',
+    'intermediate': 'assets/images/icons/machines/mach_build_intermediate.svg',
+    'mach_build_complex': 'assets/images/icons/machines/mach_build_complex.svg',
+    'build_complex': 'assets/images/icons/machines/mach_build_complex.svg',
+    'complex_assembler': 'assets/images/icons/machines/mach_build_complex.svg',
+    'complex': 'assets/images/icons/machines/mach_build_complex.svg',
+    'mach_auto_sell': 'assets/images/icons/machines/mach_auto_sell.svg',
+    'auto_sell': 'assets/images/icons/machines/mach_auto_sell.svg',
+    'basic_seller': 'assets/images/icons/machines/mach_auto_sell.svg',
+    'tool_maintenance': 'assets/images/icons/machines/tool_maintenance.svg',
+    'maintenance': 'assets/images/icons/machines/tool_maintenance.svg',
+    'tool_salvage': 'assets/images/icons/machines/tool_salvage.svg',
+    'salvage': 'assets/images/icons/machines/tool_salvage.svg',
+  };
+
+  static const Map<String, String> _fleetAssetMap = {
+    'fleet_courier_bike': 'assets/images/icons/fleet/fleet_courier_bike.svg',
+    'courier_bike': 'assets/images/icons/fleet/fleet_courier_bike.svg',
+    'bike': 'assets/images/icons/fleet/fleet_courier_bike.svg',
+    'fleet_1': 'assets/images/icons/fleet/fleet_courier_bike.svg',
+    'tier_1': 'assets/images/icons/fleet/fleet_courier_bike.svg',
+    'fleet_delivery_van': 'assets/images/icons/fleet/fleet_delivery_van.svg',
+    'delivery_van': 'assets/images/icons/fleet/fleet_delivery_van.svg',
+    'van': 'assets/images/icons/fleet/fleet_delivery_van.svg',
+    'fleet_2': 'assets/images/icons/fleet/fleet_delivery_van.svg',
+    'tier_2': 'assets/images/icons/fleet/fleet_delivery_van.svg',
+    'fleet_freight_truck': 'assets/images/icons/fleet/fleet_freight_truck.svg',
+    'freight_truck': 'assets/images/icons/fleet/fleet_freight_truck.svg',
+    'truck': 'assets/images/icons/fleet/fleet_freight_truck.svg',
+    'fleet_3': 'assets/images/icons/fleet/fleet_freight_truck.svg',
+    'tier_3': 'assets/images/icons/fleet/fleet_freight_truck.svg',
+    'fleet_cargo_plane': 'assets/images/icons/fleet/fleet_cargo_plane.svg',
+    'cargo_plane': 'assets/images/icons/fleet/fleet_cargo_plane.svg',
+    'plane': 'assets/images/icons/fleet/fleet_cargo_plane.svg',
+    'fleet_4': 'assets/images/icons/fleet/fleet_cargo_plane.svg',
+    'tier_4': 'assets/images/icons/fleet/fleet_cargo_plane.svg',
+  };
+
+  /// Resolves an item ID (material, product, machine, or fleet) to its asset path if registered.
   static String? resolveAssetPath(String id) {
     if (_materialAssetMap.containsKey(id)) return _materialAssetMap[id];
     if (_productAssetMap.containsKey(id)) return _productAssetMap[id];
+    if (_machineAssetMap.containsKey(id)) return _machineAssetMap[id];
+    if (_fleetAssetMap.containsKey(id)) return _fleetAssetMap[id];
 
     // Check with prefixes stripped if supplied
     if (id.startsWith('mat_')) {
@@ -85,6 +171,15 @@ class GameIcon extends StatelessWidget {
     } else if (id.startsWith('prod_')) {
       final cleanId = id.substring(5);
       if (_productAssetMap.containsKey(cleanId)) return _productAssetMap[cleanId];
+    } else if (id.startsWith('mach_')) {
+      final cleanId = id.substring(5);
+      if (_machineAssetMap.containsKey(cleanId)) return _machineAssetMap[cleanId];
+    } else if (id.startsWith('tool_')) {
+      final cleanId = id.substring(5);
+      if (_machineAssetMap.containsKey(cleanId)) return _machineAssetMap[cleanId];
+    } else if (id.startsWith('fleet_')) {
+      final cleanId = id.substring(6);
+      if (_fleetAssetMap.containsKey(cleanId)) return _fleetAssetMap[cleanId];
     }
 
     return null;
