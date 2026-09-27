@@ -42,6 +42,7 @@ All primary planning, tracking, design, and verification artifacts for Sprint 4 
 - **[`FUTURE_PLANS.md`](FUTURE_PLANS.md)**: Master architectural blueprint detailing the 12-phase lifecycle and technical foundations.
 - **[`PHASE12_VERIFICATION_RESULTS.md`](PHASE12_VERIFICATION_RESULTS.md)**: Full verification report, test scorecard, cross-pipeline harmonization matrix, and zero-overflow audit.
 - **[`ICON_DESIGN_ROADMAP.md`](ICON_DESIGN_ROADMAP.md)**: Design roadmap and batch production guide for game visual assets.
+- **[`RELEASE_PREPARATION_AND_CLEANUP.md`](../../RELEASE_PREPARATION_AND_CLEANUP.md)**: Master pre-launch checks, secret redeem code system (`888888`), settings lazy loading, developer mods/debug sanitization, icon assets integration, and Google Play Console release preparation tracker.
 
 ---
 

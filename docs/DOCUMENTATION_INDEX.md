@@ -62,6 +62,7 @@ Historical documentation, feature proposals, and postmortems organized by develo
 - **[`FUTURE_PLANS.md`](sprints/04_v2.0_major_update/FUTURE_PLANS.md)**: Master architectural blueprint detailing the 12-phase lifecycle and technical foundations.
 - **[`PHASE12_VERIFICATION_RESULTS.md`](sprints/04_v2.0_major_update/PHASE12_VERIFICATION_RESULTS.md)**: Final verification results report, test scorecard (314/314 green), and harmonization matrix.
 - **[`ICON_DESIGN_ROADMAP.md`](sprints/04_v2.0_major_update/ICON_DESIGN_ROADMAP.md)**: Icon design roadmap and batch production guide for all game assets.
+- **[`RELEASE_PREPARATION_AND_CLEANUP.md`](../RELEASE_PREPARATION_AND_CLEANUP.md)**: Master release readiness checklist, secret redeem code system (`888888`), settings lazy loading, developer cleanup, icon integration, and Google Play Console release preparation.
 
 ---
 

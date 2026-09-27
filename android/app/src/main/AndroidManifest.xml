@@ -1,6 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Game-specific permissions -->
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Game-specific permissions (100% offline single-player game) -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     
