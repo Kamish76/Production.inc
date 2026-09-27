@@ -17,10 +17,10 @@ Track your overall asset completion progress across all batches:
 | **Batch 3** | **Tier 2 Intermediates & Early Retail** | **10** | Tier 2: Light Assembly Facility | ✅ Complete | `10 / 10` |
 | **Batch 4** | **Advanced Consumer Electronics & Optics** | **10** | Tier 3: High-Tech Retail & Optics | ✅ Complete | `10 / 10` |
 | **Batch 5** | **Heavy Mobility, Robotics & Infrastructure** | **10** | Tier 4: Heavy Industry & Megastructures | ✅ Complete | `10 / 10` |
-| **Batch 6** | **R&D Tech Tree, Lab Systems & Corporate Clients** | **10** | Phase 4: R&D & B2B Contracts | 📋 Ready | `0 / 10` |
+| **Batch 6** | **Advanced & Quantum Infrastructure** | **9** | Advanced Infrastructure & Megastructures | ✅ Complete | `9 / 9` |
 | **Batch 7** | **Prestige IPO & Quantum Prototypes** | **8** | Phase 5: Wall Street Prestige | 📋 Ready | `0 / 8` |
 | **Batch 8** | **UI HUD, Navigation & Action Badges** | **10** | System Polish & Navigation | 📋 Ready | `0 / 10` |
-| **TOTAL** | **Complete Game Asset Suite** | **79** | **All Game Phases** | 🎨 **In Progress** | **`51 / 79` (64.6%)** |
+| **TOTAL** | **Complete Game Asset Suite** | **78** | **All Game Phases** | 🎨 **In Progress** | **`60 / 78` (76.9%)** |
 
 ---
 
@@ -155,27 +155,26 @@ Use these standard accent highlights so players intuitively identify product fam
 | [x] | `icons/products/prod_mining_drill.svg` | **Heavy Mining Drill**<br>`mining_drill` | ⛏️ | Heavy Industry | Diamond-tipped tungsten carbide rotary boring excavator head with hydraulic stabilizer pistons. | Heavy Carbide Grey & Amber (`#FF8F00`) |
 | [x] | `icons/products/prod_robot_dog.svg` | **Quadruped Robot Dog**<br>`robot_dog` / `toy_robot` | 🐕 | Robotics / Retail | Agile four-legged mechatronic robotic quadruped with lidar sensor dome and carbon articulated limbs. | Tech Slate & Industrial Gold (`#FFC107`) |
 | [x] | `icons/products/prod_space_satellite.svg` | **Orbital Space Satellite**<br>`space_satellite` / `orbital_satellite` | 🛰️ | Aerospace / Flagship | Cube-sat communication satellite with dual deployed photovoltaic solar wings and antenna dish. | Aerospace Gold & Solar Blue (`#0288D1`) |
-| [x] | `icons/products/prod_supercomputer.svg` | **Supercomputer Server Rack**<br>`supercomputer` / `quantum_processor` | 🖥️ | High Performance | High-density liquid-cooled enterprise compute server rack with pulsing optical interconnect matrix LEDs. | Deep Obsidian & Quantum Cyan (`#00E5FF`) |
+| [x] | `icons/products/prod_supercomputer.svg` | **Supercomputer Server Rack**<br>`supercomputer` | 🖥️ | High Performance | High-density liquid-cooled enterprise compute server rack with pulsing optical interconnect matrix LEDs. | Deep Obsidian & Quantum Cyan (`#00E5FF`) |
 | [x] | `icons/products/prod_wind_turbine.svg` | **Wind Turbine Generator**<br>`wind_turbine` / `wind_turbine_generator` | 💨 | Clean Energy | Three-bladed commercial clean wind turbine nacelle with tapered composite aerofoil blades on a tall mast. | Clean Aero Sky White (`#ECEFF1`) |
 
 ---
 
-## 🔬 Batch 6: R&D Tech Tree, Lab Systems & Corporate Clients (Priority: ★★★☆☆)
+## 🔬 Batch 6: Advanced & Quantum Infrastructure (Priority: ★★★☆☆)
 
-> **Goal**: Visual identity for the R&D Research screen, research points, and the 3 B2B Corporate Clients who award contracts.
+> **Goal**: High-fidelity 3D diorama icons for late-game mega-structures, quantum computing hardware, deep-space telemetry, and B2B corporate contracts.
 
 | Done | File Target | Item Name (`id`) | Current | Category | Visual Concept & Art Description | Dominant Color |
-| :---: | :--- | :--- | :---: | :---: | :--- | :--- |
-| [ ] | `icons/research/tech_material_science.svg` | **Material Science Tech**<br>`material_science` | 🧬 | Tech Branch | Double-helix DNA strand fusing with crystal lattice nodes and replicating atoms. | Bio-Synthetic Green (`#00E676`) |
-| [ ] | `icons/research/tech_factory_overclock.svg` | **Factory Overclocking Tech**<br>`factory_overclocking` | ⚡ | Tech Branch | Mechanical cog surrounded by intense electrical plasma arcs and tachometer rev needle. | Overclock Neon Orange (`#FF3D00`) |
-| [ ] | `icons/research/tech_logistics_opt.svg` | **Logistics Optimization Tech**<br>`logistics_optimization` | 🚀 | Tech Branch | Supersonic cargo container rocket blasting through a quantum hyperlane transport ring. | Hyperlane Cyan (`#00E5FF`) |
-| [ ] | `icons/research/res_points_rp.svg` | **Research Points (RP)** | 🧪 | Game Currency | Glowing spherical energy orb suspended inside a magnetic containment beaker with orbiting electrons. | Plasma Cyan Glow (`#18FFFF`) |
-| [ ] | `icons/research/lab_deconstruction.svg` | **Deconstruction Bay** | 🔬 | Lab Facility | Laser disassembly chamber breaking down a circuit board into glowing constituent atoms. | Laser Ruby Red (`#FF1744`) |
-| [ ] | `icons/research/lab_overclock_toggle.svg` | **Overclock Gauge / Switch** | 🔥 | Telemetry | Dual-needle boost pressure gauge entering redline zone with flame particle effects. | Thermal Crimson (`#D50000`) |
-| [ ] | `icons/research/lab_thermal_wear.svg` | **Machine Wear / Health** | 🌡️ | Telemetry | Heartbeat/vital waveform integrated into a gear silhouette indicating machinery health. | Diagnostics Amber (`#FFC400`) |
-| [ ] | `icons/clients/client_apex_telecom.svg` | **Apex Telecom**<br>`apex_telecom` | 📡 | Corporate Client | Satellite communications dish emitting orbital signal waves over a stylized global wireframe. | Cyber Cyan (`#00E5FF`) |
-| [ ] | `icons/clients/client_solaria_energy.svg` | **Solaria Energy**<br>`solaria_energy` | ☀️ | Corporate Client | Geometric radiant solar corona crest with photovoltaic sunbeam vectors. | Solar Gold (`#FFB300`) |
-| [ ] | `icons/clients/client_nova_robotics.svg` | **Nova Robotics**<br>`nova_robotics` | 🤖 | Corporate Client | Stylized geometric android head silhouette with glowing hexagonal optics visor. | Android Violet (`#B388FF`) |
+| :---: | :--- | :--- | :---: | :--- | :--- | :--- |
+| [x] | `icons/products/prod_ai_core.svg` | **AI Neural Core**<br>`ai_core` / `nova_robotics` | 🤖 | Endgame / Computing | Self-contained AI neural compute orb with concentric rotating magnetic rings and pulsing azure photon pathways on a diorama tech plinth. | Neural Cyan & Cobalt (`#00E5FF`) |
+| [x] | `icons/products/prod_dyson_receiver.svg` | **Dyson Swarm Receiver**<br>`dyson_receiver` / `solaria_energy` | ☀️ | Endgame / Megastructure | Parabolic solar collector dish array harvesting focused microwave energy beams from orbit on an insulated hexagonal base. | Solar Gold & Amber (`#FFB300`) |
+| [x] | `icons/products/prod_orbital_station.svg` | **Orbital Space Station**<br>`orbital_station` / `orbital_satellite` | 🛰️ | Aerospace / Flagship | Toroidal rotating ring modular space habitat with docking berths, communications mast, and solar radiator arrays. | Aerospace White & Void (`#ECEFF1`) |
+| [x] | `icons/products/prod_particle_accelerator.svg` | **Particle Accelerator Ring**<br>`particle_accelerator` / `material_science` | 🔬 | Research / Physics | Circular magnetic beamline collider tunnel with cryogenic cooling manifolds and collision detection chamber on a laboratory platform. | Cryo Azure & Steel (`#2979FF`) |
+| [x] | `icons/products/prod_quantum_computer.svg` | **Quantum Computer Chandelier**<br>`quantum_computer` | 💠 | Endgame / Hardware | Golden cryostat dilution refrigerator chandelier housing superconducting qubits, microwave coaxial coils, and shielded thermal stages. | Polished Brass & Gold (`#FFD700`) |
+| [x] | `icons/products/prod_quantum_processor.svg` | **Quantum Qubit Processor**<br>`quantum_processor` | 💾 | High-Tech Component | Cryogenic quantum chip socket with microscopic gold qubit waveguides, laser alignment channels, and quantum bus interconnects. | Quantum Violet & Gold (`#7C4DFF`) |
+| [x] | `icons/products/prod_space_probe.svg` | **Deep Space Exploration Probe**<br>`space_probe` / `logistics_optimization` | 🚀 | Aerospace / Telemetry | Autonomous interplanetary space probe equipped with RTG power unit, high-gain dish, and ion propulsion drive nozzle. | Deep Space Gold & White (`#FFD54F`) |
+| [x] | `icons/products/prod_space_telescope.svg` | **Space Observatory Telescope**<br>`space_telescope` | 🔭 | Science / Optics | Orbital space telescope with gold-coated beryllium primary mirror segments, deployable sunshield, and star tracker assembly. | Hex Gold & Dark Obsidian (`#FFA000`) |
+| [x] | `icons/products/prod_telecom_tower.svg` | **5G Telecom Relay Tower**<br>`telecom_tower` / `apex_telecom` | 📡 | Infrastructure / Comms | Lattice steel telecommunications transmission tower fitted with cellular array panels, microwave drum antennas, and warning beacons. | Telecom Cyan & Signal Red (`#00BCD4`) |
 
 ---
 
@@ -309,17 +308,15 @@ This guarantees:
 ---
 
 ## 🎯 Recommended Next Step
-Batch 1, Batch 2, Batch 3, Batch 4, & Batch 5 are **100% complete, vectorized, and integrated**! Next focus is **Batch 6: Specialized Components, Factory Tiers & R&D (10 icons)**:
-1. `icons/products/prod_silicon_wafer.svg` (Silicon Wafer)
-2. `icons/products/prod_copper_coils.svg` (Copper Coils)
-3. `icons/products/prod_servo_motor.svg` (Servo Motor)
-4. `icons/products/prod_microcontroller.svg` (Microcontroller)
-5. `icons/products/prod_chassis_alloy.svg` (Chassis Alloy)
-6. `icons/products/prod_inverter_unit.svg` (Inverter Unit)
-7. `icons/products/prod_storage_cell.svg` (Storage Cell)
-8. `icons/products/prod_image_sensor.svg` (Image Sensor)
-9. `icons/products/prod_camera_module.svg` (Camera Module)
-10. `icons/products/prod_home_powerwall.svg` (Home Powerwall)
+Batches 1 through 6 are **100% complete, vectorized, and integrated (60 / 78 icons, 76.9%)**! Next focus is **Batch 7: Prestige IPO & Quantum Prototypes (8 icons)**:
+1. `icons/prestige/curr_golden_share.svg` (Golden Share)
+2. `icons/prestige/ipo_wall_st_bell.svg` (IPO Wall Street Bell)
+3. `icons/products/prod_quantum_core.svg` (Quantum Core)
+4. `icons/prestige/perk_instant_machines.svg` (Instant Machine Licensing)
+5. `icons/prestige/perk_angel_capital.svg` (Angel Seed Capital)
+6. `icons/prestige/perk_quantum_warp.svg` (Quantum Warp Logistics)
+7. `icons/research/res_points_rp.svg` (Research Points RP)
+8. `icons/research/lab_deconstruction.svg` (Deconstruction Bay)
 
-Completing Batch 6 will unlock specialized robotics, clean energy branches, and advanced component synthesis!
+Completing Batch 7 will cover endgame Wall Street prestige, corporate perks, and prototype synthesis!
 

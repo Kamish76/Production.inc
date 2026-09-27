@@ -204,6 +204,85 @@ void main() {
       );
     });
 
+    test('Resolves all Batch 6 products correctly as SVG', () {
+      expect(
+        GameIcon.resolveAssetPath('ai_core'),
+        'assets/images/icons/products/prod_ai_core.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('nova_robotics'),
+        'assets/images/icons/products/prod_ai_core.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('client_nova_robotics'),
+        'assets/images/icons/products/prod_ai_core.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('dyson_receiver'),
+        'assets/images/icons/products/prod_dyson_receiver.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('solaria_energy'),
+        'assets/images/icons/products/prod_dyson_receiver.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('client_solaria_energy'),
+        'assets/images/icons/products/prod_dyson_receiver.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('orbital_station'),
+        'assets/images/icons/products/prod_orbital_station.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('particle_accelerator'),
+        'assets/images/icons/products/prod_particle_accelerator.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('material_science'),
+        'assets/images/icons/products/prod_particle_accelerator.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('tech_material_science'),
+        'assets/images/icons/products/prod_particle_accelerator.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('quantum_computer'),
+        'assets/images/icons/products/prod_quantum_computer.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('quantum_processor'),
+        'assets/images/icons/products/prod_quantum_processor.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('space_probe'),
+        'assets/images/icons/products/prod_space_probe.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('logistics_optimization'),
+        'assets/images/icons/products/prod_space_probe.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('tech_logistics_optimization'),
+        'assets/images/icons/products/prod_space_probe.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('space_telescope'),
+        'assets/images/icons/products/prod_space_telescope.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('telecom_tower'),
+        'assets/images/icons/products/prod_telecom_tower.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('apex_telecom'),
+        'assets/images/icons/products/prod_telecom_tower.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('client_apex_telecom'),
+        'assets/images/icons/products/prod_telecom_tower.svg',
+      );
+    });
+
     test('Resolves all Batch 2 machines correctly as SVG', () {
       expect(
         GameIcon.resolveAssetPath('buyer'),
@@ -303,6 +382,14 @@ void main() {
         GameIcon.resolveAssetPath('prod_drone'),
         'assets/images/icons/products/prod_drone.svg',
       );
+      expect(
+        GameIcon.resolveAssetPath('prod_ai_core'),
+        'assets/images/icons/products/prod_ai_core.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('prod_quantum_computer'),
+        'assets/images/icons/products/prod_quantum_computer.svg',
+      );
     });
 
     test('Returns null for uncreated / future assets', () {
@@ -329,6 +416,10 @@ void main() {
       expect(GameIcon.hasAsset('electric_car'), isTrue);
       expect(GameIcon.hasAsset('fusion_reactor'), isTrue);
       expect(GameIcon.hasAsset('wind_turbine'), isTrue);
+      expect(GameIcon.hasAsset('ai_core'), isTrue);
+      expect(GameIcon.hasAsset('quantum_computer'), isTrue);
+      expect(GameIcon.hasAsset('telecom_tower'), isTrue);
+      expect(GameIcon.hasAsset('space_probe'), isTrue);
       expect(GameIcon.hasAsset('chassis_alloy'), isFalse);
     });
   });

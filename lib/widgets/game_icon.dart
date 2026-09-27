@@ -186,12 +186,40 @@ class GameIcon extends StatelessWidget {
     'prod_orbital_satellite': 'assets/images/icons/products/prod_space_satellite.svg',
     'supercomputer': 'assets/images/icons/products/prod_supercomputer.svg',
     'prod_supercomputer': 'assets/images/icons/products/prod_supercomputer.svg',
-    'quantum_processor': 'assets/images/icons/products/prod_supercomputer.svg',
-    'prod_quantum_processor': 'assets/images/icons/products/prod_supercomputer.svg',
     'wind_turbine': 'assets/images/icons/products/prod_wind_turbine.svg',
     'prod_wind_turbine': 'assets/images/icons/products/prod_wind_turbine.svg',
     'wind_turbine_generator': 'assets/images/icons/products/prod_wind_turbine.svg',
     'prod_wind_turbine_generator': 'assets/images/icons/products/prod_wind_turbine.svg',
+
+    // Batch 6: Advanced & Quantum Infrastructure
+    'ai_core': 'assets/images/icons/products/prod_ai_core.svg',
+    'prod_ai_core': 'assets/images/icons/products/prod_ai_core.svg',
+    'nova_robotics': 'assets/images/icons/products/prod_ai_core.svg',
+    'prod_nova_robotics': 'assets/images/icons/products/prod_ai_core.svg',
+    'dyson_receiver': 'assets/images/icons/products/prod_dyson_receiver.svg',
+    'prod_dyson_receiver': 'assets/images/icons/products/prod_dyson_receiver.svg',
+    'solaria_energy': 'assets/images/icons/products/prod_dyson_receiver.svg',
+    'prod_solaria_energy': 'assets/images/icons/products/prod_dyson_receiver.svg',
+    'orbital_station': 'assets/images/icons/products/prod_orbital_station.svg',
+    'prod_orbital_station': 'assets/images/icons/products/prod_orbital_station.svg',
+    'particle_accelerator': 'assets/images/icons/products/prod_particle_accelerator.svg',
+    'prod_particle_accelerator': 'assets/images/icons/products/prod_particle_accelerator.svg',
+    'material_science': 'assets/images/icons/products/prod_particle_accelerator.svg',
+    'prod_material_science': 'assets/images/icons/products/prod_particle_accelerator.svg',
+    'quantum_computer': 'assets/images/icons/products/prod_quantum_computer.svg',
+    'prod_quantum_computer': 'assets/images/icons/products/prod_quantum_computer.svg',
+    'quantum_processor': 'assets/images/icons/products/prod_quantum_processor.svg',
+    'prod_quantum_processor': 'assets/images/icons/products/prod_quantum_processor.svg',
+    'space_probe': 'assets/images/icons/products/prod_space_probe.svg',
+    'prod_space_probe': 'assets/images/icons/products/prod_space_probe.svg',
+    'logistics_optimization': 'assets/images/icons/products/prod_space_probe.svg',
+    'prod_logistics_optimization': 'assets/images/icons/products/prod_space_probe.svg',
+    'space_telescope': 'assets/images/icons/products/prod_space_telescope.svg',
+    'prod_space_telescope': 'assets/images/icons/products/prod_space_telescope.svg',
+    'telecom_tower': 'assets/images/icons/products/prod_telecom_tower.svg',
+    'prod_telecom_tower': 'assets/images/icons/products/prod_telecom_tower.svg',
+    'apex_telecom': 'assets/images/icons/products/prod_telecom_tower.svg',
+    'prod_apex_telecom': 'assets/images/icons/products/prod_telecom_tower.svg',
   };
 
   // Batch 2: Factory Machinery & Logistics Fleet
@@ -266,6 +294,15 @@ class GameIcon extends StatelessWidget {
     } else if (id.startsWith('fleet_')) {
       final cleanId = id.substring(6);
       if (_fleetAssetMap.containsKey(cleanId)) return _fleetAssetMap[cleanId];
+    } else if (id.startsWith('client_')) {
+      final cleanId = id.substring(7);
+      if (_productAssetMap.containsKey(cleanId)) return _productAssetMap[cleanId];
+      if (_materialAssetMap.containsKey(cleanId)) return _materialAssetMap[cleanId];
+    } else if (id.startsWith('tech_')) {
+      final cleanId = id.substring(5);
+      if (_productAssetMap.containsKey(cleanId)) return _productAssetMap[cleanId];
+      if (_materialAssetMap.containsKey(cleanId)) return _materialAssetMap[cleanId];
+      if (_machineAssetMap.containsKey(cleanId)) return _machineAssetMap[cleanId];
     }
 
     return null;
