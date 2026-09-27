@@ -137,6 +137,73 @@ void main() {
       );
     });
 
+    test('Resolves all Batch 5 products correctly as SVG', () {
+      expect(
+        GameIcon.resolveAssetPath('drone'),
+        'assets/images/icons/products/prod_drone.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('cleaning_drone'),
+        'assets/images/icons/products/prod_drone.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('electric_car'),
+        'assets/images/icons/products/prod_electric_car.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('fusion_reactor'),
+        'assets/images/icons/products/prod_fusion_reactor.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('quantum_core'),
+        'assets/images/icons/products/prod_fusion_reactor.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('high_speed_train'),
+        'assets/images/icons/products/prod_high_speed_train.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('industrial_robot'),
+        'assets/images/icons/products/prod_industrial_robot.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('robotic_arm'),
+        'assets/images/icons/products/prod_industrial_robot.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('mining_drill'),
+        'assets/images/icons/products/prod_mining_drill.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('robot_dog'),
+        'assets/images/icons/products/prod_robot_dog.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('toy_robot'),
+        'assets/images/icons/products/prod_robot_dog.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('space_satellite'),
+        'assets/images/icons/products/prod_space_satellite.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('orbital_satellite'),
+        'assets/images/icons/products/prod_space_satellite.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('supercomputer'),
+        'assets/images/icons/products/prod_supercomputer.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('wind_turbine'),
+        'assets/images/icons/products/prod_wind_turbine.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('wind_turbine_generator'),
+        'assets/images/icons/products/prod_wind_turbine.svg',
+      );
+    });
+
     test('Resolves all Batch 2 machines correctly as SVG', () {
       expect(
         GameIcon.resolveAssetPath('buyer'),
@@ -232,12 +299,16 @@ void main() {
         GameIcon.resolveAssetPath('prod_smartphone'),
         'assets/images/icons/products/prod_smartphone.svg',
       );
+      expect(
+        GameIcon.resolveAssetPath('prod_drone'),
+        'assets/images/icons/products/prod_drone.svg',
+      );
     });
 
     test('Returns null for uncreated / future assets', () {
       expect(GameIcon.resolveAssetPath('silicon_wafer'), isNull);
       expect(GameIcon.resolveAssetPath('microcontroller'), isNull);
-      expect(GameIcon.resolveAssetPath('toy_robot'), isNull);
+      expect(GameIcon.resolveAssetPath('chassis_alloy'), isNull);
       expect(GameIcon.resolveAssetPath('unknown_item'), isNull);
       expect(GameIcon.hasAsset('silicon_wafer'), isFalse);
     });
@@ -253,7 +324,12 @@ void main() {
       expect(GameIcon.hasAsset('camera'), isTrue);
       expect(GameIcon.hasAsset('solar_panel'), isTrue);
       expect(GameIcon.hasAsset('vr_headset'), isTrue);
-      expect(GameIcon.hasAsset('quantum_core'), isFalse);
+      expect(GameIcon.hasAsset('drone'), isTrue);
+      expect(GameIcon.hasAsset('robot_dog'), isTrue);
+      expect(GameIcon.hasAsset('electric_car'), isTrue);
+      expect(GameIcon.hasAsset('fusion_reactor'), isTrue);
+      expect(GameIcon.hasAsset('wind_turbine'), isTrue);
+      expect(GameIcon.hasAsset('chassis_alloy'), isFalse);
     });
   });
 

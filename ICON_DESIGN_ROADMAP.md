@@ -16,11 +16,11 @@ Track your overall asset completion progress across all batches:
 | **Batch 2** | **Factory Machinery & Logistics Fleet** | **11** | Core Automation & Shipping | ✅ Complete | `11 / 11` |
 | **Batch 3** | **Tier 2 Intermediates & Early Retail** | **10** | Tier 2: Light Assembly Facility | ✅ Complete | `10 / 10` |
 | **Batch 4** | **Advanced Consumer Electronics & Optics** | **10** | Tier 3: High-Tech Retail & Optics | ✅ Complete | `10 / 10` |
-| **Batch 5** | **Specialized Branches & Factory Tiers** | **11** | Tier 3–4: Precision & Megafactory | 📋 Ready | `0 / 11` |
+| **Batch 5** | **Heavy Mobility, Robotics & Infrastructure** | **10** | Tier 4: Heavy Industry & Megastructures | ✅ Complete | `10 / 10` |
 | **Batch 6** | **R&D Tech Tree, Lab Systems & Corporate Clients** | **10** | Phase 4: R&D & B2B Contracts | 📋 Ready | `0 / 10` |
 | **Batch 7** | **Prestige IPO & Quantum Prototypes** | **8** | Phase 5: Wall Street Prestige | 📋 Ready | `0 / 8` |
 | **Batch 8** | **UI HUD, Navigation & Action Badges** | **10** | System Polish & Navigation | 📋 Ready | `0 / 10` |
-| **TOTAL** | **Complete Game Asset Suite** | **80** | **All Game Phases** | 🎨 **In Progress** | **`41 / 80` (51.3%)** |
+| **TOTAL** | **Complete Game Asset Suite** | **79** | **All Game Phases** | 🎨 **In Progress** | **`51 / 79` (64.6%)** |
 
 ---
 
@@ -141,24 +141,22 @@ Use these standard accent highlights so players intuitively identify product fam
 
 ---
 
-## 📱 Batch 5: Complex Parts, Flagships & Factory Tiers (Priority: ★★★☆☆)
+## 🤖 Batch 5: Heavy Mobility, Robotics & Infrastructure (Priority: ★★★☆☆)
 
-> **Goal**: High-tier endgame products (Smartphones, Turbines, Robotic Arms) and the 4 Factory Tier progression emblems.
+> **Goal**: Heavy industrial machines, autonomous robotics, clean grid infrastructure, and space exploration.
 
 | Done | File Target | Item Name (`id`) | Current | Category | Visual Concept & Art Description | Dominant Color |
 | :---: | :--- | :--- | :---: | :---: | :--- | :--- |
-| [ ] | `icons/products/prod_image_sensor.svg` | **Image Sensor**<br>`image_sensor` | 📸 | Intermediate Part | CMOS digital camera sensor chip with iridescent gold wire bonds and microscopic pixel grid. | Iridescent Purple & Gold (`#7B1FA2`) |
-| [ ] | `icons/products/prod_camera_module.svg` | **Camera Module**<br>`camera_module` | 📷 | Complex Part | Multi-element smartphone camera assembly with optical image stabilization (OIS) coils and flex cable. | Optical Jet Black (`#212121`) |
-| [ ] | `icons/products/prod_solar_panel.svg` | **Solar Panel**<br>`solar_panel` | 🌞 | Retail (Clean Energy) | Rigid aluminum-framed photovoltaic solar module angled on rooftop mounting brackets. | Deep Space Blue (`#0D47A1`) |
-| [ ] | `icons/products/prod_camera.svg` | **Digital Camera**<br>`camera` | 📹 | Retail Product | Compact mirrorless digital camera body with knurled exposure dial, LCD preview, and prime lens. | Magnesium Black (`#263238`) |
-| [ ] | `icons/products/prod_smartphone.svg` | **Smartphone**<br>`smartphone` | 📱 | Retail Product | Bezel-less flagship glass-slab smartphone with holographic edge screen and triple camera bump. | Sleek Sapphire (`#1A237E`) |
-| [ ] | `icons/products/prod_robotic_arm.svg` | **Robotic Arm**<br>`robotic_arm` | 🤖 | Retail (Robotics) | 6-axis industrial articulated manufacturing robot arm holding an automated welding head. | Industrial Safety Yellow (`#FDD835`) |
-| [ ] | `icons/products/prod_home_powerwall.svg` | **Home Powerwall**<br>`home_powerwall` | 🔋 | Retail (Clean Energy) | Wall-mounted residential smart battery storage cabinet with vertical pulsing LED pulse stripe. | Minimalist Matte White (`#ECEFF1`) |
-| [ ] | `icons/products/prod_wind_turbine.svg` | **Wind Turbine Generator**<br>`wind_turbine_generator` | 💨 | Retail (Clean Energy) | Three-bladed commercial wind turbine nacelle with aerodynamic tapered composite blades. | Clean Aero Cyan (`#80DEEA`) |
-| [ ] | `icons/tiers/tier_1_garage.svg` | **Tier 1: Garage Workshop** | 🏚️ | Factory Tier | Modest brick garage workshop with roller shutter, overhead bulb, and wooden workbench. | Rustic Brick Tan (`#8D6E63`) |
-| [ ] | `icons/tiers/tier_2_assembly.svg` | **Tier 2: Light Assembly** | 🏭 | Factory Tier | Steel pre-fab commercial light manufacturing building with exhaust vents and delivery bay. | Industrial Steel Blue (`#546E7A`) |
-| [ ] | `icons/tiers/tier_3_precision.svg` | **Tier 3: Precision Tech Plant** | 🔬 | Factory Tier | Futuristic corporate high-tech plant with glass atrium, cleanroom airlocks, and solar roof. | Cleanroom Aqua (`#00838F`) |
-| [ ] | `icons/tiers/tier_4_megafactory.svg` | **Tier 4: Megafactory** | 🚀 | Factory Tier | Massive sprawling gigafactory complex with automated monorails, drone docks, and glowing logo. | Hyper-Industrial Purple (`#311B92`) |
+| [x] | `icons/products/prod_drone.svg` | **Autonomous Drone**<br>`drone` / `cleaning_drone` | 🛸 | Retail / Robotics | Aerodynamic 4-rotor carbon-fiber quadcopter with gimbal camera and glowing LED navigation beacons. | Aero Cyan & Carbon (`#00E5FF`) |
+| [x] | `icons/products/prod_electric_car.svg` | **Electric Sports Sedan**<br>`electric_car` | 🚗 | Retail / Flagship | High-performance electric vehicle on a pedestal base with illuminated light-bar and glass roof. | Metallic Electric Blue (`#1E88E5`) |
+| [x] | `icons/products/prod_fusion_reactor.svg` | **Fusion Reactor Core**<br>`fusion_reactor` / `quantum_core` | ⚛️ | Endgame / Energy | Toroidal magnetic confinement reactor vessel trapping a swirling zero-point fusion plasma singularity. | High-Energy Magenta & Cyan (`#E040FB`) |
+| [x] | `icons/products/prod_high_speed_train.svg` | **High-Speed Maglev Train**<br>`high_speed_train` | 🚄 | Heavy Mobility | Aerodynamic high-speed bullet train locomotive with streamlined nose and wrap-around windshield. | Bullet Silver & Cobalt (`#1976D2`) |
+| [x] | `icons/products/prod_industrial_robot.svg` | **Industrial Robot Arm**<br>`industrial_robot` / `robotic_arm` | 🤖 | Heavy Automation | 6-axis heavy industrial articulated manufacturing robot arm holding an active automated welding head. | Industrial Safety Yellow (`#FDD835`) |
+| [x] | `icons/products/prod_mining_drill.svg` | **Heavy Mining Drill**<br>`mining_drill` | ⛏️ | Heavy Industry | Diamond-tipped tungsten carbide rotary boring excavator head with hydraulic stabilizer pistons. | Heavy Carbide Grey & Amber (`#FF8F00`) |
+| [x] | `icons/products/prod_robot_dog.svg` | **Quadruped Robot Dog**<br>`robot_dog` / `toy_robot` | 🐕 | Robotics / Retail | Agile four-legged mechatronic robotic quadruped with lidar sensor dome and carbon articulated limbs. | Tech Slate & Industrial Gold (`#FFC107`) |
+| [x] | `icons/products/prod_space_satellite.svg` | **Orbital Space Satellite**<br>`space_satellite` / `orbital_satellite` | 🛰️ | Aerospace / Flagship | Cube-sat communication satellite with dual deployed photovoltaic solar wings and antenna dish. | Aerospace Gold & Solar Blue (`#0288D1`) |
+| [x] | `icons/products/prod_supercomputer.svg` | **Supercomputer Server Rack**<br>`supercomputer` / `quantum_processor` | 🖥️ | High Performance | High-density liquid-cooled enterprise compute server rack with pulsing optical interconnect matrix LEDs. | Deep Obsidian & Quantum Cyan (`#00E5FF`) |
+| [x] | `icons/products/prod_wind_turbine.svg` | **Wind Turbine Generator**<br>`wind_turbine` / `wind_turbine_generator` | 💨 | Clean Energy | Three-bladed commercial clean wind turbine nacelle with tapered composite aerofoil blades on a tall mast. | Clean Aero Sky White (`#ECEFF1`) |
 
 ---
 
@@ -311,7 +309,7 @@ This guarantees:
 ---
 
 ## 🎯 Recommended Next Step
-Batch 1, Batch 2, Batch 3, & Batch 4 are **100% complete, vectorized, and integrated**! Next focus is **Batch 5: Specialized Branches & Factory Tiers (11 icons)**:
+Batch 1, Batch 2, Batch 3, Batch 4, & Batch 5 are **100% complete, vectorized, and integrated**! Next focus is **Batch 6: Specialized Components, Factory Tiers & R&D (10 icons)**:
 1. `icons/products/prod_silicon_wafer.svg` (Silicon Wafer)
 2. `icons/products/prod_copper_coils.svg` (Copper Coils)
 3. `icons/products/prod_servo_motor.svg` (Servo Motor)
@@ -319,10 +317,9 @@ Batch 1, Batch 2, Batch 3, & Batch 4 are **100% complete, vectorized, and integr
 5. `icons/products/prod_chassis_alloy.svg` (Chassis Alloy)
 6. `icons/products/prod_inverter_unit.svg` (Inverter Unit)
 7. `icons/products/prod_storage_cell.svg` (Storage Cell)
-8. `icons/products/prod_wall_clock.svg` (Analog Wall Clock)
-9. `icons/products/prod_toy_robot.svg` (Toy Robot)
-10. `icons/products/prod_cleaning_drone.svg` (Cleaning Drone)
-11. `icons/products/prod_image_sensor.svg` (Image Sensor)
+8. `icons/products/prod_image_sensor.svg` (Image Sensor)
+9. `icons/products/prod_camera_module.svg` (Camera Module)
+10. `icons/products/prod_home_powerwall.svg` (Home Powerwall)
 
-Completing Batch 5 will unlock specialized robotics, clean energy branches, and factory tier progression!
+Completing Batch 6 will unlock specialized robotics, clean energy branches, and advanced component synthesis!
 
