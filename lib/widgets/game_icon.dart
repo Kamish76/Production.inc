@@ -101,11 +101,39 @@ class GameIcon extends StatelessWidget {
   };
 
   static const Map<String, String> _productAssetMap = {
+    // Batch 1: Core Foundation (Starter Products)
     'box': 'assets/images/icons/products/prod_box.svg',
+    'prod_box': 'assets/images/icons/products/prod_box.svg',
     'wires': 'assets/images/icons/products/prod_wires.svg',
+    'prod_wires': 'assets/images/icons/products/prod_wires.svg',
     'circuits': 'assets/images/icons/products/prod_circuits.svg',
+    'prod_circuits': 'assets/images/icons/products/prod_circuits.svg',
     'enclosure_plastic': 'assets/images/icons/products/prod_enclosure_plastic.svg',
+    'prod_enclosure_plastic': 'assets/images/icons/products/prod_enclosure_plastic.svg',
     'metal_enclosure': 'assets/images/icons/products/prod_metal_enclosure.svg',
+    'prod_metal_enclosure': 'assets/images/icons/products/prod_metal_enclosure.svg',
+
+    // Batch 3: Tier 2 Intermediates & Early Retail
+    'sound_driver': 'assets/images/icons/products/prod_sound_driver.svg',
+    'prod_sound_driver': 'assets/images/icons/products/prod_sound_driver.svg',
+    'lens': 'assets/images/icons/products/prod_lens.svg',
+    'prod_lens': 'assets/images/icons/products/prod_lens.svg',
+    'battery': 'assets/images/icons/products/prod_battery.svg',
+    'prod_battery': 'assets/images/icons/products/prod_battery.svg',
+    'gears': 'assets/images/icons/products/prod_gears.svg',
+    'prod_gears': 'assets/images/icons/products/prod_gears.svg',
+    'solar_cells': 'assets/images/icons/products/prod_solar_cells.svg',
+    'prod_solar_cells': 'assets/images/icons/products/prod_solar_cells.svg',
+    'display_screen': 'assets/images/icons/products/prod_display_screen.svg',
+    'prod_display_screen': 'assets/images/icons/products/prod_display_screen.svg',
+    'processor': 'assets/images/icons/products/prod_processor.svg',
+    'prod_processor': 'assets/images/icons/products/prod_processor.svg',
+    'gear_mechanism': 'assets/images/icons/products/prod_gear_mechanism.svg',
+    'prod_gear_mechanism': 'assets/images/icons/products/prod_gear_mechanism.svg',
+    'speaker': 'assets/images/icons/products/prod_speaker.svg',
+    'prod_speaker': 'assets/images/icons/products/prod_speaker.svg',
+    'power_bank': 'assets/images/icons/products/prod_power_bank.svg',
+    'prod_power_bank': 'assets/images/icons/products/prod_power_bank.svg',
   };
 
   // Batch 2: Factory Machinery & Logistics Fleet

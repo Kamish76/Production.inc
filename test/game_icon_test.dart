@@ -51,6 +51,49 @@ void main() {
       );
     });
 
+    test('Resolves all Batch 3 products correctly as SVG', () {
+      expect(
+        GameIcon.resolveAssetPath('sound_driver'),
+        'assets/images/icons/products/prod_sound_driver.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('lens'),
+        'assets/images/icons/products/prod_lens.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('battery'),
+        'assets/images/icons/products/prod_battery.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('gears'),
+        'assets/images/icons/products/prod_gears.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('solar_cells'),
+        'assets/images/icons/products/prod_solar_cells.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('display_screen'),
+        'assets/images/icons/products/prod_display_screen.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('processor'),
+        'assets/images/icons/products/prod_processor.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('gear_mechanism'),
+        'assets/images/icons/products/prod_gear_mechanism.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('speaker'),
+        'assets/images/icons/products/prod_speaker.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('power_bank'),
+        'assets/images/icons/products/prod_power_bank.svg',
+      );
+    });
+
     test('Resolves all Batch 2 machines correctly as SVG', () {
       expect(
         GameIcon.resolveAssetPath('buyer'),
@@ -138,13 +181,18 @@ void main() {
         GameIcon.resolveAssetPath('fleet_courier_bike'),
         'assets/images/icons/fleet/fleet_courier_bike.svg',
       );
+      expect(
+        GameIcon.resolveAssetPath('prod_battery'),
+        'assets/images/icons/products/prod_battery.svg',
+      );
     });
 
     test('Returns null for uncreated / future assets', () {
-      expect(GameIcon.resolveAssetPath('sound_driver'), isNull);
+      expect(GameIcon.resolveAssetPath('silicon_wafer'), isNull);
+      expect(GameIcon.resolveAssetPath('microcontroller'), isNull);
       expect(GameIcon.resolveAssetPath('toy_robot'), isNull);
       expect(GameIcon.resolveAssetPath('unknown_item'), isNull);
-      expect(GameIcon.hasAsset('sound_driver'), isFalse);
+      expect(GameIcon.hasAsset('silicon_wafer'), isFalse);
     });
 
     test('hasAsset correctly identifies registered icons', () {
@@ -152,6 +200,8 @@ void main() {
       expect(GameIcon.hasAsset('box'), isTrue);
       expect(GameIcon.hasAsset('buyer'), isTrue);
       expect(GameIcon.hasAsset('fleet_1'), isTrue);
+      expect(GameIcon.hasAsset('battery'), isTrue);
+      expect(GameIcon.hasAsset('speaker'), isTrue);
       expect(GameIcon.hasAsset('quantum_core'), isFalse);
     });
   });

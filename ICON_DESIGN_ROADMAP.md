@@ -14,13 +14,13 @@ Track your overall asset completion progress across all batches:
 | :---: | :--- | :---: | :--- | :---: | :---: |
 | **Batch 1** | **Core Foundation: Raw Materials & Starter Parts** | **10** | Tier 1: Garage Workshop | ✅ Complete | `10 / 10` |
 | **Batch 2** | **Factory Machinery & Logistics Fleet** | **11** | Core Automation & Shipping | ✅ Complete | `11 / 11` |
-| **Batch 3** | **Tier 2 Intermediates & Early Retail** | **10** | Tier 2: Light Assembly Facility | 📋 Ready | `0 / 10` |
+| **Batch 3** | **Tier 2 Intermediates & Early Retail** | **10** | Tier 2: Light Assembly Facility | ✅ Complete | `10 / 10` |
 | **Batch 4** | **Specialized Branches: Robotics & Clean Energy** | **10** | Branch Specialization | 📋 Ready | `0 / 10` |
 | **Batch 5** | **Complex Parts, Flagships & Factory Tiers** | **11** | Tier 3–4: Precision & Megafactory | 📋 Ready | `0 / 11` |
 | **Batch 6** | **R&D Tech Tree, Lab Systems & Corporate Clients** | **10** | Phase 4: R&D & B2B Contracts | 📋 Ready | `0 / 10` |
 | **Batch 7** | **Prestige IPO & Quantum Prototypes** | **8** | Phase 5: Wall Street Prestige | 📋 Ready | `0 / 8` |
 | **Batch 8** | **UI HUD, Navigation & Action Badges** | **10** | System Polish & Navigation | 📋 Ready | `0 / 10` |
-| **TOTAL** | **Complete Game Asset Suite** | **80** | **All Game Phases** | 🎨 **In Progress** | **`21 / 80` (26.3%)** |
+| **TOTAL** | **Complete Game Asset Suite** | **80** | **All Game Phases** | 🎨 **In Progress** | **`31 / 80` (38.8%)** |
 
 ---
 
@@ -109,16 +109,16 @@ Use these standard accent highlights so players intuitively identify product fam
 
 | Done | File Target | Item Name (`id`) | Current | Category | Visual Concept & Art Description | Dominant Color |
 | :---: | :--- | :--- | :---: | :---: | :--- | :--- |
-| [ ] | `icons/products/prod_sound_driver.svg` | **Sound Driver**<br>`sound_driver` | 🔊 | Basic Part | Speaker cone transducer with concentric rubber surround, copper voice coil, and rear magnet. | Magnet Chrome & Copper (`#FF7043`) |
-| [ ] | `icons/products/prod_lens.svg` | **Lens**<br>`lens` | 🔍 | Basic Part | High-precision polished optical glass lens element in a threaded black aperture collar. | Optical Refraction Cyan (`#4DD0E1`) |
-| [ ] | `icons/products/prod_battery.svg` | **Battery**<br>`battery` | 🔋 | Basic Part | Rechargeable lithium-ion cylindrical cell with terminal caps and holographic safety badge. | Energy Green (`#76FF03`) |
-| [ ] | `icons/products/prod_gears.svg` | **Gears**<br>`gears` | ⚙️ | Basic Part | Pair of interlocking precision brass and steel spur gears with beveled teeth. | Brass Gold & Steel (`#FFD54F`) |
-| [ ] | `icons/products/prod_solar_cells.svg` | **Solar Cells**<br>`solar_cells` | ☀️ | Basic Part | Photovoltaic textured blue silicon wafer tile with silver grid busbars. | Solar Cobalt (`#1565C0`) |
-| [ ] | `icons/products/prod_display_screen.svg` | **Display Screen**<br>`display_screen` | 📺 | Intermediate Part | Ultra-thin bezel mobile OLED display panel showing glowing blue diagnostic test bars. | OLED Vibrant Cyan (`#00E5FF`) |
-| [ ] | `icons/products/prod_processor.svg` | **Processor**<br>`processor` | 🖥️ | Intermediate Part | Ceramic microprocessor chip package with nickel heat spreader, gold contact pins, and etched die logo. | Golden Silicon (`#FFC107`) |
-| [ ] | `icons/products/prod_gear_mechanism.svg` | **Gear Mechanism**<br>`gear_mechanism` | 🕰️ | Intermediate Part | Complex mechanical clockwork assembly with escapement wheel, coiled tension spring, and pinions. | Horology Bronze (`#D7CCC8`) |
-| [ ] | `icons/products/prod_speaker.svg` | **Speaker**<br>`speaker` | 🔈 | Retail Product | Compact portable Bluetooth bookshelf speaker with acoustic fabric grille and volume dial. | Audio Charcoal & Blue (`#37474F`) |
-| [ ] | `icons/products/prod_power_bank.svg` | **Power Bank**<br>`power_bank` | 🔌 | Retail Product | Slim pocket power bank with dual USB-C ports and illuminated 4-dot battery LED fuel gauge. | Matte Midnight (`#263238`) |
+| [x] | `icons/products/prod_sound_driver.svg` | **Sound Driver**<br>`sound_driver` | 🔊 | Basic Part | Speaker cone transducer with concentric rubber surround, copper voice coil, and rear magnet. | Magnet Chrome & Copper (`#FF7043`) |
+| [x] | `icons/products/prod_lens.svg` | **Lens**<br>`lens` | 🔍 | Basic Part | High-precision polished optical glass lens element in a threaded black aperture collar. | Optical Refraction Cyan (`#4DD0E1`) |
+| [x] | `icons/products/prod_battery.svg` | **Battery**<br>`battery` | 🔋 | Basic Part | Rechargeable lithium-ion cylindrical cell with terminal caps and holographic safety badge. | Energy Green (`#76FF03`) |
+| [x] | `icons/products/prod_gears.svg` | **Gears**<br>`gears` | ⚙️ | Basic Part | Pair of interlocking precision brass and steel spur gears with beveled teeth. | Brass Gold & Steel (`#FFD54F`) |
+| [x] | `icons/products/prod_solar_cells.svg` | **Solar Cells**<br>`solar_cells` | ☀️ | Basic Part | Photovoltaic textured blue silicon wafer tile with silver grid busbars. | Solar Cobalt (`#1565C0`) |
+| [x] | `icons/products/prod_display_screen.svg` | **Display Screen**<br>`display_screen` | 📺 | Intermediate Part | Ultra-thin bezel mobile OLED display panel showing glowing blue diagnostic test bars. | OLED Vibrant Cyan (`#00E5FF`) |
+| [x] | `icons/products/prod_processor.svg` | **Processor**<br>`processor` | 🖥️ | Intermediate Part | Ceramic microprocessor chip package with nickel heat spreader, gold contact pins, and etched die logo. | Golden Silicon (`#FFC107`) |
+| [x] | `icons/products/prod_gear_mechanism.svg` | **Gear Mechanism**<br>`gear_mechanism` | 🕰️ | Intermediate Part | Complex mechanical clockwork assembly with escapement wheel, coiled tension spring, and pinions. | Horology Bronze (`#D7CCC8`) |
+| [x] | `icons/products/prod_speaker.svg` | **Speaker**<br>`speaker` | 🔈 | Retail Product | Compact portable Bluetooth bookshelf speaker with acoustic fabric grille and volume dial. | Audio Charcoal & Blue (`#37474F`) |
+| [x] | `icons/products/prod_power_bank.svg` | **Power Bank**<br>`power_bank` | 🔌 | Retail Product | Slim pocket power bank with dual USB-C ports and illuminated 4-dot battery LED fuel gauge. | Matte Midnight (`#263238`) |
 
 ---
 
@@ -311,18 +311,17 @@ This guarantees:
 ---
 
 ## 🎯 Recommended Next Step
-Batch 1 & Batch 2 are **100% complete, vectorized, and integrated**! Next focus is **Batch 3: Tier 2 Intermediates & Early Retail (11 icons)**:
-1. `item_copper_wire.svg` (Copper Wire - Spool of braided copper wire)
-2. `item_glass_sheet.svg` (Glass Sheet - Polished architectural glass pane)
-3. `item_reinforced_alloy.svg` (Reinforced Alloy - Composite titanium-steel ingot)
-4. `item_electronic_components.svg` (Electronic Components - PCB board with microchips)
-5. `item_electric_motor.svg` (Electric Motor - Stator, copper coiled rotor, drive shaft)
-6. `item_hydraulic_pump.svg` (Hydraulic Pump - Compact fluid pump with pressure dial)
-7. `item_appliance.svg` (Kitchen Appliance - Premium microwave / smart toaster)
-8. `item_electric_scooter.svg` (Electric Scooter - Sleek commuter scooter)
-9. `item_drone.svg` (Commercial Drone - 4-rotor delivery drone with camera)
-10. `item_smartphone.svg` (Smartphone - Edge-to-edge glass display)
-11. `item_power_tools.svg` (Power Tool Set - Cordless brushless drill with battery pack)
+Batch 1, Batch 2, & Batch 3 are **100% complete, vectorized, and integrated**! Next focus is **Batch 4: Specialized Branches — Robotics & Clean Energy (10 icons)**:
+1. `icons/products/prod_silicon_wafer.svg` (Silicon Wafer)
+2. `icons/products/prod_copper_coils.svg` (Copper Coils)
+3. `icons/products/prod_servo_motor.svg` (Servo Motor)
+4. `icons/products/prod_microcontroller.svg` (Microcontroller)
+5. `icons/products/prod_chassis_alloy.svg` (Chassis Alloy)
+6. `icons/products/prod_inverter_unit.svg` (Inverter Unit)
+7. `icons/products/prod_storage_cell.svg` (Storage Cell)
+8. `icons/products/prod_wall_clock.svg` (Analog Wall Clock)
+9. `icons/products/prod_toy_robot.svg` (Toy Robot)
+10. `icons/products/prod_cleaning_drone.svg` (Cleaning Drone)
 
-Completing Batch 3 will unlock the intermediate manufacturing and consumer technology retail tiers!
+Completing Batch 4 will unlock the specialized mechatronics, robotics, and clean energy storage tech branches!
 
