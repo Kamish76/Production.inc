@@ -18,3 +18,10 @@ Whenever working on this project (Production.INC):
 
 5. **Proactive Hot Reload**:
    - Utilize Dart MCP tools to trigger `hot_reload` after UI widget edits and `hot_restart` after service, state model, or initialization modifications.
+
+6. **Icon Asset Pipeline & SVG Invariants**:
+   - **SVG Exclusivity**: Standardize 100% on Scalable Vector Graphics (`.svg`) rendered via `flutter_svg`. Never convert vector SVGs to PNG.
+   - **Centralized Consumption**: In-game icons must always route through `GameIcon` (or convenience constructors `GameIcon.forMaterial` / `GameIcon.forProduct`) with `placeholderBuilder` and `errorBuilder` falling back gracefully to Unicode emojis.
+   - **Zero Solid Background Bleed**: All icons must have complete alpha transparency (`alpha = 0`) around artwork edges. No off-white or solid card background squares are permitted in production directories.
+   - **Clean Staging & Zero Leftovers**: Temporary drop directories (e.g. `assets/images/Batch X - ...`), draft `*_v1.*` files, and unreferenced PNGs must be cleaned up before committing. Preserve empty category folders with `.gitkeep`.
+
