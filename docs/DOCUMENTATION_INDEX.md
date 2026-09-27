@@ -10,25 +10,23 @@ These core documents reflect the current architecture, coding conventions, and s
 
 | Category | Document | Description |
 | :--- | :--- | :--- |
+| **Developer & Agent Guide** | **[`context.md`](context.md)** | Single source of truth for architecture invariants, memory constraints, and core patterns. |
+| **Developer Guidelines** | **[`DEVELOPMENT_GUIDE.md`](DEVELOPMENT_GUIDE.md)** | Contribution standards, project architecture, code styling, and best practices. |
 | **API Reference** | **[`API_DOCUMENTATION.md`](API_DOCUMENTATION.md)** | Service definitions, method signatures, game state mutations, and telemetry API reference. |
-| **Database & Persistence** | **[`DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md)** | SQLite tables, schema migrations (`onUpgrade`), foreign keys, and persistence service architecture. |
-| **Developer Guide** | **[`DEVELOPMENT_GUIDE.md`](DEVELOPMENT_GUIDE.md)** | Contribution standards, project architecture, code styling, and best practices. |
+| **Database & Persistence** | **[`DATABASE_SCHEMA.md`](DATABASE_SCHEMA.md)** | SQLite tables, schema migrations (`onUpgrade` v1–v13), foreign keys, and persistence architecture. |
 | **UI Architecture** | **[`WIDGET_STRUCTURE.md`](WIDGET_STRUCTURE.md)** | Screen hierarchies, reusable components, design tokens, and theme standards. |
 | **Testing Setup** | **[`TESTING_SETUP.md`](TESTING_SETUP.md)** | Guidelines for writing and running unit tests, widget tests, and integration scenarios. |
 | **Version Management** | **[`VERSION_MANAGEMENT.md`](VERSION_MANAGEMENT.md)** | Versioning policy, release lifecycle, and deployment checklists. |
 
 ---
 
-## 🚀 Active Roadmap & Sprint Tracking (Project Root)
+## 🚀 Active Project Root Files
 
-For active feature work and real-time development context, reference these root files:
+For quick access at the repository root:
 
-- **[`FUTURE_PLANS.md`](../FUTURE_PLANS.md)**: Master architecture roadmap detailing completed Phases 1–5 and planned Phases 6–7.
-- **[`TODO_SEP_23.md`](../TODO_SEP_23.md)**: Granular task backlog and execution checklist for upcoming releases.
-- **[`ICON_DESIGN_ROADMAP.md`](../ICON_DESIGN_ROADMAP.md)**: Master icon design roadmap & prioritized batch production guide for all game assets.
-- **[`context.md`](../context.md)**: Architectural invariants, memory constraints, and core game patterns.
-- **[`README.md`](../README.md)**: Main repository overview and player feature summary.
-- **[`CHANGELOG.md`](../CHANGELOG.md)**: Detailed historical release notes across all versions.
+- **[`README.md`](../README.md)**: Main repository overview, gameplay mechanics, and technical architecture for **Version 2.0.0**.
+- **[`CHANGELOG.md`](../CHANGELOG.md)**: Detailed historical release notes across all versions through **v2.0.0**.
+- **[`pubspec.yaml`](../pubspec.yaml)**: Project dependencies, asset registrations, and build version (`2.0.0+20`).
 
 ---
 
@@ -41,6 +39,7 @@ Historical documentation, feature proposals, and postmortems organized by develo
 - **[`Concept.txt`](sprints/01_legacy_v1.0-v1.4/Concept.txt)**: Initial game concept and pitch.
 - **[`game economy.txt`](sprints/01_legacy_v1.0-v1.4/game%20economy.txt)**: Early material costs, crafting requirements, and economy formulas.
 - **[`Store listing.txt`](sprints/01_legacy_v1.0-v1.4/Store%20listing.txt)**: Play Store listing draft and product positioning.
+- **[`README_production.md`](sprints/01_legacy_v1.0-v1.4/README_production.md)**: Legacy v1.4.19 project overview.
 - **[`release_notes/`](sprints/01_legacy_v1.0-v1.4/release_notes/)**: Early release notes.
 - **[`version_documentation/`](sprints/01_legacy_v1.0-v1.4/version_documentation/)**: Detailed logs for v1.2, v1.3, v1.4, and v1.5 draft concepts.
 
@@ -55,16 +54,19 @@ Historical documentation, feature proposals, and postmortems organized by develo
 - **Specifications & Releases**: [`V.1.5.md`](sprints/03_automation_v1.5/V.1.5.md), [`QUICK_SUMMARY.md`](sprints/03_automation_v1.5/QUICK_SUMMARY.md), [`GOOGLE_PLAY_BETA_RELEASE_NOTES.md`](sprints/03_automation_v1.5/GOOGLE_PLAY_BETA_RELEASE_NOTES.md), [`PRE_RELEASE_CHECKLIST.md`](sprints/03_automation_v1.5/PRE_RELEASE_CHECKLIST.md).
 - **Automation & Design**: [`automation/`](sprints/03_automation_v1.5/automation/) (Auto-Buy & Auto-Build logic), [`design_notes/`](sprints/03_automation_v1.5/design_notes/) (Control Screen wireframes & ideas).
 - **Implementations**: [`CONTROL_SCREEN_SPLIT_IMPLEMENTATION.md`](sprints/03_automation_v1.5/CONTROL_SCREEN_SPLIT_IMPLEMENTATION.md), [`BUILD_SPEED_MINIMUM_FLOOR.md`](sprints/03_automation_v1.5/BUILD_SPEED_MINIMUM_FLOOR.md), [`UNLOCK_PERSISTENCE.md`](sprints/03_automation_v1.5/UNLOCK_PERSISTENCE.md).
-- **Bug Fixes Archive**: [`bug_fixes/`](sprints/03_automation_v1.5/bug_fixes/) (9 detailed postmortems and reports covering material leaks, database migrations, and unlock display synchronization).
+- **Bug Fixes Archive**: [`bug_fixes/`](sprints/03_automation_v1.5/bug_fixes/) (9 detailed postmortems covering material leaks, database migrations, and unlock display synchronization).
 
-### [Sprint 4: Version 2.0 Major Update (Phases 1–7)](sprints/04_v2.0_major_update/README.md)
-*September 23, 2026 – Present*
-- Master architectural documentation for the **v2.0 Major Update**, covering completed **Phases 1–5** (Factory Tiers, B2B Logistics, Industry Branches, R&D Lab, Prestige/IPO) and active release finalization in **Phases 6–7** (Ergonomics Polish & Automation Dynamic Scaling).
+### [Sprint 4: Version 2.0 Major Update (Phases 1–12 Completed & Verified)](sprints/04_v2.0_major_update/README.md)
+*September 23, 2026 – September 27, 2026*
+- **[`TODO_SEP_23.md`](sprints/04_v2.0_major_update/TODO_SEP_23.md)**: Sprint task backlog, implementation specifications, and completion records for Phases 6 through 12.
+- **[`FUTURE_PLANS.md`](sprints/04_v2.0_major_update/FUTURE_PLANS.md)**: Master architectural blueprint detailing the 12-phase lifecycle and technical foundations.
+- **[`PHASE12_VERIFICATION_RESULTS.md`](sprints/04_v2.0_major_update/PHASE12_VERIFICATION_RESULTS.md)**: Final verification results report, test scorecard (314/314 green), and harmonization matrix.
+- **[`ICON_DESIGN_ROADMAP.md`](sprints/04_v2.0_major_update/ICON_DESIGN_ROADMAP.md)**: Icon design roadmap and batch production guide for all game assets.
 
 ---
 
 ## 🧭 Navigation & Maintenance Guide
 
-1. **Working on Code**: Start with [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) and [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
+1. **Working on Code**: Start with [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) and [context.md](context.md).
 2. **Database Modifications**: Consult [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) and ensure migration invariants in `.agents/rules/production_inc_context.md` are upheld.
 3. **Historical Context**: Explore the relevant sprint folder in `sprints/` for design decisions and past investigations.

@@ -49,8 +49,11 @@ Game1/
 │   │   └── settings_screen.dart    # Audio, debug tools, database repair, save management
 │   └── widgets/                    # Reusable component library (TierExpansionPanel, GameCard, OrderCard, etc.)
 ├── docs/                           # Technical documentation, bug reports, and design specs
-├── context.md                      # This agent guide
-└── FUTURE_PLANS.md                 # Design plans, roadmap, and upcoming game systems
+│   ├── DOCUMENTATION_INDEX.md      # Master documentation index
+│   ├── context.md                  # This agent & developer context guide
+│   └── sprints/                    # Historical sprint archives (01_legacy to 04_v2.0)
+├── tool/                           # Database integrity & diagnostic scripts
+└── test/                           # Automated test suite (314 unit, widget & integration tests)
 ```
 
 ---

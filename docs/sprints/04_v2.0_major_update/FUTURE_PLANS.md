@@ -6,7 +6,7 @@
 
 ---
 
-## 🗺️ Version 2.0 Roadmap Summary (Phases 1–7)
+## 🗺️ Version 2.0 Architecture Roadmap (Phases 1–12 Completed)
 
 | Phase | System / Feature | Target Area | Status | Impact in v2.0 |
 | :---: | :--- | :--- | :---: | :--- |
@@ -15,11 +15,15 @@
 | **3** | **New Industry Branches (Robotics & Clean Energy)** | `game_data.dart`, Build & Sell Screens | ✅ **Completed** | Expands product catalog with 11 high-tech components, flagships, and branch filters. |
 | **4** | **R&D Lab & Technology Tree** | Control Center (`R&D Lab` Tab) | ✅ **Completed** | Gives utility to surplus inventory through permanent science research and efficiency perks. |
 | **5** | **Prestige / IPO (Initial Public Offering)** | Control Screen (`Prestige 🌟` Tab) | ✅ **Completed** | Infinite replayability with company valuation, Golden Shares, and permanent global multipliers. |
-| **6** | **Final Testing, Ergonomics & Systems Polish** | All Screens & List Recycling | ⏳ **In Progress** | Sales screen fleet counter, lazy-loaded contracts accordion, uncapped autobuy buffer, RAM optimization. |
-| **7** | **Machine & Automation Overhaul: Dynamic Scaling** | Control Screen (`Machines` Tab) | 📋 **Planned** | Tier-based machine caps, exponential price scaling (1.15x–1.2x), bulk intake multipliers, machine salvage. |
+| **6** | **Ergonomics, Usability & Systems Polish** | All Screens & List Recycling | ✅ **Completed** | Sales screen fleet counter, lazy-loaded contracts accordion, uncapped autobuy buffer, RAM optimization. |
+| **7** | **Machine Economy & Dynamic Pricing** | Control Screen (`Machines` Tab) | ✅ **Completed** | Tier-based machine caps, exponential price scaling ($1,000 base, 1.15x curve), machine salvage refunds. |
+| **8** | **High-Throughput Automation** | Crafting Engine & Procurement | ✅ **Completed** | Symmetrical production rate upgrades: Auto-Build Batch Throughput & Auto-Buy Intake Multipliers. |
+| **9A** | **B2B Contract Overhaul & Sales Hub** | Sell Products Screen & Contracts | ✅ **Completed** | Retail vs Manufacturing requisitions, Lock & Ship single-step fulfillment, Sales Hub consolidation. |
+| **9B** | **Auto-Sell Dispatchers (Storefront Automation)** | Control Screen (`Machines` Tab) | ✅ **Completed** | Direct local storefront walk-in automation (0 fleet slots consumed), batch throughput scaling. |
+| **10** | **Logistics Fleet Overhaul** | Shipping Screen & Fleet Engine | ✅ **Completed** | Carrier payload limits (20 to 600 units) and variety limits across Bikes, Vans, Trucks, Planes. |
+| **11** | **Commercial Dispatch Manifest (Bulk Cart)** | Sell Products Screen | ✅ **Completed** | Staging tray, review drawer, multi-product bulk staging, square-root consolidated transit times. |
+| **12** | **System Quality & Integration Verification** | Entire App & Test Suite | ✅ **Completed** | Full cross-system concurrency, 200-tick stress testing, 314/314 tests passing with 0 analyzer issues. |
 
-> [!TIP]
-> **Active v2.0 Finalization Checklist**: For granular task tracking, implementation checklists, and ergonomic passes for **Phase 6** and **Phase 7**, consult [`TODO_SEP_23.md`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/TODO_SEP_23.md).
 
 ---
 
@@ -187,31 +191,37 @@ Delivered the definitive endgame prestige loop for Production.INC. Players can t
   - Clean static analysis with 0 warnings or errors (`flutter analyze`).
 ---
 
-## ⚡ Phase 6: Final Testing, Ergonomics & Systems Polish (⏳ In Progress in v2.0)
+## ⚡ Phase 6: Ergonomics, Usability & Systems Polish (✅ Completed in v2.0)
 
 ### 🎯 Objective & Scope
 The stabilization and polish pass ensuring Version 2.0 provides seamless usability and optimal frame rates across long play sessions:
-- **Selling Screen Fleet Visibility**: Add live `Fleets in Transit: X / Max` indicator directly on the portfolio card.
+- **Selling Screen Fleet Visibility**: Added live `Fleets in Transit: X / Max` indicator directly on the portfolio card.
 - **Contract UX & Requisitions Drawer**: Completed B2B contracts automatically sink to bottom and render in a lazy-loaded accordion to conserve memory.
-- **Auto-Buy Buffer Uncapping**: Remove arbitrary machine capacity ceilings in late game to match auto-build throughput.
-- **Unified Machine Card Componentry**: Harmonize Auto-Buy and Auto-Build card layouts, typography, and controls.
+- **Auto-Buy Buffer Uncapping**: Removed arbitrary machine capacity ceilings in late game to match auto-build throughput.
+- **Unified Machine Card Componentry**: Harmonized Auto-Buy and Auto-Build card layouts, typography, and controls.
 - **RAM Optimization**: Aggressive list recycling and off-screen child disposal (`addAutomaticKeepAlives: false`) across all tabs.
-
-> 📝 *Detailed checklist and implementation tasks are tracked in [`TODO_SEP_23.md`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/TODO_SEP_23.md).*
 
 ---
 
-## ⚙️ Phase 7: Machine & Automation Overhaul: Dynamic Scaling (📋 Planned in v2.0)
+## ⚙️ Phase 7: Machine Economy & Dynamic Pricing (✅ Completed in v2.0)
 
 ### 🎯 Objective & Scope
-The final automation capstone for the Version 2.0 release:
-- **Tier-Based Machine Caps**: Factory tiers dynamically scale total machine slots (Garage: 3 machines $\to$ Megafactory: 24+ machines).
-- **Exponential Price Scaling**: Standardize incremental machine purchasing costs (`Base * 1.15^count`).
-- **Batch Build Throughput**: High-tier auto-build machines construct goods in parallel batches.
-- **Bulk Auto-Buy Intake Multipliers**: High-tier auto-buyers procure raw materials in bulk bursts.
-- **Machine Decommissioning / Salvage**: Reclaim 60% capital value by selling outdated machinery.
+The foundational automation overhaul for the Version 2.0 release:
+- **Tier-Based Machine Caps**: Factory tiers scale total machine slots (10 / 20 / 30 / 40 machines per category).
+- **Exponential Price Scaling**: Standardized incremental machine purchasing costs ($1,000 base with $1.15^N$ compounding curve).
+- **Machine Salvage**: Reclaim 50% capital value by selling surplus or decommissioned machinery.
 
-> 📝 *Detailed architectural specifications and tasks are tracked in [`TODO_SEP_23.md`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/TODO_SEP_23.md).*
+---
+
+## 🚀 Phases 8–12: Advanced Automation, Commercial Logistics & Quality Gates (✅ Completed in v2.0)
+
+- **Phase 8 (Batch Throughput & Bulk Procurement)**: Auto-Build batch processing and Auto-Buy intake multipliers.
+- **Phase 9A (B2B Contract Overhaul & Sales Hub)**: Retail vs Manufacturing contracts, Lock & Ship single-step fulfillment, and Sales Hub consolidation.
+- **Phase 9B (Auto-Sell Dispatchers)**: Storefront automation with 0 fleet slots consumed and inventory reserve safety.
+- **Phase 10 (Logistics Fleet Overhaul)**: Payload capacity and variety constraints across Courier Bikes, Delivery Vans, Freight Trucks, and Cargo Planes.
+- **Phase 11 (Commercial Dispatch Manifest)**: Docked manifest staging tray, interactive review drawer, and square-root consolidated transit times.
+- **Phase 12 (System Quality & Integration Verification)**: Full cross-pipeline concurrency verification, 200-tick stress testing, responsive zero-overflow validation, and 314/314 passing tests.
+
 
 ---
 

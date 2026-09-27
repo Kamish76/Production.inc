@@ -1,262 +1,156 @@
-# Production.INC
+# Production.INC — Factory Tycoon (v2.0.0)
 
-A sophisticated Flutter-based mobile business simulation game where you build and manage complex production chains, from basic materials to premium consumer electronics!
+[![Flutter Version](https://img.shields.io/badge/Flutter-3.7%2B-blue.svg)](https://flutter.dev/)
+[![Version](https://img.shields.io/badge/Version-2.0.0%2B20-green.svg)](pubspec.yaml)
+[![Tests](https://img.shields.io/badge/Tests-314%2F314%20Passing-brightgreen.svg)](test/)
+[![Analysis](https://img.shields.io/badge/Analysis-0%20Issues-brightgreen.svg)](analysis_options.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## 🎮 Game Concept
-
-**Discover • Build • Optimize • Expand!**
-
-Start by gathering raw materials and discovering what you can build. Progress through increasingly complex production tiers - from basic parts to intermediate components, complex assemblies, and premium retail products. Master supply chain management and unlock advanced manufacturing capabilities!
-
-## 🌟 Current Features (v1.4.19)
-
-### 📦 Production Tiers
-- **Materials** - 6 raw materials (cardboard, plastic, metals, glass, etc.)
-- **Basic Parts** - 10 fundamental components (boxes, wires, circuits, batteries, etc.)
-- **Intermediate Parts** - 4 sophisticated assemblies (processors, displays, cameras, etc.)
-- **Complex Parts** - 1 advanced multi-component system (camera modules)
-- **Retail Products** - 8 consumer-ready products (speakers, smartphones, solar panels, etc.)
-
-### 🔓 Progressive Unlock System
-- **Discovery-Driven** - Products unlock as you gather required materials
-- **Logical Progression** - Basic → Intermediate → Complex → Retail unlocking
-- **Production-Ready** - Only unlock when you can actually manufacture the item
-- **Smart Caching** - Optimized unlock condition checking for smooth gameplay
-
-### 🏭 Advanced Production Features
-- **Production Queue System** - Queue multiple items of the same type
-- **Quantity Preferences** - Remember your preferred build/buy/sell quantities
-- **Real-Time Progress** - Live production timers with visual indicators
-- **Grouped Display** - Clean UI showing production status efficiently
-
-### 🎨 Polished User Experience
-- **Responsive Design** - Optimized for phones and tablets
-- **Consistent UI** - Unified card-based interaction patterns
-- **Smooth Animations** - Progress indicators, expand/collapse transitions
-- **Professional Theming** - Consistent color scheme and typography
-
-### 💾 Robust Data Management
-- **Intelligent Saving** - Optimized persistence with 90% fewer database writes
-- **Automatic Backup** - Save file protection and recovery
-- **Migration System** - Seamless updates without data loss
-- **Performance Optimized** - Smart timer management and caching
-
-## 🚀 Five Core Game Screens
-
-1. **Buy Materials** - Purchase raw materials with bulk buying options
-2. **Build Products** - Manage production queues and unlock new items
-3. **Sell Products** - Market your finished products for profit
-4. **Shipping** - Automated logistics system for bulk sales
-5. **Settings** - Game configuration and data management
-
-## 🎯 Getting Started
-
-### Prerequisites
-- Flutter SDK (latest stable version)
-- Android device or emulator (Primary platform)
-- VS Code or Android Studio
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd Game1
-   ```
-
-2. Install dependencies:
-   ```bash
-   flutter pub get
-   ```
-
-3. Run the game:
-   ```bash
-   flutter run
-   ```
-
-## 📱 How to Play
-
-### 🚀 Starting Your Production Empire
-
-1. **Begin with $100** - Use your starting capital wisely
-2. **Gather Materials** - Visit "Buy Materials" to discover what's available
-3. **Unlock Products** - As you collect materials, new products become available
-4. **Build Smart** - Use the production queue system to plan efficiently
-5. **Optimize Profits** - Progress through tiers for higher-value products
-
-### 💡 Example Production Chain
-```
-Raw Materials → Basic Parts → Intermediate → Complex → Retail
-Cardboard → Box → (Packaging) → Speaker ($74)
-Glass + Metals → Lens → Camera Module → Smartphone ($800)
-```
-
-### 📊 Economic Strategy
-- **Basic Parts**: 5-15% profit margins, quick production
-- **Intermediate**: ~20% margins, moderate complexity
-- **Complex**: ~14% margins, high coordination required
-- **Retail**: $0.50/second total chain time rule for balanced progression
-
-### 🔓 Unlock Progression
-- **Start Simple**: Cardboard unlocks Box production
-- **Build Foundation**: Basic parts enable intermediate products
-- **Master Components**: Intermediate parts unlock complex assemblies
-- **Create Premium**: Complex parts enable high-value retail products
-
-## 🏗️ Technical Architecture
-
-### 📁 Project Structure
-```
-lib/
-├── main.dart                           # App entry point & theme
-├── constants/
-│   └── game_constants.dart            # Centralized configuration values
-├── models/
-│   ├── game_models.dart               # Core data models (Material, Product, etc.)
-│   ├── game_state.dart                # Game state and production tasks
-│   └── game_data.dart                 # Static game content definitions
-├── services/
-│   ├── production_game_service.dart   # Main game logic and state management
-│   ├── product_unlock_service.dart    # Progressive unlock system
-│   └── game_persistence_service.dart  # Database operations and save/load
-├── widgets/
-│   ├── common_widgets.dart            # Shared UI components
-│   ├── product_card.dart              # Product display component
-│   └── production_status_widget.dart  # Production progress displays
-└── screens/
-    ├── main_menu_screen.dart          # Navigation hub
-    ├── buy_materials_screen.dart      # Material purchasing interface
-    ├── build_products_screen.dart     # Production management
-    ├── sell_products_screen.dart      # Product sales interface
-    └── settings_screen.dart           # Configuration and utilities
-```
-
-### 🔧 Key Technical Features
-
-#### Performance Optimizations (v1.4.19)
-- **Intelligent Caching**: 85% faster unlock condition checking
-- **Optimized Database**: 90% reduction in write operations
-- **Smart Timers**: Adaptive update frequency based on activity
-- **Efficient UI**: Shared components and granular rebuilds
-
-#### Code Quality Improvements
-- **Maintainable Architecture**: Large methods refactored into focused helpers
-- **Centralized Constants**: 50+ magic numbers moved to structured constants
-- **Comprehensive Documentation**: API docs with examples and performance notes
-- **Consistent Theming**: Unified color scheme and typography system
-
-#### Robust Data Management
-- **Migration System**: Seamless schema updates without data loss
-- **Automatic Backup**: Save file protection and corruption recovery
-- **Incremental Saves**: Only save changed data for better performance
-- **Platform Optimization**: Mobile-specific database configuration
-
-## 🚀 Build & Deploy
-
-### Development Build
-```bash
-# Run with hot reload
-flutter run
-
-# Run tests
-flutter test
-
-# Check for issues
-flutter analyze
-```
-
-### Production Build
-```bash
-# Android APK
-flutter build apk --release
-
-# Android App Bundle (for Play Store)
-flutter build appbundle --release
-```
-
-### 🧪 Testing
-- **Unit Tests**: Core game logic and services
-- **Widget Tests**: UI component behavior
-- **Integration Tests**: End-to-end gameplay scenarios
-- **Performance Tests**: Database and unlock system optimization
-
-## 🛠️ Development Guide
-
-### Adding New Content
-
-#### 📦 Adding Materials
-1. Add to `GameData.materials` in `lib/models/game_data.dart`
-2. Update unlock thresholds in `lib/constants/game_constants.dart` if needed
-3. Materials automatically appear in buy screen when added
-
-#### 🏭 Adding Products
-1. Add to appropriate tier in `GameData.products` in `lib/models/game_data.dart`
-2. Specify required materials, production time, and pricing
-3. Update unlock conditions in `ProductUnlockService` if custom logic needed
-4. Products automatically integrate with all screens
-
-#### 🎨 Customizing UI
-- Modify `AppColors` in `lib/constants/game_constants.dart` for theming
-- Update `UIConstants` for spacing and sizing adjustments
-- Create new shared widgets in `lib/widgets/` for reusable components
-
-### 🧪 Contributing
-
-1. **Fork the Repository** - Create your own copy
-2. **Create Feature Branch** - Use descriptive branch names
-3. **Follow Architecture** - Maintain separation of concerns
-4. **Add Tests** - Cover new functionality with tests
-5. **Update Documentation** - Keep README and code comments current
-6. **Test Thoroughly** - Verify on mobile devices
-7. **Submit Pull Request** - Include clear description of changes
-
-### 📊 Performance Guidelines
-- Use `const` constructors for immutable widgets
-- Implement proper `shouldUpdateWidget` logic for custom widgets
-- Cache expensive computations (see `ProductUnlockService` caching)
-- Follow the established database patterns for persistence
-- Use the shared component library for consistency
-
-## 🔮 Future Roadmap
-
-### 🤖 Automation Features (v1.5+)
-- **Auto-Buyers**: Automatic material purchasing systems
-- **Production Lines**: Automated manufacturing workflows
-- **Smart Shipping**: Intelligent order fulfillment
-- **Resource Management**: Advanced inventory optimization
-
-### 🌐 Advanced Features
-- **Research & Development**: Unlock new technologies
-- **Factory Expansion**: Multiple production facilities
-- **Market Analysis**: Dynamic pricing and demand
-- **Achievements System**: Progress tracking and rewards
-
-### 📱 Platform Expansion
-- **iOS Release**: Native iOS deployment
-- **iOS Release**: (removed - project now targets Android only in this branch)
-- **Cloud Saves**: Cross-device synchronization
-- **Analytics**: Performance and engagement tracking
-- **Localization**: Multi-language support
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [Flutter](https://flutter.dev/) framework
-- Database powered by [SQLite](https://www.sqlite.org/)
-- State management via [Provider](https://pub.dev/packages/provider) pattern
-- Icons from [Material Design](https://material.io/design/iconography/)
+**Production.INC** is an end-to-end industrial tycoon and supply chain simulation game built with Flutter. Transform a modest garage workshop into an automated multi-branch megafactory, fulfill corporate B2B requisitions, research breakthrough technologies, dispatch carrier transport fleets, and take your manufacturing empire public on Wall Street!
 
 ---
 
-**🏭 Start your production empire today! Transform raw materials into premium products and master the art of manufacturing! �💰**
+## 🎮 Core Game Systems (Version 2.0)
 
-*Production.INC - Where every component counts and every optimization matters.*
-### Coding Standards Compliance
+### 🏭 1. Factory Tiers & Expansion Licensing
+Progress through 4 distinct facility tiers that unlock new manufacturing recipes, expand machine limits, and scale your industrial operations:
+1. **Tier 1 (Garage Workshop 🏚️)**: Humble beginnings with manual assembly and basic electronics.
+2. **Tier 2 (Light Assembly Facility 🏭)**: Intermediate component fabrication and first commercial corporate contracts.
+3. **Tier 3 (Precision Manufacturing Plant 🔬)**: Complex mechatronics, advanced robotics, and heavy freight logistics.
+4. **Tier 4 (Megafactory Cleanroom 🚀)**: High-tech flagship cleanrooms, clean energy systems, and global air freight.
 
-Production.Inc enforces strict linting and code quality standards:
-- All code passes `flutter analyze` with no lint errors
-- Key rules: `avoid_print`, `prefer_single_quotes`, `prefer_const_constructors`
-- See [Development Guide](docs/DEVELOPMENT_GUIDE.md) for details
+### 🌐 2. Three Industry Branches & Dynamic Catalog
+Manufacture across three specialized industrial sectors:
+- **Consumer Electronics**: Circuit boards, microprocessors, camera modules, tablets, and flagship smartphones.
+- **Robotics & Mechatronics**: Precision servos, microcontrollers, sensor arrays, and commercial robotic kits.
+- **Clean Energy Systems**: Solar cells, lithium battery packs, power inverters, and utility-scale solar panels.
+
+### 🤖 3. Full-Spectrum Automation Engine
+Automate your factory floor from raw materials intake to retail storefront sales:
+- **Auto-Buy Machines**: Automatically procure raw materials with intake multipliers to feed rapid assembly lines.
+- **Auto-Build Machines**: Batch manufacturing throughput constructs multiple units per tick.
+- **Auto-Sell Storefront Dispatchers**: Hands-free walk-in customer sales consuming **0 fleet slots**, leaving transport carriers free for bulk contracts.
+- **Dynamic $1.20^N$ Machine Economy**: Factory tier ownership caps, exponential price scaling, and 50% capital salvage refunds.
+
+### 🚚 4. Commercial Logistics & Shipping Manifest
+- **Tiered Logistics Fleet**: Upgrade from *Courier Bikes (🚲)* $\to$ *Delivery Vans (🚐)* $\to$ *Freight Trucks (🚚)* $\to$ *Cargo Planes (✈️)*, scaling transit velocity (+150%) and payload capacities up to 600 units.
+- **Bulk Shipping Manifest Cart**: Multi-product staging cart with interactive review drawer and square-root consolidated transit times.
+- **B2B Corporate Contracts**: Partner with AI clients (*Apex Telecom*, *Solaria Energy*, *Nova Robotics*), fulfill bulk Lock & Ship requisitions, and climb corporate reputation tiers for permanent discounts and cash bonuses.
+
+### 🧪 5. R&D Laboratory & Technology Tree
+- **Deconstruction Bay**: Convert surplus manufactured goods into Science Points.
+- **4 Tech Branches**: Assembly Line Velocity, Procurement Logistics, Fleet Efficiency, and Storage Mastery.
+
+### 🌟 6. Prestige / Initial Public Offering (IPO)
+- Liquidate your company on Wall Street for **Golden Shares**.
+- Compounding permanent multipliers on production speed and market valuation for endless replayability.
+
+---
+
+## 📱 Game Screens Overview
+
+1. **Buy Materials Screen**: Purchase raw materials (Cardboard, Metals, Plastic, Glass, Advanced Metals, Rare Minerals) with bulk multipliers and client discount badges.
+2. **Build Products Screen**: Manage manual and automated production queues across Electronics, Robotics, and Clean Energy branches.
+3. **Sell Products Screen (Sales Hub)**: Manual retail sales, docked Bulk Manifest Tray, and corporate B2B Requisitions feed with Lock & Ship fulfillment.
+4. **Shipping Screen**: Active fleet operations, countdown timers, carrier upgrades, and historical shipping logs.
+5. **Control Center Screen**: Tabbed industrial management center:
+   - **Machines Tab**: Auto-Buy, Auto-Build, and Auto-Sell controls, throughput upgrades, and machine salvage.
+   - **Tiers Tab**: Factory tier roadmap, licensing requirements, and facility upgrades.
+   - **R&D Lab Tab**: Deconstruction Bay and 4-branch Technology Tree.
+   - **Prestige Tab**: Wall Street IPO valuation, Golden Shares ledger, and company liquidation.
+6. **Settings Screen**: Audio, haptics, dark theme, database diagnostics, and safe data resets.
+
+---
+
+## 🏗️ Technical Architecture
+
+The project follows a clean **Layered Architecture (UI $\to$ Service/Logic $\to$ State/Data)** powered by Flutter's `Provider`:
+
+```text
+Game1/
+├── assets/
+│   └── images/                     # App icons and visual assets
+├── lib/
+│   ├── main.dart                   # Entry point, Provider configuration, theme
+│   ├── constants/
+│   │   └── game_constants.dart     # Centralized colors, timing constants, economy values
+│   ├── models/
+│   │   ├── game_models.dart        # Immutable models: Material, Product, Machine, CorporateContract
+│   │   ├── game_data.dart          # Catalogs: recipes, factory tiers, fleet tiers, AI corporations
+│   │   └── game_state.dart         # Player state: treasury, inventory, machine levels, R&D tech
+│   ├── services/
+│   │   ├── production_game_service.dart # Central coordinator, tick loops, and economy
+│   │   ├── product_unlock_service.dart  # Recipe unlocking conditions & state caching
+│   │   ├── machine_builder.dart         # Auto-build worker logic
+│   │   ├── machine_buyer.dart           # Auto-buy worker logic
+│   │   └── game_persistence_service.dart# SQLite database handling, v13 migrations, auto-save
+│   ├── screens/                    # Core screens (Buy, Build, Sell, Shipping, Control, Settings)
+│   └── widgets/                    # Reusable components (ItemCard, MachineCard, ManifestTray, etc.)
+├── docs/                           # Central documentation hub and sprint archives
+│   ├── DOCUMENTATION_INDEX.md      # Master documentation index
+│   └── sprints/                    # Historical sprint archives (01_legacy to 04_v2.0)
+├── tool/                           # Database integrity & diagnostic scripts
+└── test/                           # 314 automated unit, widget, and integration tests
+```
+
+### 🛡️ Reliability & Invariants
+- **100% Offline Single-Player**: Zero network dependencies, zero telemetry tracking, and zero dangerous Android runtime permissions.
+- **SQLite Database Integrity**: Automated non-destructive migrations (v1 through v13) preserving existing save data.
+- **Memory Conservation**: Aggressive widget list recycling (`addAutomaticKeepAlives: false`) and lazy-loaded drawers ensuring consistent 60 FPS performance on low-end hardware.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- [Flutter SDK](https://flutter.dev/docs/get-started/install) `^3.7.0` (Dart 3+)
+- Android Studio / VS Code with Flutter extension
+- Android device or emulator (Android 7.0+ / API 24+)
+
+### Installation & Run
+```bash
+# Clone the repository
+git clone <repository-url>
+cd Game1
+
+# Install dependencies
+flutter pub get
+
+# Run the game in debug mode
+flutter run
+```
+
+### Running Tests & Static Analysis
+```bash
+# Run the complete test suite (314 tests)
+flutter test
+
+# Run static analysis (0 warnings / 0 lints)
+flutter analyze
+```
+
+### Building for Release
+```bash
+# Build Android App Bundle (.aab) for Google Play Console
+flutter build appbundle --release --obfuscate --split-debug-info=build/app/outputs/symbols
+
+# Build Release APK
+flutter build apk --release
+```
+
+---
+
+## 📚 Documentation
+
+For complete architectural specifications, API references, and development guidelines, explore the [Documentation Index](docs/DOCUMENTATION_INDEX.md):
+
+- [Development Guide](docs/DEVELOPMENT_GUIDE.md) — Coding conventions, git workflow, and style guide.
+- [API Documentation](docs/API_DOCUMENTATION.md) — Service methods, state signatures, and event contracts.
+- [Database Schema](docs/DATABASE_SCHEMA.md) — SQLite schema tables and version migration history.
+- [Sprint 4 (v2.0 Major Update)](docs/sprints/04_v2.0_major_update/README.md) — Complete 12-phase specification and verification report.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

@@ -23,8 +23,8 @@ android {
         applicationId = "com.production.inc"
         minSdk = 24  
     targetSdk = 36
-        versionCode = 14
-        versionName = "1.4.14"
+        versionCode = 20
+        versionName = "2.0.0"
         
     }
 
