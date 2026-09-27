@@ -6,7 +6,7 @@ import 'package:game1/services/game_persistence_service.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
 
 void main() {
-  group('Build Speed Multiplier - Minimum Time Tests', () {
+  group('Build Speed Multiplier - Minimum Time Tests (v2.0 Modernized)', () {
     late ProductionGameService gameService;
     late String testDbName;
 
@@ -25,38 +25,32 @@ void main() {
       await sqflite.databaseFactory.deleteDatabase(fullPath);
     });
 
-    test('Production time enforces minimum of 1 second', () {
-      gameService.state.autoBuildMachinesOwned['basicParts'] = 50;
-      
+    test('Production time respects baseline when no speed boosts active', () {
       const baseTime = 5.0;
       final adjustedTime = gameService.getAdjustedProductionTime('wires', baseTime);
-      
-      expect(adjustedTime, greaterThanOrEqualTo(1.0),
-          reason: 'Production time should never go below 1 second');
-      expect(adjustedTime, equals(1.0),
-          reason: 'With many machines, time should be clamped to 1 second minimum');
+      expect(adjustedTime, equals(baseTime));
     });
 
-    test('Short base times also respect 1 second minimum', () {
-      gameService.state.autoBuildMachinesOwned['basicParts'] = 100;
-      
+    test('Production time scales with Prestige Golden Shares speed multiplier', () {
+      // 10 Golden Shares = +100% speed -> 2.0x multiplier
+      gameService.devAddGoldenShares(10);
+      expect(gameService.state.prestigeSpeedMultiplier, 2.0);
+
+      const baseTime = 5.0;
+      final adjustedTime = gameService.getAdjustedProductionTime('wires', baseTime);
+      expect(adjustedTime, equals(2.5),
+          reason: '5.0s / 2.0x = 2.5s');
+    });
+
+    test('Extreme speed multiplier respects lower clamp bound (0.1s minimum)', () {
+      // 1000 Golden Shares = extreme multiplier
+      gameService.devAddGoldenShares(1000);
+      expect(gameService.state.prestigeSpeedMultiplier, greaterThan(10.0));
+
       const baseTime = 3.0;
       final adjustedTime = gameService.getAdjustedProductionTime('box', baseTime);
-      
-      expect(adjustedTime, equals(1.0),
-          reason: 'Even 3s base time with 100 machines should floor at 1s');
-    });
-
-    test('Normal machine counts do not hit minimum', () {
-      gameService.state.autoBuildMachinesOwned['basicParts'] = 5;
-      
-      const baseTime = 5.0;
-      final adjustedTime = gameService.getAdjustedProductionTime('wires', baseTime);
-      
-      expect(adjustedTime, greaterThan(1.0),
-          reason: 'With reasonable machine counts, time should still be above 1s');
-      expect(adjustedTime, lessThan(baseTime),
-          reason: 'Time should still be reduced by machines');
+      expect(adjustedTime, greaterThanOrEqualTo(0.1),
+          reason: 'Production time should never drop below safe minimum 0.1s');
     });
   });
 }

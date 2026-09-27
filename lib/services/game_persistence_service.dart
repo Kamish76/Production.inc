@@ -13,7 +13,7 @@ class GamePersistenceService {
     static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      12; // Updated for Phase 9B: Auto-Sell Dispatchers
+      13; // Updated for Phase 12: High-throughput & automation persistence completeness
 
   Database? _database;
 
@@ -177,6 +177,10 @@ class GamePersistenceService {
       case 12:
         // Phase 9B migrations - Auto-Sell Dispatchers
         await _migrateToVersion12(db);
+        break;
+      case 13:
+        // Phase 12 migrations - Complete automation persistence (Intake level, Auto-ship flags, Auto-build throughput)
+        await _migrateToVersion13(db);
         break;
       default:
         if (kDebugMode) {
@@ -789,6 +793,68 @@ class GamePersistenceService {
     }
   }
 
+  /// Migration to version 13 (Phase 12: Complete automation persistence)
+  Future<void> _migrateToVersion13(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 13 (Automation Persistence Completeness)');
+    }
+
+    final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+    final existingColumns = tableInfo.map((row) => row['name'] as String).toSet();
+
+    if (!existingColumns.contains('auto_buy_intake_level')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_buy_intake_level INTEGER NOT NULL DEFAULT 1
+        ''');
+        if (kDebugMode) print('Added column: auto_buy_intake_level');
+      } catch (e) {
+        if (kDebugMode) print('Migration warning (auto_buy_intake_level): $e');
+      }
+    }
+
+    if (!existingColumns.contains('auto_ship_retail')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_ship_retail INTEGER NOT NULL DEFAULT 0
+        ''');
+        if (kDebugMode) print('Added column: auto_ship_retail');
+      } catch (e) {
+        if (kDebugMode) print('Migration warning (auto_ship_retail): $e');
+      }
+    }
+
+    if (!existingColumns.contains('auto_ship_manufacturing')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_ship_manufacturing INTEGER NOT NULL DEFAULT 0
+        ''');
+        if (kDebugMode) print('Added column: auto_ship_manufacturing');
+      } catch (e) {
+        if (kDebugMode) print('Migration warning (auto_ship_manufacturing): $e');
+      }
+    }
+
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS auto_build_throughput (
+          tier TEXT PRIMARY KEY,
+          level INTEGER NOT NULL DEFAULT 1
+        )
+      ''');
+      if (kDebugMode) print('Created auto_build_throughput table');
+    } catch (e) {
+      if (kDebugMode) print('Migration warning (auto_build_throughput): $e');
+    }
+
+    if (kDebugMode) {
+      print('Migration to version 13 completed');
+    }
+  }
+
   /// Create backup of existing database before major operations
   Future<void> _createDatabaseBackup() async {
     if (_database == null) return;
@@ -933,6 +999,9 @@ class GamePersistenceService {
         auto_buy_enabled INTEGER DEFAULT 0,
         auto_buy_last_tick INTEGER,
         auto_buy_resource_capacity INTEGER DEFAULT 10,
+        auto_buy_intake_level INTEGER NOT NULL DEFAULT 1,
+        auto_ship_retail INTEGER NOT NULL DEFAULT 0,
+        auto_ship_manufacturing INTEGER NOT NULL DEFAULT 0,
         auto_sell_machines_owned INTEGER NOT NULL DEFAULT 0,
         auto_sell_enabled INTEGER NOT NULL DEFAULT 0,
         auto_sell_throughput_level INTEGER NOT NULL DEFAULT 1,
@@ -1081,6 +1150,14 @@ class GamePersistenceService {
       )
     ''');
 
+    // Auto-build throughput table (Phase 8/12)
+    await db.execute('''
+      CREATE TABLE auto_build_throughput (
+        tier TEXT PRIMARY KEY,
+        level INTEGER NOT NULL DEFAULT 1
+      )
+    ''');
+
     // Corporate contracts table (Phase 2)
     await db.execute('''
       CREATE TABLE corporate_contracts (
@@ -1178,6 +1255,9 @@ class GamePersistenceService {
         'auto_buy_enabled': state.autoBuyEnabled ? 1 : 0,
         'auto_buy_last_tick': state.lastAutoBuyTick?.millisecondsSinceEpoch,
         'auto_buy_resource_capacity': state.autoBuyResourceCapacity,
+        'auto_buy_intake_level': state.autoBuyIntakeLevel,
+        'auto_ship_retail': state.autoShipRetail ? 1 : 0,
+        'auto_ship_manufacturing': state.autoShipManufacturing ? 1 : 0,
         'auto_sell_machines_owned': state.autoSellMachinesOwned,
         'auto_sell_enabled': state.autoSellEnabled ? 1 : 0,
         'auto_sell_throughput_level': state.autoSellThroughputLevel,
@@ -1329,6 +1409,15 @@ class GamePersistenceService {
         'capacity': entry.value,
       });
     }
+
+    // Save throughput settings (Phase 8/12)
+    await txn.delete('auto_build_throughput');
+    for (final entry in state.autoBuildThroughputLevel.entries) {
+      await txn.insert('auto_build_throughput', {
+        'tier': entry.key,
+        'level': entry.value,
+      });
+    }
   }
 
   /// Save shipping data (active orders and history)
@@ -1430,6 +1519,9 @@ class GamePersistenceService {
         ? DateTime.fromMillisecondsSinceEpoch(autoBuyLastTickMs) 
         : null;
     final autoBuyResourceCapacity = (row['auto_buy_resource_capacity'] as int?) ?? 10;
+    final autoBuyIntakeLevel = (row['auto_buy_intake_level'] as int?) ?? 1;
+    final autoShipRetail = ((row['auto_ship_retail'] as int?) ?? 0) == 1;
+    final autoShipManufacturing = ((row['auto_ship_manufacturing'] as int?) ?? 0) == 1;
     final autoSellMachinesOwned = (row['auto_sell_machines_owned'] as int?) ?? 0;
     final autoSellEnabled = ((row['auto_sell_enabled'] as int?) ?? 0) == 1;
     final autoSellThroughputLevel = (row['auto_sell_throughput_level'] as int?) ?? 1;
@@ -1473,10 +1565,14 @@ class GamePersistenceService {
       autoBuyEnabled: autoBuyEnabled,
       lastAutoBuyTick: autoBuyLastTick,
       autoBuyResourceCapacity: autoBuyResourceCapacity,
+      autoBuyIntakeLevel: autoBuyIntakeLevel,
       autoBuildMachinesOwned: autoBuildData.machines,
       autoBuildEnabled: autoBuildData.enabled,
       lastAutoBuildTick: autoBuildData.lastTick,
       autoBuildProductCapacity: autoBuildData.capacity,
+      autoBuildThroughputLevel: autoBuildData.throughput,
+      autoShipRetail: autoShipRetail,
+      autoShipManufacturing: autoShipManufacturing,
       autoSellMachinesOwned: autoSellMachinesOwned,
       autoSellEnabled: autoSellEnabled,
       autoSellThroughputLevel: autoSellThroughputLevel,
@@ -1590,6 +1686,7 @@ class GamePersistenceService {
     Map<String, bool> enabled,
     Map<String, DateTime?> lastTick,
     Map<String, int> capacity,
+    Map<String, int> throughput,
   })> _loadAutoBuildData(Database db) async {
     final machines = <String, int>{};
     final enabled = <String, bool>{};
@@ -1623,11 +1720,21 @@ class GamePersistenceService {
       capacity[row['tier'] as String] = row['capacity'] as int;
     }
 
+    // Load throughput settings (Phase 8/12)
+    final throughput = <String, int>{};
+    try {
+      final throughputResult = await db.query('auto_build_throughput');
+      for (final row in throughputResult) {
+        throughput[row['tier'] as String] = row['level'] as int;
+      }
+    } catch (_) {}
+
     return (
       machines: machines,
       enabled: enabled,
       lastTick: lastTick,
       capacity: capacity,
+      throughput: throughput,
     );
   }
 
@@ -1881,6 +1988,7 @@ class GamePersistenceService {
       await txn.delete('shipping_history_items');
       await txn.delete('shipping_history');
       await txn.delete('auto_build_machines');
+      await txn.delete('auto_build_throughput');
       await txn.delete('researched_technologies');
 
       // Update core game state with reset run values and updated persistent prestige data
@@ -1893,6 +2001,9 @@ class GamePersistenceService {
           'auto_buy_enabled': 0,
           'auto_buy_last_tick': null,
           'auto_buy_resource_capacity': 10,
+          'auto_buy_intake_level': 1,
+          'auto_ship_retail': 0,
+          'auto_ship_manufacturing': 0,
           'factory_tier': 1,
           'fleet_tier': 1,
           'research_points': 0,
@@ -2236,6 +2347,7 @@ class GamePersistenceService {
         'auto_buy_enabled': state.autoBuyEnabled ? 1 : 0,
         'auto_buy_last_tick': state.lastAutoBuyTick?.millisecondsSinceEpoch,
         'auto_buy_resource_capacity': state.autoBuyResourceCapacity,
+        'auto_buy_intake_level': state.autoBuyIntakeLevel,
       },
       where: 'id = ?',
       whereArgs: [1],
@@ -2278,6 +2390,15 @@ class GamePersistenceService {
       await txn.insert('auto_build_capacity', {
         'tier': entry.key,
         'capacity': entry.value,
+      });
+    }
+
+    // Save auto-build throughput settings (Phase 8/12)
+    await txn.delete('auto_build_throughput');
+    for (final entry in state.autoBuildThroughputLevel.entries) {
+      await txn.insert('auto_build_throughput', {
+        'tier': entry.key,
+        'level': entry.value,
       });
     }
   }
@@ -2343,6 +2464,7 @@ class GamePersistenceService {
         'auto_build_enabled',
         'auto_build_last_tick',
         'auto_build_capacity',
+        'auto_build_throughput',
       ];
       
       for (final table in requiredTables) {

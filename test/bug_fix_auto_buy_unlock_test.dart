@@ -147,12 +147,17 @@ void main() {
 
         // Trigger auto-buy until it reaches similar material levels
         for (int i = 0; i < 10; i++) {
+          gameServiceAuto.testSetState(gameServiceAuto.state.copyWith(
+            lastAutoBuyTick: DateTime.now().subtract(const Duration(seconds: 10)),
+          ));
           gameServiceAuto.updateProductions();
           await Future.delayed(const Duration(milliseconds: 10));
 
           // Stop when materials are roughly similar
           final autoCardboard = gameServiceAuto.state.materials['cardboard'] ?? 0;
-          if (autoCardboard >= 10) break;
+          final autoMetals = gameServiceAuto.state.materials['basic_metals'] ?? 0;
+          final autoPlastic = gameServiceAuto.state.materials['plastic'] ?? 0;
+          if (autoCardboard >= 10 && autoMetals >= 10 && autoPlastic >= 10) break;
         }
 
         // Compare unlocked products
@@ -203,22 +208,29 @@ void main() {
         gameService.incrementAutoBuildMachines('basicParts');
         gameService.toggleAutoBuild('basicParts'); // Enable auto-build
 
-        // Trigger auto-build tick
+        // Trigger auto-build tick (enqueues production tasks)
         gameService.updateProductions();
 
-        // After auto-build, some basic parts should be built
-        final boxCount = gameService.state.products['box'] ?? 0;
-        final wiresCount = gameService.state.products['wires'] ?? 0;
+        // Complete the enqueued production tasks
+        final completedTasks = gameService.state.activeProductions
+            .map((t) => t.copyWith(
+                  startTime: DateTime.now().subtract(const Duration(seconds: 20)),
+                ))
+            .toList();
+        gameService.testSetState(gameService.state.copyWith(activeProductions: completedTasks));
+        gameService.updateProductions();
+
+        // After completing production, some basic parts should be in product inventory
+        final totalBuilt = gameService.state.products.values.fold(0, (a, b) => a + b);
 
         // Verify products were built
         expect(
-          boxCount + wiresCount,
+          totalBuilt,
           greaterThan(0),
           reason: 'Auto-build should have built some products',
         );
 
-        // BUG FIX VERIFICATION: Check if intermediate parts unlock after basic parts are built
-        // Battery requires wires to be produced
+        final wiresCount = gameService.state.products['wires'] ?? 0;
         if (wiresCount > 0) {
           // Battery should now be unlockable (if other materials available)
           final advancedMetals = gameService.state.materials['advanced_metals'] ?? 0;

@@ -6,7 +6,6 @@ import 'package:game1/models/game_models.dart';
 import 'package:game1/services/game_persistence_service.dart';
 import 'package:game1/services/production_game_service.dart';
 import 'package:game1/widgets/item_card.dart';
-import 'package:game1/widgets/shipping_manifest_drawer.dart';
 import 'package:game1/widgets/shipping_manifest_tray.dart';
 import 'package:provider/provider.dart';
 

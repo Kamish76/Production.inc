@@ -74,47 +74,56 @@ class ShippingManifestTray extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                '📦 $varietyCount Var • $totalUnits/${fleet.maxPayloadUnits} Units',
-                                style: TextStyle(
-                                  color: badgeColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.purple.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: Colors.purple.withValues(alpha: 0.4),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '📦 $varietyCount Var • $totalUnits/${fleet.maxPayloadUnits} Units',
+                                  style: TextStyle(
+                                    color: badgeColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
                                   ),
                                 ),
-                                child: Text(
-                                  '${fleet.emoji} ${fleet.name}',
-                                  style: const TextStyle(
-                                    color: Colors.purpleAccent,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w600,
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: Colors.purple.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '${fleet.emoji} ${fleet.name}',
+                                    style: const TextStyle(
+                                      color: Colors.purpleAccent,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            'Total: \$${totalRevenue.toStringAsFixed(2)} • ⏱️ ${shippingTime.toStringAsFixed(1)}s',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Total: \$${totalRevenue.toStringAsFixed(2)} • ⏱️ ${shippingTime.toStringAsFixed(1)}s',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],

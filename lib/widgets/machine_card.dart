@@ -530,64 +530,50 @@ class MachineCard extends StatelessWidget {
               const SizedBox(height: 14),
 
               // 2. Fleet Count Row: Machines badge + Buy Machine action button + Salvage button
-              Row(
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  const Text(
-                    'Fleet Count:',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF131726),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: accentColor.withValues(alpha: 0.3),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Fleet Count:',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      '$machineCount ${machineCount == 1 ? "Unit" : "Units"}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF131726),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: accentColor.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Text(
+                          '$machineCount ${machineCount == 1 ? "Unit" : "Units"}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: machineCount >= machineLimit
-                        ? Tooltip(
-                            message:
-                                'Tier Limit Reached ($machineLimit/$machineLimit). Upgrade Factory to expand.',
-                            child: ElevatedButton.icon(
-                              onPressed: null,
-                              icon: const Icon(Icons.add_shopping_cart, size: 16),
-                              label: Text(
-                                'Buy Machine (\$${machineCost.toInt()})',
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green[700],
-                                foregroundColor: Colors.white,
-                                disabledBackgroundColor: Colors.grey[850],
-                                disabledForegroundColor: Colors.grey[600],
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                elevation: 0,
-                              ),
-                            ),
-                          )
-                        : ElevatedButton.icon(
-                            onPressed: canBuy ? onBuy : null,
-                            icon: const Icon(Icons.add_shopping_cart, size: 16),
+                  machineCount >= machineLimit
+                      ? Tooltip(
+                          message:
+                              'Tier Limit Reached ($machineLimit/$machineLimit). Upgrade Factory to expand.',
+                          child: ElevatedButton.icon(
+                            onPressed: null,
+                            icon: const Icon(Icons.lock, size: 16),
                             label: Text(
                               'Buy Machine (\$${machineCost.toInt()})',
                               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
@@ -604,8 +590,26 @@ class MachineCard extends StatelessWidget {
                               elevation: 0,
                             ),
                           ),
-                  ),
-                  const SizedBox(width: 8),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: canBuy ? onBuy : null,
+                          icon: const Icon(Icons.add_shopping_cart, size: 16),
+                          label: Text(
+                            'Buy Machine (\$${machineCost.toInt()})',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green[700],
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: Colors.grey[850],
+                            disabledForegroundColor: Colors.grey[600],
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
                   IconButton(
                     icon: const Icon(Icons.recycling),
                     tooltip: 'Salvage Machine',
@@ -646,7 +650,10 @@ class MachineCard extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 // 3. Capacity Stepper Row: [-] [Value] [+] + Unit label
-                Row(
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
                   children: [
                     const Text(
                       'Capacity:',
@@ -656,54 +663,55 @@ class MachineCard extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    IconButton(
-                      onPressed: canDecreaseCapacity ? onDecreaseCapacity : null,
-                      icon: const Icon(Icons.remove_circle_outline),
-                      color: Colors.redAccent,
-                      disabledColor: Colors.grey[700],
-                      iconSize: 22,
-                      padding: const EdgeInsets.all(4),
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF131726),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: accentColor.withValues(alpha: 0.35),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: canDecreaseCapacity ? onDecreaseCapacity : null,
+                          icon: const Icon(Icons.remove_circle_outline),
+                          color: Colors.redAccent,
+                          disabledColor: Colors.grey[700],
+                          iconSize: 22,
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(),
                         ),
-                      ),
-                      child: Text(
-                        '$capacity',
-                        style: TextStyle(
-                          color: accentColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF131726),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: accentColor.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Text(
+                            '$capacity',
+                            style: TextStyle(
+                              color: accentColor,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: canIncreaseCapacity ? onIncreaseCapacity : null,
-                      icon: const Icon(Icons.add_circle_outline),
-                      color: Colors.greenAccent,
-                      disabledColor: Colors.grey[700],
-                      iconSize: 22,
-                      padding: const EdgeInsets.all(4),
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        capacityUnit,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: canIncreaseCapacity ? onIncreaseCapacity : null,
+                          icon: const Icon(Icons.add_circle_outline),
+                          color: Colors.greenAccent,
+                          disabledColor: Colors.grey[700],
+                          iconSize: 22,
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(),
                         ),
+                      ],
+                    ),
+                    Text(
+                      capacityUnit,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ],
@@ -713,7 +721,10 @@ class MachineCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // 4. Throughput Upgrade Row: Throughput Badge + Upgrade Button
-              Row(
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   const Text(
                     'Throughput:',
@@ -723,8 +734,7 @@ class MachineCard extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  if (throughputLabel.isNotEmpty) ...[
+                  if (throughputLabel.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
@@ -743,29 +753,25 @@ class MachineCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                  ],
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: canUpgradeThroughput ? onUpgradeThroughput : null,
-                      icon: const Icon(Icons.arrow_upward, size: 16),
-                      label: Text(
-                        isMaxThroughput 
-                            ? 'Max Level' 
-                            : 'Upgrade (\$${throughputUpgradeCost.toStringAsFixed(2)})',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ElevatedButton.icon(
+                    onPressed: canUpgradeThroughput ? onUpgradeThroughput : null,
+                    icon: const Icon(Icons.arrow_upward, size: 16),
+                    label: Text(
+                      isMaxThroughput 
+                          ? 'Max Level' 
+                          : 'Upgrade (\$${throughputUpgradeCost.toStringAsFixed(2)})',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E88E5),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey[850],
+                      disabledForegroundColor: Colors.grey[600],
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E88E5),
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: Colors.grey[850],
-                        disabledForegroundColor: Colors.grey[600],
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 0,
-                      ),
+                      elevation: 0,
                     ),
                   ),
                 ],

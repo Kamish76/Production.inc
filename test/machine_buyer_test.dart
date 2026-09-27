@@ -37,9 +37,8 @@ void main() {
       const startMoney = 100.0;
 
       // Tick 1: pooled buys = 2 * 5 = 10
-      // metal deficit = 7, buy 7 for \\\$21 -> metal = 10, pooled = 3, money = \\\$79
-      // wood deficit = 0, skip
-      // plastic deficit = 5, buy 3 for \\\$6 -> plastic = 8, pooled = 0, money = \\\$73
+      // In the full-batch model, metal is below cap (3 < 10), so machines buy full batch:
+      // min(pooled 10, affordable 33) = 10 metal for $30 -> metal = 13, pooled = 0
       final result1 = performAutoBuyTick(
         inventory: inventory,
         currentMoney: startMoney,
@@ -51,16 +50,15 @@ void main() {
       );
 
       expect(result1.itemsPurchased, equals(10), reason: 'Tick 1 should purchase 10 items');
-      expect(result1.moneySpent, equals(27.0), reason: 'Tick 1 should spend \\\$27');
-      expect(inventory['metal'], equals(10), reason: 'Metal should be at cap');
+      expect(result1.moneySpent, equals(30.0), reason: 'Tick 1 should spend \$30 for 10 metal');
+      expect(inventory['metal'], equals(13), reason: 'Metal should be 13 (full batch)');
       expect(inventory['wood'], equals(10), reason: 'Wood should remain at cap');
-      expect(inventory['plastic'], equals(8), reason: 'Plastic should be 8');
+      expect(inventory['plastic'], equals(5), reason: 'Plastic should remain 5');
 
-      // Tick 2: pooled buys = 10, money = \\\$73
-      // metal deficit = 0, skip
-      // wood deficit = 0, skip
-      // plastic deficit = 2, buy 2 for \\\$4 -> plastic = 10, pooled = 8, money = \\\$69
-      // All resources at cap, remaining 8 unused
+      // Tick 2: pooled buys = 10, money = \$70
+      // metal is 13 (>= cap 10), skip
+      // wood is 10 (>= cap 10), skip
+      // plastic is 5 (< cap 10), buy full batch 10 for \$20 -> plastic = 15, pooled = 0
       final result2 = performAutoBuyTick(
         inventory: inventory,
         currentMoney: startMoney - result1.moneySpent,
@@ -71,11 +69,11 @@ void main() {
         resourceCap: resourceCap,
       );
 
-      expect(result2.itemsPurchased, equals(2), reason: 'Tick 2 should purchase 2 items');
-      expect(result2.moneySpent, equals(4.0), reason: 'Tick 2 should spend \\\$4');
-      expect(inventory['metal'], equals(10), reason: 'Metal should remain at cap');
+      expect(result2.itemsPurchased, equals(10), reason: 'Tick 2 should purchase 10 items');
+      expect(result2.moneySpent, equals(20.0), reason: 'Tick 2 should spend \$20');
+      expect(inventory['metal'], equals(13), reason: 'Metal should remain at 13');
       expect(inventory['wood'], equals(10), reason: 'Wood should remain at cap');
-      expect(inventory['plastic'], equals(10), reason: 'Plastic should be at cap');
+      expect(inventory['plastic'], equals(15), reason: 'Plastic should be 15 (full batch)');
     });
 
     test('Insufficient money: stops buying when money runs out', () {
@@ -199,8 +197,9 @@ void main() {
       };
 
       // 3 machines * 5 = 15 buys
-      // metal deficit = 10, buy 10 for \\\$30 -> metal = 10, pooled = 5
-      // wood deficit = 10, buy 5 for \\\$10 -> wood = 5, pooled = 0
+      // 3 machines * 5 = 15 buys
+      // In full-batch model: metal is 0 (< cap 10), so machines buy min(15, 33) = 15 metal for $45
+      // metal = 15, pooled = 0
       final result = performAutoBuyTick(
         inventory: inventory,
         currentMoney: 100.0,
@@ -212,21 +211,21 @@ void main() {
       );
 
       expect(result.itemsPurchased, equals(15), reason: '3 machines should buy 15 items');
-      expect(result.moneySpent, equals(40.0), reason: '10 metal (\\\$30) + 5 wood (\\\$10) = \\\$40');
-      expect(inventory['metal'], equals(10), reason: 'Metal should be at cap');
-      expect(inventory['wood'], equals(5), reason: 'Wood should have 5');
+      expect(result.moneySpent, equals(45.0), reason: '15 metal (\$45)');
+      expect(inventory['metal'], equals(15), reason: 'Metal should be 15');
+      expect(inventory['wood'], equals(0), reason: 'Wood should have 0');
       expect(inventory['plastic'], equals(0), reason: 'Plastic should remain 0');
     });
 
-    test('Wrapping behavior with money: buys wrap back to top', () {
+    test('Full batch behavior: buys full pooled capacity for first deficit resource', () {
       final inventory = {
-        'metal': 8, // deficit = 2
-        'wood': 8,  // deficit = 2
+        'metal': 8, // below cap 10
+        'wood': 8,  // below cap 10
       };
 
       // 2 machines * 5 = 10 pooled buys
-      // Pass 1: metal buy 2 for \\\$6 -> metal=10, pooled=8; wood buy 2 for \\\$4 -> wood=10, pooled=6
-      // Pass 2: both at cap, remaining 6 unused
+      // Metal is below cap (8 < 10), so full pooled batch of 10 is bought for metal:
+      // metal = 8 + 10 = 18, cost = $30. pooled buys = 0.
       final result = performAutoBuyTick(
         inventory: inventory,
         currentMoney: 100.0,
@@ -237,10 +236,10 @@ void main() {
         resourceCap: 10,
       );
 
-      expect(result.itemsPurchased, equals(4), reason: 'Should buy 4 items (2+2) then stop');
-      expect(result.moneySpent, equals(10.0), reason: '2 metal (\\\$6) + 2 wood (\\\$4) = \\\$10');
-      expect(inventory['metal'], equals(10), reason: 'Metal at cap');
-      expect(inventory['wood'], equals(10), reason: 'Wood at cap');
+      expect(result.itemsPurchased, equals(10), reason: 'Should buy full batch of 10 items');
+      expect(result.moneySpent, equals(30.0), reason: '10 metal at \$3 = \$30');
+      expect(inventory['metal'], equals(18), reason: 'Metal exceeds cap due to full batch');
+      expect(inventory['wood'], equals(8), reason: 'Wood not reached in tick 1');
     });
 
     test('Resource not in inventory is initialized to 0', () {

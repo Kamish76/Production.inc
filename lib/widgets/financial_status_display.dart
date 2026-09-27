@@ -92,72 +92,93 @@ class FinancialStatusDisplay extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Column(
-                children: [
-                  Text(
-                    'Total Products',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: backgroundColor?.withValues(alpha: 0.6) ?? Colors.purple[200],
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      'Total Products',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: backgroundColor?.withValues(alpha: 0.6) ?? Colors.purple[200],
+                      ),
                     ),
-                  ),
-                  Text(
-                    '$totalProducts',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        '$totalProducts',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               Container(
                 height: 30,
                 width: 1,
                 color: backgroundColor?.withValues(alpha: 0.8) ?? Colors.purple[400],
               ),
-              Column(
-                children: [
-                  Text(
-                    'Portfolio Value',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: backgroundColor?.withValues(alpha: 0.6) ?? Colors.purple[200],
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      'Portfolio Value',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: backgroundColor?.withValues(alpha: 0.6) ?? Colors.purple[200],
+                      ),
                     ),
-                  ),
-                  Text(
-                    '\$${portfolioValue.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        '\$${portfolioValue.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               Container(
                 height: 30,
                 width: 1,
                 color: backgroundColor?.withValues(alpha: 0.8) ?? Colors.purple[400],
               ),
-              Column(
-                children: [
-                  Text(
-                    'Fleets Active',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: backgroundColor?.withValues(alpha: 0.6) ?? Colors.purple[200],
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      'Fleets Active',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: backgroundColor?.withValues(alpha: 0.6) ?? Colors.purple[200],
+                      ),
                     ),
-                  ),
-                  Text(
-                    '${gameService.state.activeShippingOrders.length}/${gameService.state.maxSimultaneousShipments}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        '${gameService.state.activeShippingOrders.length}/${gameService.state.maxSimultaneousShipments}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),

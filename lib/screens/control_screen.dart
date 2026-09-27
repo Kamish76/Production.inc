@@ -48,12 +48,15 @@ class _ControlScreenState extends State<ControlScreen> {
                       children: [
                         Icon(Icons.tune, color: Colors.cyan[400], size: 28),
                         const SizedBox(width: 12),
-                        const Text(
-                          'Control Center',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        const Expanded(
+                          child: Text(
+                            'Control Center',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -153,36 +156,43 @@ class _ControlScreenState extends State<ControlScreen> {
                   : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? (activeColor ?? Colors.cyan[300]) : Colors.grey[400],
-              size: 16,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey[400],
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? (activeColor ?? Colors.cyan[300]) : Colors.grey[400],
+                size: 15,
               ),
-            ),
-            if (showBadge) ...[
               const SizedBox(width: 3),
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFD54F),
-                  shape: BoxShape.circle,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.grey[400],
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
                 ),
               ),
+              if (showBadge) ...[
+                const SizedBox(width: 2),
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFD54F),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -539,25 +549,27 @@ class _ControlScreenState extends State<ControlScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Machine Controls',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Machine Controls',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Autonomous procurement and assembly fleet',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.6),
+                    Text(
+                      'Autonomous procurement and assembly fleet',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -585,13 +597,15 @@ class _ControlScreenState extends State<ControlScreen> {
             children: [
               Icon(Icons.construction, size: 16, color: Colors.blue[300]),
               const SizedBox(width: 8),
-              Text(
-                'AUTO-BUILD ASSEMBLY TIERS',
-                style: TextStyle(
-                  color: Colors.blue[300],
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
+              Expanded(
+                child: Text(
+                  'AUTO-BUILD ASSEMBLY TIERS',
+                  style: TextStyle(
+                    color: Colors.blue[300],
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
                 ),
               ),
             ],

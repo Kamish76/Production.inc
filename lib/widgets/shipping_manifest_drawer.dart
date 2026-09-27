@@ -150,8 +150,10 @@ class ShippingManifestDrawer extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        runSpacing: 4,
                         children: [
                           Text(
                             'Payload: $totalUnits / ${fleet.maxPayloadUnits} Units',
@@ -181,10 +183,13 @@ class ShippingManifestDrawer extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        runSpacing: 4,
                         children: [
                           Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.timer_outlined,
                                   size: 14, color: Colors.cyanAccent),
@@ -200,6 +205,7 @@ class ShippingManifestDrawer extends StatelessWidget {
                             ],
                           ),
                           Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 hasFleetSlot
@@ -220,6 +226,7 @@ class ShippingManifestDrawer extends StatelessWidget {
                                   color: hasFleetSlot
                                       ? Colors.greenAccent
                                       : Colors.redAccent,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],

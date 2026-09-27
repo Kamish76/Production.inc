@@ -2003,12 +2003,13 @@ class ProductionGameService extends ChangeNotifier {
         ProductUnlockService.isProductUnlocked(productId, _state);
   }
 
-  /// Calculate adjusted production time with auto-build machine speed bonus
-  /// Each machine provides a 1.1x speed multiplier (stacks multiplicatively)
-  /// Calculates adjusted production time based on machine speed bonuses
-  /// Phase 10: Speed estimation removed to ensure precise tick alignment (returns baseTime)
+  /// Calculate adjusted production time incorporating Factory Overclocking (Phase 4)
+  /// and Prestige Golden Shares speed multiplier (Phase 5).
   double getAdjustedProductionTime(String productId, double baseTime) {
-    return baseTime;
+    final speedMultiplier =
+        _state.overclockSpeedMultiplier * _state.prestigeSpeedMultiplier;
+    if (speedMultiplier <= 0) return baseTime;
+    return (baseTime / speedMultiplier).clamp(0.1, 86400.0);
   }
 
 
@@ -2307,8 +2308,9 @@ class ProductionGameService extends ChangeNotifier {
   /// Get current auto-buy intake level (default 1)
   int getAutoBuyIntakeLevel() => _state.autoBuyIntakeLevel;
 
-  /// Calculate auto-buy intake multiplier based on level: 1.0 per level
-  double getAutoBuyIntakeMultiplier(int level) => level * 1.0;
+  /// Calculate auto-buy intake multiplier based on level: 1.0 + (level - 1) * 0.25
+  double getAutoBuyIntakeMultiplier(int level) =>
+      1.0 + (math.max(1, level) - 1) * 0.25;
 
   /// Calculate upgrade cost for auto-buy intake: 1000 * 1.15^(level - 1)
   double getAutoBuyIntakeUpgradeCost() =>

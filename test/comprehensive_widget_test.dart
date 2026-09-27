@@ -61,9 +61,11 @@ void main() {
     testWidgets('Build products screen displays correctly', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: ChangeNotifierProvider.value(
-            value: gameService,
-            child: const BuildProductsScreen(),
+          home: Scaffold(
+            body: ChangeNotifierProvider.value(
+              value: gameService,
+              child: const BuildProductsScreen(),
+            ),
           ),
         ),
       );
@@ -78,9 +80,11 @@ void main() {
     testWidgets('Sell products screen displays correctly', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: ChangeNotifierProvider.value(
-            value: gameService,
-            child: const SellProductsScreen(),
+          home: Scaffold(
+            body: ChangeNotifierProvider.value(
+              value: gameService,
+              child: const SellProductsScreen(),
+            ),
           ),
         ),
       );
@@ -88,7 +92,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check for key elements  
-      expect(find.text('Sell Products'), findsOneWidget);
+      expect(find.text('Sales Hub'), findsOneWidget);
       expect(find.byType(SellProductsScreen), findsOneWidget);
     });
 
