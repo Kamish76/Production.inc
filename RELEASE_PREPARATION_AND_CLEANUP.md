@@ -129,7 +129,7 @@ The Settings page is an infrequent destination during standard gameplay sessions
 ### 1.3 Debug Constants & Logging Sanitization
 Review logging constants in [`lib/constants/game_constants.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/constants/game_constants.dart) and raw `print()` statements:
 
-- [ ] **Turn off Verbose Persistence Logging**:
+- [x] **Turn off Verbose Persistence Logging**:
   In `DebugConstants`:
   ```dart
   class DebugConstants {
@@ -139,10 +139,11 @@ Review logging constants in [`lib/constants/game_constants.dart`](file:///Users/
     static const bool persistenceLogging = false; // Change from true to false for release
   }
   ```
-- [ ] **Sanitize Raw `print()` Statements**:
-  In [`GamePersistenceService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/game_persistence_service.dart), replace remaining raw `print(...)` calls in database migration routines with logger calls or wrap strictly in `if (kDebugMode)`.
-- [ ] **Ensure Test Helpers are Guarded**:
-  Confirm all `@visibleForTesting` methods in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) (`testSetManifest`, `processAutoSellTickForTest`, `addContractForTest`, `testSetState`, etc.) are never invoked by any production UI screen or normal loop.
+  (✅ **Completed**)
+- [x] **Sanitize Raw `print()` Statements**:
+  In [`GamePersistenceService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/game_persistence_service.dart), replace remaining raw `print(...)` calls in database migration routines with logger calls or wrap strictly in `if (kDebugMode)`. (✅ **Completed**)
+- [x] **Ensure Test Helpers are Guarded**:
+  Confirm all `@visibleForTesting` methods in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) (`testSetManifest`, `processAutoSellTickForTest`, `addContractForTest`, `testSetState`, etc.) are never invoked by any production UI screen or normal loop. (✅ **Completed**)
 
 ---
 
@@ -187,15 +188,15 @@ flutter_launcher_icons:
 ```
 
 #### Verification & Generation Tasks:
-- [ ] Run `dart run flutter_launcher_icons` to re-generate mipmap densities if `AppIcon.png` has been updated.
-- [ ] Verify generated mipmaps in `android/app/src/main/res/`:
+- [x] Run `dart run flutter_launcher_icons` to re-generate mipmap densities if `AppIcon.png` has been updated. (✅ **Verified**)
+- [x] Verify generated mipmaps in `android/app/src/main/res/`:
   - `mipmap-mdpi/launcher_icon.png` (48x48)
   - `mipmap-hdpi/launcher_icon.png` (72x72)
   - `mipmap-xhdpi/launcher_icon.png` (96x96)
   - `mipmap-xxhdpi/launcher_icon.png` (144x144)
   - `mipmap-xxxhdpi/launcher_icon.png` (192x192)
-  - `mipmap-anydpi-v26/launcher_icon.xml` (Adaptive icon definition)
-- [ ] Verify `AndroidManifest.xml` points to `@mipmap/launcher_icon` for both `android:icon` and `android:roundIcon` (if applicable).
+  - `mipmap-anydpi-v26/launcher_icon.xml` (Adaptive icon definition) (✅ **Verified**)
+- [x] Verify `AndroidManifest.xml` points to `@mipmap/launcher_icon` for `android:icon`. (✅ **Verified**)
 - [ ] Provide Android 13+ themed monochrome icon XML layer (`<monochrome android:drawable="..." />`).
 
 ---
@@ -249,7 +250,7 @@ To prevent missing-asset runtime errors or layout breaks while individual icon b
 ## 🛡️ Pillar 3: Google Play Console Release & Compliance Hardening
 
 ### 3.1 Android Build & Release Configuration
-- [ ] **Version Synchronization**:
+- [x] **Version Synchronization**: (✅ **Verified**)
   - `pubspec.yaml`: `version: 2.0.0+20` (Confirmed).
   - `android/app/build.gradle.kts`: Verify `versionCode = 20` and `versionName = "2.0.0"`.
   - Android API Targets: `compileSdk = 36`, `targetSdk = 36`, `minSdk = 24`.
@@ -262,7 +263,7 @@ To prevent missing-asset runtime errors or layout breaks while individual icon b
     storePassword=YOUR_STORE_PASSWORD
     ```
   - Ensure `android/key.properties` and `.jks` are in `.gitignore` (never commit keys to source control).
-- [ ] **R8 Code Shrinking & ProGuard Rules**:
+- [x] **R8 Code Shrinking & ProGuard Rules**: (✅ **Verified**)
   - In `android/app/build.gradle.kts`, verify release build type:
     ```kotlin
     buildTypes {
@@ -370,30 +371,33 @@ Execute the following verification suite prior to tagging `v2.0.0`:
 ## 📋 Comprehensive Execution Checklist
 
 ### Phase A: Developer "Mods" & Debug Cleanup (Redeem Code & Settings Lazy Load)
-- [ ] Implement "Redeem Codes" card on [`SettingsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/settings_screen.dart) supporting:
+- [x] Implement "Redeem Codes" card on [`SettingsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/settings_screen.dart) supporting: (✅ **Completed**)
   - **Ephemeral Debug Unlock (`888888`)**: Memory-only session flag; auto-relocks on app exit/closure.
   - **One-Time Persistent Codes (`PRODUCTION2026`)**: Grants +$5,000 credits; tracked in persistent database to prevent double redemption.
-- [ ] Migrate [`SettingsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/settings_screen.dart) from `SingleChildScrollView` to virtualized lazy-loaded `ListView.builder` to conserve RAM and improve battery efficiency.
-- [ ] Transfer all 15 developer controls from [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart) to the unlocked Developer Tools section in `SettingsScreen`.
-- [ ] Clean up [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart) (`Tiers` tab) by removing `_buildDevControlsSection` to free up space and eliminate clutter.
-- [ ] Update `DebugConstants.persistenceLogging = false` in [`lib/constants/game_constants.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/constants/game_constants.dart).
-- [ ] Replace raw `print()` statements in [`GamePersistenceService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/game_persistence_service.dart) with Logger or `if (kDebugMode)` guards.
-- [ ] Implement "Join Discord Community" button on [`MainMenuScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/main_menu_screen.dart) delegating `https://discord.gg/7yH3jgMnhf` via `android_intent_plus` (`ACTION_VIEW`) to an external app/browser, preserving 100% offline gameplay.
-- [ ] Audit all `@visibleForTesting` methods in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) to confirm zero production leaks.
-- [ ] Run `flutter test` to ensure 314/314 tests remain green after refactoring.
+- [x] Migrate [`SettingsScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/settings_screen.dart) from `SingleChildScrollView` to virtualized lazy-loaded `ListView.builder` to conserve RAM and improve battery efficiency. (✅ **Completed**)
+- [x] Transfer all 15 developer controls from [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart) to the unlocked Developer Tools section in `SettingsScreen`. (✅ **Completed**)
+- [x] Clean up [`ControlScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/control_screen.dart) (`Tiers` tab) by removing `_buildDevControlsSection` to free up space and eliminate clutter. (✅ **Completed**)
+- [x] Update `DebugConstants.persistenceLogging = false` in [`lib/constants/game_constants.dart`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/constants/game_constants.dart). (✅ **Completed**)
+- [x] Replace raw `print()` statements in [`GamePersistenceService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/game_persistence_service.dart) with Logger or `if (kDebugMode)` guards. (✅ **Completed**)
+- [x] Implement "Join Discord Community" button on [`MainMenuScreen`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/screens/main_menu_screen.dart) delegating `https://discord.gg/7yH3jgMnhf` via `android_intent_plus` (`ACTION_VIEW`) to an external app/browser, preserving 100% offline gameplay. (✅ **Completed**)
+- [x] Audit all `@visibleForTesting` methods in [`ProductionGameService`](file:///Users/Kamish/Desktop/JEBZ%20DEVVV/Main%20Projects/Game1/lib/services/production_game_service.dart) to confirm zero production leaks. (✅ **Completed**)
+- [x] Run `flutter test` to ensure 314/314 tests remain green after refactoring (359/359 tests now passing). (✅ **Completed**)
 
 ### Phase B: App Icon & Asset Integration
-- [ ] Run `dart run flutter_launcher_icons` and verify all Android mipmap densities and adaptive icons.
+- [x] Run `dart run flutter_launcher_icons` and verify all Android mipmap densities and adaptive icons. (✅ **Completed**)
 - [x] Create `assets/images/icons/` subdirectories (`materials`, `products`, `machines`, `fleet`, `tiers`, `research`, `clients`, `prestige`, `ui`). (✅ **Completed**)
 - [x] Register new asset folders under `flutter.assets` in `pubspec.yaml` and install `flutter_svg: ^2.3.0`. (✅ **Completed**)
-- [x] Add created icon SVG files into their respective subdirectories (Batch 1: Core Foundation 10 icons complete with clean alpha transparency and SVG packaging). (✅ **Completed**)
+- [x] Add created icon SVG files into their respective subdirectories (Batches 1–6 complete: 60/78 icons integrated across Materials, Products, Machines, Fleet, and Infrastructure). (✅ **Completed**)
 - [x] Implement `GameIcon` helper widget with `flutter_svg` and graceful fallback to emojis/Material icons. (✅ **Completed**)
 - [x] Connect custom icons into `RawMaterialCard`, `ProductCard`, `OrderItemsList`, `ShippingManifestDrawer`, and `RecipeRow`. (✅ **Completed**)
+- [ ] Create and integrate remaining visual assets:
+  - Batch 7: Prestige IPO & Quantum Prototypes (8 icons)
+  - Batch 8: UI HUD, Navigation & Action Badges (10 icons)
 
 ### Phase C: Google Play Console Release Prep
-- [ ] Verify version `2.0.0+20` in `pubspec.yaml` and `android/app/build.gradle.kts`.
-- [ ] Setup production signing key and `android/key.properties` (secured in `.gitignore`).
-- [ ] Verify R8 minification and `proguard-rules.pro` configurations.
+- [x] Verify version `2.0.0+20` in `pubspec.yaml` and `android/app/build.gradle.kts` (`versionCode = 20`, `versionName = "2.0.0"`, `compileSdk = 36`, `targetSdk = 36`). (✅ **Completed**)
+- [ ] Setup production signing key (`upload-keystore.jks`) and `android/key.properties` (secured in `.gitignore`).
+- [x] Verify R8 minification and `proguard-rules.pro` configurations (`isMinifyEnabled = true`, `isShrinkResources = true`). (✅ **Completed**)
 - [x] Remove `android.permission.INTERNET` from `android/app/src/main/AndroidManifest.xml` (retained in debug/profile manifests) to ensure a 100% offline release with zero network permissions. (✅ **Completed**)
 - [ ] Build release AAB (`flutter build appbundle --release --obfuscate --split-debug-info=...`).
 - [ ] Prepare 512x512 icon, 1024x500 banner, and 8 promotional screenshots.

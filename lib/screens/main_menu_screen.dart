@@ -1,8 +1,55 @@
+import 'dart:io' show Platform;
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
+
+  /// Permanent Discord community invite URL
+  static const String discordInviteUrl = 'https://discord.gg/7yH3jgMnhf';
+
+  /// Launch Discord via Android OS Intent, preserving 100% offline gameplay integrity
+  static Future<void> launchDiscordIntent({
+    BuildContext? context,
+    String url = discordInviteUrl,
+    Future<void> Function(AndroidIntent intent)? customLauncher,
+  }) async {
+    try {
+      if (customLauncher != null || (!kIsWeb && Platform.isAndroid)) {
+        final intent = AndroidIntent(
+          action: 'android.intent.action.VIEW',
+          data: url,
+        );
+        if (customLauncher != null) {
+          await customLauncher(intent);
+        } else {
+          await intent.launch();
+        }
+      } else {
+        if (context != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Join Discord Community: $url'),
+              backgroundColor: const Color(0xFF5865F2),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open Discord. Community link: $url'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +118,17 @@ class MainMenuScreen extends StatelessWidget {
                         () => context.go('/game'),
                         Colors.orange[600]!,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
+
+                      // Join Discord Community (Phase A: 100% Offline Preserved)
+                      _buildMenuButton(
+                        context,
+                        'Join Discord Community',
+                        Icons.forum,
+                        () => launchDiscordIntent(context: context),
+                        const Color(0xFF5865F2),
+                      ),
+                      const SizedBox(height: 16),
                       
                       // Additional menu options
                       _buildMenuButton(
@@ -83,7 +140,7 @@ class MainMenuScreen extends StatelessWidget {
                         },
                         Colors.blue[600]!,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       
                       _buildMenuButton(
                         context,

@@ -13,7 +13,7 @@ class GamePersistenceService {
     static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      13; // Updated for Phase 12: High-throughput & automation persistence completeness
+      14; // Updated for Phase A / v2.0: Persistent redeemed codes
 
   Database? _database;
 
@@ -181,6 +181,10 @@ class GamePersistenceService {
       case 13:
         // Phase 12 migrations - Complete automation persistence (Intake level, Auto-ship flags, Auto-build throughput)
         await _migrateToVersion13(db);
+        break;
+      case 14:
+        // Phase A migrations - Persistent Redeem Codes System
+        await _migrateToVersion14(db);
         break;
       default:
         if (kDebugMode) {
@@ -855,6 +859,28 @@ class GamePersistenceService {
     }
   }
 
+  /// Migration to version 14 (Phase A: Persistent Redeem Codes)
+  Future<void> _migrateToVersion14(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 14 (Redeem Codes System)');
+    }
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS redeemed_codes (
+          code TEXT PRIMARY KEY,
+          redeemed_at INTEGER NOT NULL
+        )
+      ''');
+      if (kDebugMode) print('Created redeemed_codes table');
+    } catch (e) {
+      if (kDebugMode) print('Migration warning (redeemed_codes): $e');
+    }
+
+    if (kDebugMode) {
+      print('Migration to version 14 completed');
+    }
+  }
+
   /// Create backup of existing database before major operations
   Future<void> _createDatabaseBackup() async {
     if (_database == null) return;
@@ -1203,6 +1229,14 @@ class GamePersistenceService {
       )
     ''');
 
+    // Redeemed codes table (Phase A: Redeem Codes System)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS redeemed_codes (
+        code TEXT PRIMARY KEY,
+        redeemed_at INTEGER NOT NULL
+      )
+    ''');
+
     // Insert initial game state record
     await db.insert('game_state', {
       'id': 1,
@@ -1241,6 +1275,7 @@ class GamePersistenceService {
       await _saveReputation(txn, state);
       await _saveTechnologies(txn, state);
       await _savePrestigePerks(txn, state);
+      await _saveRedeemedCodes(txn, state);
     });
   }
 
@@ -1549,6 +1584,7 @@ class GamePersistenceService {
     final clientReputation = await _loadReputation(db);
     final techLevels = await _loadTechnologies(db);
     final unlockedPrestigePerks = await _loadPrestigePerks(db);
+    final redeemedCodes = await _loadRedeemedCodes(db);
 
     return GameState(
       money: money,
@@ -1590,6 +1626,7 @@ class GamePersistenceService {
       lifetimeRevenue: lifetimeRevenue,
       lifetimeUnitsShipped: lifetimeUnitsShipped,
       unlockedPrestigePerks: unlockedPrestigePerks,
+      redeemedCodes: redeemedCodes,
     );
   }
 
@@ -1908,6 +1945,38 @@ class GamePersistenceService {
     }
   }
 
+  /// Save redeemed codes to database (Phase A)
+  Future<void> _saveRedeemedCodes(DatabaseExecutor txn, GameState state) async {
+    try {
+      await txn.delete('redeemed_codes');
+      final now = DateTime.now().millisecondsSinceEpoch;
+      for (final code in state.redeemedCodes) {
+        await txn.insert('redeemed_codes', {
+          'code': code,
+          'redeemed_at': now,
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error saving redeemed codes: $e');
+      }
+    }
+  }
+
+  /// Load redeemed codes from database (Phase A)
+  Future<Set<String>> _loadRedeemedCodes(Database db) async {
+    try {
+      final result = await db.query('redeemed_codes');
+      final set = <String>{};
+      for (final row in result) {
+        set.add((row['code'] as String).trim().toUpperCase());
+      }
+      return set;
+    } catch (_) {
+      return {};
+    }
+  }
+
   /// Check if a save file exists
   Future<bool> hasSaveData() async {
     final db = await database;
@@ -1950,6 +2019,7 @@ class GamePersistenceService {
       await txn.delete('client_reputation');
       await txn.delete('researched_technologies');
       await txn.delete('prestige_perks');
+      await txn.delete('redeemed_codes');
 
       // Reset game state to defaults
       await txn.update(
@@ -2143,6 +2213,10 @@ class GamePersistenceService {
       if (_dirtyTables.contains('prestige')) {
         await _savePrestigePerks(txn, state);
       }
+
+      if (_dirtyTables.contains('redeemed_codes')) {
+        await _saveRedeemedCodes(txn, state);
+      }
     });
 
     if (kDebugMode) {
@@ -2195,6 +2269,7 @@ class GamePersistenceService {
       await _saveReputation(txn, state);
       await _saveTechnologies(txn, state);
       await _savePrestigePerks(txn, state);
+      await _saveRedeemedCodes(txn, state);
     });
   }
 
@@ -2465,12 +2540,16 @@ class GamePersistenceService {
         'auto_build_last_tick',
         'auto_build_capacity',
         'auto_build_throughput',
+        'redeemed_codes',
       ];
       
       for (final table in requiredTables) {
         if (!existingTables.contains(table)) {
           if (kDebugMode) {
-            print('Missing table: $table, will be created by migration');
+            print('Missing table: $table, creating table');
+          }
+          if (table == 'redeemed_codes') {
+            await _migrateToVersion14(db);
           }
         }
       }

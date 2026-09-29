@@ -57,6 +57,27 @@ class _MoneyAndHistory {
   _MoneyAndHistory({required this.money, required this.history});
 }
 
+/// Result category for code redemption
+enum RedeemCodeResult {
+  devUnlocked,
+  rewardClaimed,
+  alreadyRedeemed,
+  invalid,
+}
+
+/// Detailed outcome of a code redemption attempt
+class RedeemResult {
+  final RedeemCodeResult status;
+  final String message;
+  final double? cashGranted;
+
+  const RedeemResult({
+    required this.status,
+    required this.message,
+    this.cashGranted,
+  });
+}
+
 // Production.INC Game Service - handles all game logic
 class ProductionGameService extends ChangeNotifier {
   // ignore: prefer_const_constructors
@@ -73,10 +94,77 @@ class ProductionGameService extends ChangeNotifier {
   bool _isAppPaused = false;
   bool _isTestMode = false;
 
+  // Phase A: Ephemeral developer mode session flag (memory only)
+  bool _isDeveloperModeUnlocked = false;
+
   GameState get state => _state;
   bool get isLoaded => _isLoaded;
   bool get isAppPaused => _isAppPaused;
   bool get isTestMode => _isTestMode;
+  bool get isDeveloperModeUnlocked => _isDeveloperModeUnlocked;
+
+  void setDeveloperModeUnlocked(bool value) {
+    if (_isDeveloperModeUnlocked != value) {
+      _isDeveloperModeUnlocked = value;
+      notifyListeners();
+    }
+  }
+
+  /// Redeem promotional or developer codes
+  RedeemResult redeemCode(String code) {
+    final cleanCode = code.trim().toUpperCase();
+    if (cleanCode.isEmpty) {
+      return const RedeemResult(
+        status: RedeemCodeResult.invalid,
+        message: '❌ Invalid redeem code.',
+      );
+    }
+
+    // 1. Ephemeral Session Debug Unlock: 888888
+    if (cleanCode == '888888') {
+      _isDeveloperModeUnlocked = true;
+      notifyListeners();
+      return const RedeemResult(
+        status: RedeemCodeResult.devUnlocked,
+        message: '🛠️ Developer Tools Unlocked! (Session Only)',
+      );
+    }
+
+    // 2. Already redeemed check
+    if (_state.redeemedCodes.contains(cleanCode)) {
+      return const RedeemResult(
+        status: RedeemCodeResult.alreadyRedeemed,
+        message: '⚠️ Code has already been redeemed!',
+      );
+    }
+
+    // 3. Persistent Launch Gift Code: PRODUCTION2026
+    if (cleanCode == 'PRODUCTION2026') {
+      const reward = 5000.0;
+      final updatedCodes = Set<String>.from(_state.redeemedCodes)..add(cleanCode);
+      _state = _state.copyWith(
+        money: math.min(_state.money + reward, LimitsConstants.maxMoney),
+        redeemedCodes: updatedCodes,
+      );
+      _persistenceService.markDirty('game_state');
+      _persistenceService.markDirty('redeemed_codes');
+      notifyListeners();
+      if (!_isTestMode) {
+        saveGame();
+      }
+      return const RedeemResult(
+        status: RedeemCodeResult.rewardClaimed,
+        message: '🎉 Redeemed PRODUCTION2026! +\$5,000 Cash added!',
+        cashGranted: reward,
+      );
+    }
+
+    // 4. Unknown code
+    return const RedeemResult(
+      status: RedeemCodeResult.invalid,
+      message: '❌ Invalid redeem code.',
+    );
+  }
 
   // Phase 11: Staged Shipping Manifest (Bulk Sell Cart)
   final Map<String, int> _stagedManifest = <String, int>{};
@@ -308,12 +396,14 @@ class ProductionGameService extends ChangeNotifier {
         lastAutoBuildTick: {},
         autoBuildProductCapacity: {},
       );
+      _isDeveloperModeUnlocked = false;
       notifyListeners();
       return;
     }
 
     try {
       await _persistenceService.resetGameData();
+      _isDeveloperModeUnlocked = false;
       _state = const GameState(
         autoBuildMachinesOwned: {},
         autoBuildEnabled: {},
@@ -1951,7 +2041,7 @@ class ProductionGameService extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error checking unlocks: $e');
+        GameLogger.error('Error checking unlocks', e);
       }
     }
   }
@@ -2893,7 +2983,9 @@ class ProductionGameService extends ChangeNotifier {
   void addMoney(double amount) {
     if (amount <= 0) return;
     
-    _state = _state.copyWith(money: _state.money + amount);
+    _state = _state.copyWith(
+      money: math.min(_state.money + amount, LimitsConstants.maxMoney),
+    );
     
     // Check for newly unlocked products after adding money
     _checkAndUpdateUnlocks();
@@ -2962,6 +3054,7 @@ class ProductionGameService extends ChangeNotifier {
         startTime: now.subtract(Duration(seconds: order.totalShippingTime.ceil() + 1)),
         totalShippingTime: order.totalShippingTime,
         totalRevenue: order.totalRevenue,
+        contractId: order.contractId,
       );
     }).toList();
     
@@ -2978,7 +3071,9 @@ class ProductionGameService extends ChangeNotifier {
   /// Dev method: Unlock all products by setting a high money amount (for testing)
   void unlockAllProductsForTesting() {
     // Add a very large amount of money to trigger all unlocks
-    _state = _state.copyWith(money: _state.money + 1000000);
+    _state = _state.copyWith(
+      money: math.min(_state.money + 1000000, LimitsConstants.maxMoney),
+    );
     
     // Force unlock check
     _checkAndUpdateUnlocks();
@@ -3073,6 +3168,7 @@ class ProductionGameService extends ChangeNotifier {
       }
       
       await _persistenceService.resetDatabase();
+      _isDeveloperModeUnlocked = false;
       
       // Reload the game state (will be fresh/default state)
       _state = await _persistenceService.loadGameState();
@@ -3378,9 +3474,12 @@ class ProductionGameService extends ChangeNotifier {
           })
           .toList();
     }
-    // Last fallback: any unlocked product
+    // Last fallback: any unlocked product or starter product
     if (targetPool.isEmpty) {
       targetPool = _state.unlockedProducts.toList();
+    }
+    if (targetPool.isEmpty) {
+      targetPool = ['box'];
     }
     if (targetPool.isEmpty) return null;
 
@@ -3446,9 +3545,12 @@ class ProductionGameService extends ChangeNotifier {
           })
           .toList();
     }
-    // Last fallback: any unlocked product
+    // Last fallback: any unlocked product or starter product
     if (targetPool.isEmpty) {
       targetPool = _state.unlockedProducts.toList();
+    }
+    if (targetPool.isEmpty) {
+      targetPool = ['box'];
     }
     if (targetPool.isEmpty) return null;
 
@@ -3986,6 +4088,7 @@ class ProductionGameService extends ChangeNotifier {
       lifetimeRevenue: newLifetimeRev,
       lifetimeUnitsShipped: newLifetimeUnits,
       unlockedPrestigePerks: Set<String>.from(_state.unlockedPrestigePerks),
+      redeemedCodes: _state.redeemedCodes,
     );
 
     // Recompute unlocked products based on new reset state (tier 1, no research, but may have prototype blueprints if perk owned)

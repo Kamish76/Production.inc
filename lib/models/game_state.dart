@@ -118,6 +118,7 @@ class GameState {
   final double lifetimeRevenue; // All-time revenue accrued across all prestiges
   final int lifetimeUnitsShipped; // All-time units shipped across all prestiges
   final Set<String> unlockedPrestigePerks; // Unlocked perk IDs
+  final Set<String> redeemedCodes; // Persistent redeemed codes (e.g. PRODUCTION2026)
 
   const GameState({
     this.money = 100.0, // Starting money
@@ -161,6 +162,7 @@ class GameState {
     this.lifetimeRevenue = 0.0,
     this.lifetimeUnitsShipped = 0,
     this.unlockedPrestigePerks = const {},
+    this.redeemedCodes = const {},
   });
 
   GameState copyWith({
@@ -205,6 +207,7 @@ class GameState {
     double? lifetimeRevenue,
     int? lifetimeUnitsShipped,
     Set<String>? unlockedPrestigePerks,
+    Set<String>? redeemedCodes,
   }) {
     return GameState(
       money: money ?? this.money,
@@ -253,11 +256,13 @@ class GameState {
       lifetimeRevenue: lifetimeRevenue ?? this.lifetimeRevenue,
       lifetimeUnitsShipped: lifetimeUnitsShipped ?? this.lifetimeUnitsShipped,
       unlockedPrestigePerks: unlockedPrestigePerks ?? this.unlockedPrestigePerks,
+      redeemedCodes: redeemedCodes ?? this.redeemedCodes,
     );
   }
 
 
   // Helper methods
+  bool isCodeRedeemed(String code) => redeemedCodes.contains(code.trim().toUpperCase());
   int getMaterialCount(String materialId) => materials[materialId] ?? 0;
   int getProductCount(String productId) => products[productId] ?? 0;
   bool canAfford(double price) => money >= price;
@@ -588,6 +593,7 @@ class GameState {
       'lifetimeRevenue': lifetimeRevenue,
       'lifetimeUnitsShipped': lifetimeUnitsShipped,
       'unlockedPrestigePerks': unlockedPrestigePerks.toList(),
+      'redeemedCodes': redeemedCodes.toList(),
     };
   }
 
@@ -736,6 +742,11 @@ class GameState {
                   ?.map((e) => e.toString())
                   .toSet() ??
               const {},
+      redeemedCodes: (json['redeemedCodes'] as List<dynamic>? ??
+              json['redeemed_codes'] as List<dynamic>?)
+          ?.map((e) => e.toString().trim().toUpperCase())
+          .toSet() ??
+          const {},
     );
   }
 }

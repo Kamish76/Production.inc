@@ -205,7 +205,7 @@ class DebugConstants {
   static const bool performanceLogging = false;
 
   /// Whether to show save/load operation logs
-  static const bool persistenceLogging = true;
+  static const bool persistenceLogging = false;
 }
 
 // ==================================================
