@@ -106,6 +106,40 @@ class GameIcon extends StatelessWidget {
     );
   }
 
+  /// Factory constructor for a UI control, setting, or navigation icon.
+  factory GameIcon.forUi({
+    Key? key,
+    required String id,
+    required String fallbackEmoji,
+    double size = 24.0,
+    BoxFit fit = BoxFit.contain,
+  }) {
+    return GameIcon(
+      key: key,
+      itemId: id,
+      fallbackEmoji: fallbackEmoji,
+      size: size,
+      fit: fit,
+    );
+  }
+
+  /// Factory constructor for an achievement or milestone badge.
+  factory GameIcon.forBadge({
+    Key? key,
+    required String id,
+    required String fallbackEmoji,
+    double size = 24.0,
+    BoxFit fit = BoxFit.contain,
+  }) {
+    return GameIcon(
+      key: key,
+      itemId: id,
+      fallbackEmoji: fallbackEmoji,
+      size: size,
+      fit: fit,
+    );
+  }
+
   // --- Registered Asset Mappings ---
 
   // Batch 1: Core Foundation (Materials & Starter Products)
@@ -330,13 +364,68 @@ class GameIcon extends StatelessWidget {
     'thermal_cooling': 'assets/images/icons/research/upg_thermal_cooling.svg',
   };
 
-  /// Resolves an item ID (material, product, machine, fleet, or upgrade) to its asset path if registered.
+  // Batch 8: Game UI, Controls & Achievement Badges
+  static const Map<String, String> _uiAssetMap = {
+    // UI Controls & System
+    'ui_audio_off': 'assets/images/icons/ui/ui_audio_off.svg',
+    'audio_off': 'assets/images/icons/ui/ui_audio_off.svg',
+    'sound_off': 'assets/images/icons/ui/ui_audio_off.svg',
+    'mute': 'assets/images/icons/ui/ui_audio_off.svg',
+
+    'ui_audio_on': 'assets/images/icons/ui/ui_audio_on.svg',
+    'audio_on': 'assets/images/icons/ui/ui_audio_on.svg',
+    'sound_on': 'assets/images/icons/ui/ui_audio_on.svg',
+    'audio': 'assets/images/icons/ui/ui_audio_on.svg',
+    'volume': 'assets/images/icons/ui/ui_audio_on.svg',
+
+    'ui_quest_target': 'assets/images/icons/ui/ui_quest_target.svg',
+    'quest_target': 'assets/images/icons/ui/ui_quest_target.svg',
+    'quest': 'assets/images/icons/ui/ui_quest_target.svg',
+    'target': 'assets/images/icons/ui/ui_quest_target.svg',
+    'milestone': 'assets/images/icons/ui/ui_quest_target.svg',
+
+    'ui_save_cloud': 'assets/images/icons/ui/ui_save_cloud.svg',
+    'save_cloud': 'assets/images/icons/ui/ui_save_cloud.svg',
+    'cloud_save': 'assets/images/icons/ui/ui_save_cloud.svg',
+    'save': 'assets/images/icons/ui/ui_save_cloud.svg',
+
+    'ui_settings': 'assets/images/icons/ui/ui_settings.svg',
+    'settings': 'assets/images/icons/ui/ui_settings.svg',
+    'gear_settings': 'assets/images/icons/ui/ui_settings.svg',
+
+    'ui_stats_analytics': 'assets/images/icons/ui/ui_stats_analytics.svg',
+    'stats_analytics': 'assets/images/icons/ui/ui_stats_analytics.svg',
+    'analytics': 'assets/images/icons/ui/ui_stats_analytics.svg',
+    'stats': 'assets/images/icons/ui/ui_stats_analytics.svg',
+    'statistics': 'assets/images/icons/ui/ui_stats_analytics.svg',
+
+    // Achievement Badges
+    'badge_interplanetary_reach': 'assets/images/icons/ui/badge_interplanetary_reach.svg',
+    'interplanetary_reach': 'assets/images/icons/ui/badge_interplanetary_reach.svg',
+    'badge_interplanetary': 'assets/images/icons/ui/badge_interplanetary_reach.svg',
+
+    'badge_master_automation': 'assets/images/icons/ui/badge_master_automation.svg',
+    'master_automation': 'assets/images/icons/ui/badge_master_automation.svg',
+    'badge_automation': 'assets/images/icons/ui/badge_master_automation.svg',
+
+    'badge_tycoon_trophy': 'assets/images/icons/ui/badge_tycoon_trophy.svg',
+    'tycoon_trophy': 'assets/images/icons/ui/badge_tycoon_trophy.svg',
+    'badge_tycoon': 'assets/images/icons/ui/badge_tycoon_trophy.svg',
+    'trophy': 'assets/images/icons/ui/badge_tycoon_trophy.svg',
+
+    'badge_zero_carbon': 'assets/images/icons/ui/badge_zero_carbon.svg',
+    'zero_carbon': 'assets/images/icons/ui/badge_zero_carbon.svg',
+    'badge_carbon': 'assets/images/icons/ui/badge_zero_carbon.svg',
+  };
+
+  /// Resolves an item ID (material, product, machine, fleet, upgrade, UI, or badge) to its asset path if registered.
   static String? resolveAssetPath(String id) {
     if (_materialAssetMap.containsKey(id)) return _materialAssetMap[id];
     if (_productAssetMap.containsKey(id)) return _productAssetMap[id];
     if (_machineAssetMap.containsKey(id)) return _machineAssetMap[id];
     if (_fleetAssetMap.containsKey(id)) return _fleetAssetMap[id];
     if (_researchAssetMap.containsKey(id)) return _researchAssetMap[id];
+    if (_uiAssetMap.containsKey(id)) return _uiAssetMap[id];
 
     // Check with prefixes stripped if supplied
     if (id.startsWith('mat_')) {
@@ -370,6 +459,12 @@ class GameIcon extends StatelessWidget {
     } else if (id.startsWith('perk_')) {
       final cleanId = id.substring(5);
       if (_researchAssetMap.containsKey(cleanId)) return _researchAssetMap[cleanId];
+    } else if (id.startsWith('ui_')) {
+      final cleanId = id.substring(3);
+      if (_uiAssetMap.containsKey(cleanId)) return _uiAssetMap[cleanId];
+    } else if (id.startsWith('badge_')) {
+      final cleanId = id.substring(6);
+      if (_uiAssetMap.containsKey(cleanId)) return _uiAssetMap[cleanId];
     }
 
     return null;

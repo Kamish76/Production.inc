@@ -6,6 +6,7 @@ import '../widgets/tech_tree_card.dart';
 import '../widgets/deconstruction_bay_card.dart';
 import '../widgets/prestige_card.dart';
 import '../widgets/machine_card.dart';
+import '../widgets/game_icon.dart';
 import 'settings_screen.dart';
 
 class ControlScreen extends StatefulWidget {
@@ -470,7 +471,11 @@ class _ControlScreenState extends State<ControlScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.settings, color: Colors.cyan[400], size: 24),
+              GameIcon.forUi(
+                id: 'ui_settings',
+                fallbackEmoji: '⚙️',
+                size: 24,
+              ),
               const SizedBox(width: 12),
               const Text(
                 'Settings',
@@ -489,7 +494,11 @@ class _ControlScreenState extends State<ControlScreen> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () => _openSettings(context),
-              icon: const Icon(Icons.settings),
+              icon: const GameIcon(
+                itemId: 'ui_settings',
+                fallbackEmoji: '⚙️',
+                size: 20,
+              ),
               label: const Text('Open Settings'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.cyan[600],

@@ -394,6 +394,101 @@ void main() {
       );
     });
 
+    test('Resolves all Batch 8 UI controls and achievement badges correctly as SVG', () {
+      expect(
+        GameIcon.resolveAssetPath('badge_interplanetary_reach'),
+        'assets/images/icons/ui/badge_interplanetary_reach.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('interplanetary_reach'),
+        'assets/images/icons/ui/badge_interplanetary_reach.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('badge_master_automation'),
+        'assets/images/icons/ui/badge_master_automation.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('master_automation'),
+        'assets/images/icons/ui/badge_master_automation.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('badge_tycoon_trophy'),
+        'assets/images/icons/ui/badge_tycoon_trophy.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('tycoon_trophy'),
+        'assets/images/icons/ui/badge_tycoon_trophy.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('trophy'),
+        'assets/images/icons/ui/badge_tycoon_trophy.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('badge_zero_carbon'),
+        'assets/images/icons/ui/badge_zero_carbon.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('zero_carbon'),
+        'assets/images/icons/ui/badge_zero_carbon.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('ui_audio_off'),
+        'assets/images/icons/ui/ui_audio_off.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('audio_off'),
+        'assets/images/icons/ui/ui_audio_off.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('sound_off'),
+        'assets/images/icons/ui/ui_audio_off.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('ui_audio_on'),
+        'assets/images/icons/ui/ui_audio_on.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('audio_on'),
+        'assets/images/icons/ui/ui_audio_on.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('ui_quest_target'),
+        'assets/images/icons/ui/ui_quest_target.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('quest_target'),
+        'assets/images/icons/ui/ui_quest_target.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('ui_save_cloud'),
+        'assets/images/icons/ui/ui_save_cloud.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('save_cloud'),
+        'assets/images/icons/ui/ui_save_cloud.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('ui_settings'),
+        'assets/images/icons/ui/ui_settings.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('settings'),
+        'assets/images/icons/ui/ui_settings.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('ui_stats_analytics'),
+        'assets/images/icons/ui/ui_stats_analytics.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('stats_analytics'),
+        'assets/images/icons/ui/ui_stats_analytics.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('analytics'),
+        'assets/images/icons/ui/ui_stats_analytics.svg',
+      );
+    });
+
     test('Resolves all Batch 2 machines correctly as SVG', () {
       expect(
         GameIcon.resolveAssetPath('buyer'),
@@ -534,6 +629,11 @@ void main() {
       expect(GameIcon.hasAsset('automation_chip'), isTrue);
       expect(GameIcon.hasAsset('overclock_boost'), isTrue);
       expect(GameIcon.hasAsset('neural_accelerator'), isTrue);
+      expect(GameIcon.hasAsset('badge_tycoon_trophy'), isTrue);
+      expect(GameIcon.hasAsset('badge_master_automation'), isTrue);
+      expect(GameIcon.hasAsset('ui_settings'), isTrue);
+      expect(GameIcon.hasAsset('ui_audio_on'), isTrue);
+      expect(GameIcon.hasAsset('save_cloud'), isTrue);
       expect(GameIcon.hasAsset('chassis_alloy'), isFalse);
     });
   });
@@ -610,6 +710,16 @@ void main() {
                   fallbackEmoji: '⚙️',
                   size: 28,
                 ),
+                GameIcon.forUi(
+                  id: 'ui_settings',
+                  fallbackEmoji: '⚙️',
+                  size: 28,
+                ),
+                GameIcon.forBadge(
+                  id: 'badge_tycoon_trophy',
+                  fallbackEmoji: '🏆',
+                  size: 28,
+                ),
               ],
             ),
           ),
@@ -617,12 +727,14 @@ void main() {
       );
 
       final svgs = tester.widgetList<SvgPicture>(find.byType(SvgPicture)).toList();
-      expect(svgs.length, 5);
+      expect(svgs.length, 7);
       expect(svgs[0].width, 28);
       expect(svgs[1].width, 28);
       expect(svgs[2].width, 28);
       expect(svgs[3].width, 28);
       expect(svgs[4].width, 28);
+      expect(svgs[5].width, 28);
+      expect(svgs[6].width, 28);
     });
   });
 }

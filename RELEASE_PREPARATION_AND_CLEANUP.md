@@ -387,11 +387,10 @@ Execute the following verification suite prior to tagging `v2.0.0`:
 - [x] Run `dart run flutter_launcher_icons` and verify all Android mipmap densities and adaptive icons. (✅ **Completed**)
 - [x] Create `assets/images/icons/` subdirectories (`materials`, `products`, `machines`, `fleet`, `tiers`, `research`, `clients`, `prestige`, `ui`). (✅ **Completed**)
 - [x] Register new asset folders under `flutter.assets` in `pubspec.yaml` and install `flutter_svg: ^2.3.0`. (✅ **Completed**)
-- [x] Add created icon SVG files into their respective subdirectories (Batches 1–7 complete: 70/80 icons integrated across Materials, Products, Machines, Fleet, Infrastructure, and Tech/Upgrades). (✅ **Completed**)
+- [x] Add created icon SVG files into their respective subdirectories (Batches 1–8 complete: 80/80 icons integrated across Materials, Products, Machines, Fleet, Infrastructure, Tech/Upgrades, and Game UI/Badges). (✅ **Completed**)
 - [x] Implement `GameIcon` helper widget with `flutter_svg` and graceful fallback to emojis/Material icons. (✅ **Completed**)
-- [x] Connect custom icons into `RawMaterialCard`, `ProductCard`, `OrderItemsList`, `ShippingManifestDrawer`, `RecipeRow`, `TechTreeCard`, and `PrestigeCard`. (✅ **Completed**)
-- [ ] Create and integrate remaining visual assets:
-  - Batch 8: UI HUD, Navigation & Action Badges (10 icons)
+- [x] Connect custom icons into `RawMaterialCard`, `ProductCard`, `OrderItemsList`, `ShippingManifestDrawer`, `RecipeRow`, `TechTreeCard`, `PrestigeCard`, `SettingsScreen`, and `ControlScreen`. (✅ **Completed**)
+- [x] All 8 visual asset batches fully vectorized, tested, and integrated (80/80 icons, 100%). (✅ **Completed**)
 
 ### Phase C: Google Play Console Release Prep
 - [x] Verify version `2.0.0+20` in `pubspec.yaml` and `android/app/build.gradle.kts` (`versionCode = 20`, `versionName = "2.0.0"`, `compileSdk = 36`, `targetSdk = 36`). (✅ **Completed**)

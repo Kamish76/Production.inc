@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../models/game_state.dart';
 import '../models/game_models.dart';
@@ -54,9 +55,20 @@ class GamePersistenceService {
           print('Failed to initialize FFI database factory: $e');
         }
       }
+    } else if (!kIsWeb) {
+      try {
+        databaseFactory = sqflite.databaseFactory;
+        if (kDebugMode) {
+          print('Using mobile database factory for mobile platform');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Failed to initialize mobile database factory: $e');
+        }
+      }
     } else {
       if (kDebugMode) {
-        print('Using default database factory for mobile/web platform');
+        print('Using default database factory for web platform');
       }
     }
   }
@@ -80,6 +92,10 @@ class GamePersistenceService {
         } catch (_) {}
         try {
           databaseFactory = databaseFactoryFfi;
+        } catch (_) {}
+      } else if (!kIsWeb) {
+        try {
+          databaseFactory = sqflite.databaseFactory;
         } catch (_) {}
       }
       final dbPath = await getDatabasesPath();

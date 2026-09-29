@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/game_data.dart';
 import '../services/production_game_service.dart';
 import '../widgets/game_dialog.dart';
+import '../widgets/game_icon.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -322,7 +323,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       tooltip: 'Back',
                     ),
                     const SizedBox(width: 8),
-                    Icon(Icons.settings, color: Colors.grey[400], size: 28),
+                    GameIcon.forUi(
+                      id: 'ui_settings',
+                      fallbackEmoji: '⚙️',
+                      size: 28,
+                    ),
                     const SizedBox(width: 12),
                     const Text(
                       'Settings',
@@ -447,7 +452,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                 }
               },
-              icon: const Icon(Icons.save_alt),
+              icon: const GameIcon(
+                itemId: 'ui_save_cloud',
+                fallbackEmoji: '💾',
+                size: 22,
+              ),
               label: const Text('Save Game'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green[600],
@@ -642,26 +651,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
 
           // Sound Effects Toggle
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.volume_up,
-                      color: Colors.white70,
+                    GameIcon.forUi(
+                      id: 'ui_audio_on',
+                      fallbackEmoji: '🔊',
                       size: 20,
                     ),
-                    SizedBox(width: 8),
-                    Text(
+                    const SizedBox(width: 8),
+                    const Text(
                       'Sound Effects',
                       style: TextStyle(color: Colors.white70),
                     ),
                   ],
                 ),
               ),
-              Switch(
+              const Switch(
                 value: false,
                 onChanged: null,
                 activeThumbColor: Colors.green,
