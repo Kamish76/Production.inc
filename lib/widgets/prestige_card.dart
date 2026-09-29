@@ -3,6 +3,7 @@ import '../models/game_data.dart';
 import '../models/game_models.dart';
 import '../constants/game_constants.dart';
 import '../services/production_game_service.dart';
+import 'game_icon.dart';
 
 /// Card widget that displays the Initial Public Offering (IPO / Prestige) Launchpad,
 /// Corporate Valuation breakdown, Venture Perks store, and Prototype Blueprints showcase.
@@ -584,7 +585,11 @@ class PrestigeCard extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(perk.emoji, style: const TextStyle(fontSize: 22)),
+                child: GameIcon.forUpgrade(
+                  id: perk.id,
+                  fallbackEmoji: perk.emoji,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(

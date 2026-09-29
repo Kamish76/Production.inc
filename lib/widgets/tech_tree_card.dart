@@ -3,6 +3,7 @@ import '../models/game_data.dart';
 import '../models/game_models.dart';
 import '../constants/game_constants.dart';
 import '../services/production_game_service.dart';
+import 'game_icon.dart';
 
 /// Card widget that displays the Technology Tree branches, active perks,
 /// upgrade requirements, and research action buttons.
@@ -292,9 +293,10 @@ class TechTreeCard extends StatelessWidget {
                     color: branchAccent.withValues(alpha: 0.4),
                   ),
                 ),
-                child: Text(
-                  tech.emoji,
-                  style: const TextStyle(fontSize: 24),
+                child: GameIcon.forUpgrade(
+                  id: tech.id,
+                  fallbackEmoji: tech.emoji,
+                  size: 28,
                 ),
               ),
               const SizedBox(width: 12),

@@ -18,9 +18,9 @@ Track your overall asset completion progress across all batches:
 | **Batch 4** | **Advanced Consumer Electronics & Optics** | **10** | Tier 3: High-Tech Retail & Optics | ✅ Complete | `10 / 10` |
 | **Batch 5** | **Heavy Mobility, Robotics & Infrastructure** | **10** | Tier 4: Heavy Industry & Megastructures | ✅ Complete | `10 / 10` |
 | **Batch 6** | **Advanced & Quantum Infrastructure** | **9** | Advanced Infrastructure & Megastructures | ✅ Complete | `9 / 9` |
-| **Batch 7** | **Prestige IPO & Quantum Prototypes** | **8** | Phase 5: Wall Street Prestige | 📋 Ready | `0 / 8` |
+| **Batch 7** | **Upgrades & Tech Tree Modules** | **10** | Phase 4 & 5: Tech Tree & Prestige | ✅ Complete | `10 / 10` |
 | **Batch 8** | **UI HUD, Navigation & Action Badges** | **10** | System Polish & Navigation | 📋 Ready | `0 / 10` |
-| **TOTAL** | **Complete Game Asset Suite** | **78** | **All Game Phases** | 🎨 **In Progress** | **`60 / 78` (76.9%)** |
+| **TOTAL** | **Complete Game Asset Suite** | **80** | **All Game Phases** | 🎨 **In Progress** | **`70 / 80` (87.5%)** |
 
 ---
 
@@ -178,20 +178,22 @@ Use these standard accent highlights so players intuitively identify product fam
 
 ---
 
-## 💎 Batch 7: Prestige IPO & Quantum Prototypes (Priority: ★★☆☆☆)
+## 💎 Batch 7: Upgrades & Tech Tree Modules (Priority: ★★☆☆☆)
 
-> **Goal**: Late-game prestige assets for taking Production.INC public on Wall Street, earning Golden Shares, and crafting high-margin Prototype Blueprints.
+> **Goal**: High-tech upgrade modules, research nodes, and prestige perks for R&D lab advancements, factory overclocking, and venture perks.
 
 | Done | File Target | Item Name (`id`) | Current | Category | Visual Concept & Art Description | Dominant Color |
 | :---: | :--- | :--- | :---: | :---: | :--- | :--- |
-| [ ] | `icons/prestige/curr_golden_share.svg` | **Golden Share** | 📜 | Prestige Currency | Holographic gold stock certificate embossed with an illuminated factory emblem and diamond watermark. | Brilliant Gold (`#FFD700`) |
-| [ ] | `icons/prestige/ipo_wall_st_bell.svg` | **IPO Wall Street Bell** | 🔔 | Prestige Milestone | Polished brass exchange opening bell on an oak mount surrounded by ticker tape confetti. | Polished Brass (`#FFA000`) |
-| [ ] | `icons/products/prod_quantum_processor.svg` | **Quantum Processor**<br>`quantum_processor` | 💠 | Prototype Intermediate | Gold dilution refrigerator cold-finger chip packaging quantum qubit waveguides with blue zero-point glow. | Cryogenic Cyan (`#00E5FF`) |
-| [ ] | `icons/products/prod_quantum_core.svg` | **Quantum Core**<br>`quantum_core` | ⚛️ | Prototype Complex | Toroidal magnetic confinement reactor vessel trapping a swirling zero-point fusion singularity. | Singularity Violet (`#D500F9`) |
-| [ ] | `icons/products/prod_orbital_satellite.svg` | **Orbital Satellite**<br>`orbital_satellite` | 🛰️ | Prototype Retail | Golden foil-wrapped cube-sat payload deploying dual solar wings and quantum communication dish in orbit. | Orbital Gold & Void (`#FFEA00`) |
-| [ ] | `icons/prestige/perk_instant_machines.svg` | **Instant Machine Licensing** | ⚙️ | Prestige Perk | Golden gear fitted with a lightning bolt key bypassing a padlock. | Gilded Amber (`#FFC107`) |
-| [ ] | `icons/prestige/perk_angel_capital.svg` | **Angel Seed Capital** | 💼 | Prestige Perk | Gilded leather investor briefcase overflowing with stacks of cash and gold bullion. | Venture Emerald (`#00E676`) |
-| [ ] | `icons/prestige/perk_quantum_warp.svg` | **Quantum Warp Logistics** | 🌌 | Prestige Perk | Spiral galactic hyperspace wormhole gateway bending transit light vectors. | Cosmic Indigo (`#3D5AFE`) |
+| [x] | `icons/research/upg_automation_chip.svg` | **Automation Chip**<br>`automation_chip`, `instant_machines` | ⚙️ | Tech / Perk | Cybernetic processor wafer glowing with micro-circuits and neon logic pathways on a polished rounded pedestal. | Cybernetic Cyan (`#00E5FF`) |
+| [x] | `icons/research/upg_eco_efficiency.svg` | **Eco Efficiency**<br>`eco_efficiency` | 🍃 | Tech Upgrade | Biomechanical leaf turbine synthesis node infused with green solar energy ribbons. | Emerald Green (`#00E676`) |
+| [x] | `icons/research/upg_logistics_optimizer.svg` | **Logistics Optimizer**<br>`logistics_optimizer`, `quantum_warp_dispatch` | 🚀 | Tech / Perk | Holographic routing navigational orb computing real-time quantum hyperspace vector coordinates. | Quantum Cobalt (`#2979FF`) |
+| [x] | `icons/research/upg_market_algorithm.svg` | **Market Algorithm**<br>`market_algorithm`, `angel_seed_capital` | 📈 | Tech / Perk | Dynamic financial holographic matrix displaying surging candlestick projections and gold tokens. | Venture Gold (`#FFD700`) |
+| [x] | `icons/research/upg_nanotech_infusion.svg` | **Nanotech Infusion**<br>`nanotech_infusion`, `prototype_blueprints` | 🔬 | Tech / Perk | Glowing nanite swarm chamber constructing crystalline molecular lattices in zero gravity. | Singularity Violet (`#D500F9`) |
+| [x] | `icons/research/upg_neural_accelerator.svg` | **Neural Accelerator**<br>`neural_accelerator` | 🧠 | Tech Upgrade | Synthetic crystalline neocortex node with synapse pulse arcs and optoelectronic conduits. | Synapse Magenta (`#FF4081`) |
+| [x] | `icons/research/upg_overclock_boost.svg` | **Overclock Boost**<br>`overclock_boost`, `factory_overclocking` | ⚡ | Tech Upgrade | Heavy-duty plasma actuator manifold firing twin blue lightning surges through cooling fins. | Electric Amber (`#FFAB00`) |
+| [x] | `icons/research/upg_power_grid_overload.svg` | **Power Grid Overload**<br>`power_grid_overload` | 🔋 | Tech Upgrade | High-voltage substation capacitor array radiating plasma discharge arcs on an insulated base. | Arc Violet (`#7C4DFF`) |
+| [x] | `icons/research/upg_quality_control.svg` | **Quality Control**<br>`quality_control` | 🔍 | Tech Upgrade | Precision optical diagnostic scanner projecting green holographic calibration reticles over parts. | Laser Teal (`#00BFA5`) |
+| [x] | `icons/research/upg_thermal_cooling.svg` | **Thermal Cooling**<br>`thermal_cooling` | ❄️ | Tech Upgrade | Cryogenic vapor dispersion heat sink venting sub-zero frost vapors with glowing coolant coils. | Cryo Cyan (`#18FFFF`) |
 
 ---
 
@@ -308,15 +310,17 @@ This guarantees:
 ---
 
 ## 🎯 Recommended Next Step
-Batches 1 through 6 are **100% complete, vectorized, and integrated (60 / 78 icons, 76.9%)**! Next focus is **Batch 7: Prestige IPO & Quantum Prototypes (8 icons)**:
-1. `icons/prestige/curr_golden_share.svg` (Golden Share)
-2. `icons/prestige/ipo_wall_st_bell.svg` (IPO Wall Street Bell)
-3. `icons/products/prod_quantum_core.svg` (Quantum Core)
-4. `icons/prestige/perk_instant_machines.svg` (Instant Machine Licensing)
-5. `icons/prestige/perk_angel_capital.svg` (Angel Seed Capital)
-6. `icons/prestige/perk_quantum_warp.svg` (Quantum Warp Logistics)
-7. `icons/research/res_points_rp.svg` (Research Points RP)
-8. `icons/research/lab_deconstruction.svg` (Deconstruction Bay)
+Batches 1 through 7 are **100% complete, vectorized, and integrated (70 / 80 icons, 87.5%)**! Next focus is **Batch 8: UI HUD, Navigation & Action Badges (10 icons)**:
+1. `icons/ui/nav_buy.svg` (Buy Materials Tab)
+2. `icons/ui/nav_build.svg` (Build Products Tab)
+3. `icons/ui/nav_sell.svg` (Sell Commercial Tab)
+4. `icons/ui/nav_shipping.svg` (Shipping Logistics Tab)
+5. `icons/ui/nav_control.svg` (Control Center Tab)
+6. `icons/ui/hud_cash.svg` (Cash Currency Emblem)
+7. `icons/ui/hud_reputation.svg` (Corporate Rep Star)
+8. `icons/ui/hud_manifest_cart.svg` (Bulk Manifest Staging Tray)
+9. `icons/ui/hud_transit_timer.svg` (Transit Speed Timer)
+10. `icons/ui/hud_tier_lock.svg` (Tier Requirement Lock)
 
-Completing Batch 7 will cover endgame Wall Street prestige, corporate perks, and prototype synthesis!
+Completing Batch 8 will finalize the complete 80-icon bespoke visual redesign of Production.INC!
 

@@ -387,11 +387,10 @@ Execute the following verification suite prior to tagging `v2.0.0`:
 - [x] Run `dart run flutter_launcher_icons` and verify all Android mipmap densities and adaptive icons. (✅ **Completed**)
 - [x] Create `assets/images/icons/` subdirectories (`materials`, `products`, `machines`, `fleet`, `tiers`, `research`, `clients`, `prestige`, `ui`). (✅ **Completed**)
 - [x] Register new asset folders under `flutter.assets` in `pubspec.yaml` and install `flutter_svg: ^2.3.0`. (✅ **Completed**)
-- [x] Add created icon SVG files into their respective subdirectories (Batches 1–6 complete: 60/78 icons integrated across Materials, Products, Machines, Fleet, and Infrastructure). (✅ **Completed**)
+- [x] Add created icon SVG files into their respective subdirectories (Batches 1–7 complete: 70/80 icons integrated across Materials, Products, Machines, Fleet, Infrastructure, and Tech/Upgrades). (✅ **Completed**)
 - [x] Implement `GameIcon` helper widget with `flutter_svg` and graceful fallback to emojis/Material icons. (✅ **Completed**)
-- [x] Connect custom icons into `RawMaterialCard`, `ProductCard`, `OrderItemsList`, `ShippingManifestDrawer`, and `RecipeRow`. (✅ **Completed**)
+- [x] Connect custom icons into `RawMaterialCard`, `ProductCard`, `OrderItemsList`, `ShippingManifestDrawer`, `RecipeRow`, `TechTreeCard`, and `PrestigeCard`. (✅ **Completed**)
 - [ ] Create and integrate remaining visual assets:
-  - Batch 7: Prestige IPO & Quantum Prototypes (8 icons)
   - Batch 8: UI HUD, Navigation & Action Badges (10 icons)
 
 ### Phase C: Google Play Console Release Prep

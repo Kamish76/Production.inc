@@ -283,6 +283,117 @@ void main() {
       );
     });
 
+    test('Resolves all Batch 7 upgrades and tech modules correctly as SVG', () {
+      expect(
+        GameIcon.resolveAssetPath('automation_chip'),
+        'assets/images/icons/research/upg_automation_chip.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('upg_automation_chip'),
+        'assets/images/icons/research/upg_automation_chip.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('instant_machines'),
+        'assets/images/icons/research/upg_automation_chip.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('perk_instant_machines'),
+        'assets/images/icons/research/upg_automation_chip.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('eco_efficiency'),
+        'assets/images/icons/research/upg_eco_efficiency.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('upg_eco_efficiency'),
+        'assets/images/icons/research/upg_eco_efficiency.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('logistics_optimizer'),
+        'assets/images/icons/research/upg_logistics_optimizer.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('upg_logistics_optimizer'),
+        'assets/images/icons/research/upg_logistics_optimizer.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('quantum_warp_dispatch'),
+        'assets/images/icons/research/upg_logistics_optimizer.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('market_algorithm'),
+        'assets/images/icons/research/upg_market_algorithm.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('upg_market_algorithm'),
+        'assets/images/icons/research/upg_market_algorithm.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('angel_seed_capital'),
+        'assets/images/icons/research/upg_market_algorithm.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('nanotech_infusion'),
+        'assets/images/icons/research/upg_nanotech_infusion.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('upg_nanotech_infusion'),
+        'assets/images/icons/research/upg_nanotech_infusion.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('prototype_blueprints'),
+        'assets/images/icons/research/upg_nanotech_infusion.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('neural_accelerator'),
+        'assets/images/icons/research/upg_neural_accelerator.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('upg_neural_accelerator'),
+        'assets/images/icons/research/upg_neural_accelerator.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('overclock_boost'),
+        'assets/images/icons/research/upg_overclock_boost.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('upg_overclock_boost'),
+        'assets/images/icons/research/upg_overclock_boost.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('factory_overclocking'),
+        'assets/images/icons/research/upg_overclock_boost.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('tech_factory_overclocking'),
+        'assets/images/icons/research/upg_overclock_boost.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('power_grid_overload'),
+        'assets/images/icons/research/upg_power_grid_overload.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('upg_power_grid_overload'),
+        'assets/images/icons/research/upg_power_grid_overload.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('quality_control'),
+        'assets/images/icons/research/upg_quality_control.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('upg_quality_control'),
+        'assets/images/icons/research/upg_quality_control.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('thermal_cooling'),
+        'assets/images/icons/research/upg_thermal_cooling.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('upg_thermal_cooling'),
+        'assets/images/icons/research/upg_thermal_cooling.svg',
+      );
+    });
+
     test('Resolves all Batch 2 machines correctly as SVG', () {
       expect(
         GameIcon.resolveAssetPath('buyer'),
@@ -420,6 +531,9 @@ void main() {
       expect(GameIcon.hasAsset('quantum_computer'), isTrue);
       expect(GameIcon.hasAsset('telecom_tower'), isTrue);
       expect(GameIcon.hasAsset('space_probe'), isTrue);
+      expect(GameIcon.hasAsset('automation_chip'), isTrue);
+      expect(GameIcon.hasAsset('overclock_boost'), isTrue);
+      expect(GameIcon.hasAsset('neural_accelerator'), isTrue);
       expect(GameIcon.hasAsset('chassis_alloy'), isFalse);
     });
   });
@@ -491,6 +605,11 @@ void main() {
                   fallbackEmoji: '🚲',
                   size: 28,
                 ),
+                GameIcon.forUpgrade(
+                  id: 'automation_chip',
+                  fallbackEmoji: '⚙️',
+                  size: 28,
+                ),
               ],
             ),
           ),
@@ -498,11 +617,12 @@ void main() {
       );
 
       final svgs = tester.widgetList<SvgPicture>(find.byType(SvgPicture)).toList();
-      expect(svgs.length, 4);
+      expect(svgs.length, 5);
       expect(svgs[0].width, 28);
       expect(svgs[1].width, 28);
       expect(svgs[2].width, 28);
       expect(svgs[3].width, 28);
+      expect(svgs[4].width, 28);
     });
   });
 }

@@ -89,6 +89,23 @@ class GameIcon extends StatelessWidget {
     );
   }
 
+  /// Factory constructor for an upgrade, research technology node, or prestige perk.
+  factory GameIcon.forUpgrade({
+    Key? key,
+    required String id,
+    required String fallbackEmoji,
+    double size = 24.0,
+    BoxFit fit = BoxFit.contain,
+  }) {
+    return GameIcon(
+      key: key,
+      itemId: id,
+      fallbackEmoji: fallbackEmoji,
+      size: size,
+      fit: fit,
+    );
+  }
+
   // --- Registered Asset Mappings ---
 
   // Batch 1: Core Foundation (Materials & Starter Products)
@@ -271,12 +288,55 @@ class GameIcon extends StatelessWidget {
     'tier_4': 'assets/images/icons/fleet/fleet_cargo_plane.svg',
   };
 
-  /// Resolves an item ID (material, product, machine, or fleet) to its asset path if registered.
+  // Batch 7: Upgrades & Tech Tree Modules
+  static const Map<String, String> _researchAssetMap = {
+    'upg_automation_chip': 'assets/images/icons/research/upg_automation_chip.svg',
+    'automation_chip': 'assets/images/icons/research/upg_automation_chip.svg',
+    'instant_machines': 'assets/images/icons/research/upg_automation_chip.svg',
+    'perk_instant_machines': 'assets/images/icons/research/upg_automation_chip.svg',
+
+    'upg_eco_efficiency': 'assets/images/icons/research/upg_eco_efficiency.svg',
+    'eco_efficiency': 'assets/images/icons/research/upg_eco_efficiency.svg',
+
+    'upg_logistics_optimizer': 'assets/images/icons/research/upg_logistics_optimizer.svg',
+    'logistics_optimizer': 'assets/images/icons/research/upg_logistics_optimizer.svg',
+    'quantum_warp_dispatch': 'assets/images/icons/research/upg_logistics_optimizer.svg',
+    'perk_quantum_warp_dispatch': 'assets/images/icons/research/upg_logistics_optimizer.svg',
+
+    'upg_market_algorithm': 'assets/images/icons/research/upg_market_algorithm.svg',
+    'market_algorithm': 'assets/images/icons/research/upg_market_algorithm.svg',
+    'angel_seed_capital': 'assets/images/icons/research/upg_market_algorithm.svg',
+    'perk_angel_seed_capital': 'assets/images/icons/research/upg_market_algorithm.svg',
+
+    'upg_nanotech_infusion': 'assets/images/icons/research/upg_nanotech_infusion.svg',
+    'nanotech_infusion': 'assets/images/icons/research/upg_nanotech_infusion.svg',
+    'prototype_blueprints': 'assets/images/icons/research/upg_nanotech_infusion.svg',
+    'perk_prototype_blueprints': 'assets/images/icons/research/upg_nanotech_infusion.svg',
+
+    'upg_neural_accelerator': 'assets/images/icons/research/upg_neural_accelerator.svg',
+    'neural_accelerator': 'assets/images/icons/research/upg_neural_accelerator.svg',
+
+    'upg_overclock_boost': 'assets/images/icons/research/upg_overclock_boost.svg',
+    'overclock_boost': 'assets/images/icons/research/upg_overclock_boost.svg',
+    'factory_overclocking': 'assets/images/icons/research/upg_overclock_boost.svg',
+
+    'upg_power_grid_overload': 'assets/images/icons/research/upg_power_grid_overload.svg',
+    'power_grid_overload': 'assets/images/icons/research/upg_power_grid_overload.svg',
+
+    'upg_quality_control': 'assets/images/icons/research/upg_quality_control.svg',
+    'quality_control': 'assets/images/icons/research/upg_quality_control.svg',
+
+    'upg_thermal_cooling': 'assets/images/icons/research/upg_thermal_cooling.svg',
+    'thermal_cooling': 'assets/images/icons/research/upg_thermal_cooling.svg',
+  };
+
+  /// Resolves an item ID (material, product, machine, fleet, or upgrade) to its asset path if registered.
   static String? resolveAssetPath(String id) {
     if (_materialAssetMap.containsKey(id)) return _materialAssetMap[id];
     if (_productAssetMap.containsKey(id)) return _productAssetMap[id];
     if (_machineAssetMap.containsKey(id)) return _machineAssetMap[id];
     if (_fleetAssetMap.containsKey(id)) return _fleetAssetMap[id];
+    if (_researchAssetMap.containsKey(id)) return _researchAssetMap[id];
 
     // Check with prefixes stripped if supplied
     if (id.startsWith('mat_')) {
@@ -300,9 +360,16 @@ class GameIcon extends StatelessWidget {
       if (_materialAssetMap.containsKey(cleanId)) return _materialAssetMap[cleanId];
     } else if (id.startsWith('tech_')) {
       final cleanId = id.substring(5);
+      if (_researchAssetMap.containsKey(cleanId)) return _researchAssetMap[cleanId];
       if (_productAssetMap.containsKey(cleanId)) return _productAssetMap[cleanId];
       if (_materialAssetMap.containsKey(cleanId)) return _materialAssetMap[cleanId];
       if (_machineAssetMap.containsKey(cleanId)) return _machineAssetMap[cleanId];
+    } else if (id.startsWith('upg_')) {
+      final cleanId = id.substring(4);
+      if (_researchAssetMap.containsKey(cleanId)) return _researchAssetMap[cleanId];
+    } else if (id.startsWith('perk_')) {
+      final cleanId = id.substring(5);
+      if (_researchAssetMap.containsKey(cleanId)) return _researchAssetMap[cleanId];
     }
 
     return null;
