@@ -104,36 +104,45 @@ class PrestigeCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'PRODUCTION.INC HOLDINGS',
-                      style: TextStyle(
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFFFD54F),
+                    const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'PRODUCTION.INC HOLDINGS',
+                        style: TextStyle(
+                          fontSize: 11,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFFFD54F),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          '${state.goldenShares}',
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${state.goldenShares}',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Golden Shares',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFFFFE082),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Golden Shares',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFFFE082),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -183,11 +192,25 @@ class PrestigeCard extends StatelessWidget {
           const SizedBox(height: 12),
           // Lifetime metrics row
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildMetricStat('Completed IPOs', '${state.prestigeCount}'),
-              _buildMetricStat('Lifetime Shares', '${state.lifetimeGoldenShares}'),
-              _buildMetricStat('Perks Owned', '${state.unlockedPrestigePerks.length} / ${GameData.prestigePerks.length}'),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: _buildMetricStat('Completed IPOs', '${state.prestigeCount}'),
+                ),
+              ),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: _buildMetricStat('Lifetime Shares', '${state.lifetimeGoldenShares}'),
+                ),
+              ),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: _buildMetricStat('Perks Owned', '${state.unlockedPrestigePerks.length} / ${GameData.prestigePerks.length}'),
+                ),
+              ),
             ],
           ),
         ],
@@ -250,16 +273,22 @@ class PrestigeCard extends StatelessWidget {
                 size: 22,
               ),
               const SizedBox(width: 10),
-              const Text(
-                'Initial Public Offering (IPO)',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              const Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Initial Public Offering (IPO)',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
-              const Spacer(),
-              if (canIPO)
+              if (canIPO) ...[
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
@@ -276,6 +305,7 @@ class PrestigeCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 8),
@@ -291,16 +321,22 @@ class PrestigeCard extends StatelessWidget {
 
           // Valuation Progress Bar
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Corporate Net Worth: ${_formatCurrency(netWorth)}',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Corporate Net Worth: ${_formatCurrency(netWorth)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 '${(progress * 100).toInt()}%',
                 style: TextStyle(
@@ -325,16 +361,22 @@ class PrestigeCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 'Goal: \$1,000,000.00',
                 style: TextStyle(fontSize: 11, color: Colors.white54),
               ),
+              const Spacer(),
               if (!canIPO)
-                Text(
-                  '${_formatCurrency(PrestigeConstants.ipoNetWorthThreshold - netWorth)} remaining',
-                  style: const TextStyle(fontSize: 11, color: Colors.white54),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '${_formatCurrency(PrestigeConstants.ipoNetWorthThreshold - netWorth)} remaining',
+                      style: const TextStyle(fontSize: 11, color: Colors.white54),
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -494,22 +536,30 @@ class PrestigeCard extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: Colors.cyan[300]),
         const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(fontSize: 10, color: Colors.white54),
-            ),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(fontSize: 10, color: Colors.white54),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -524,15 +574,21 @@ class PrestigeCard extends StatelessWidget {
           children: [
             const Text('💼', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
-            const Text(
-              'Venture Perks Catalog',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            const Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Venture Perks Catalog',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             Text(
               'Spend 🌟 Shares',
               style: TextStyle(
@@ -651,22 +707,31 @@ class PrestigeCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Text('🌟', style: TextStyle(fontSize: 14)),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Cost: ${perk.goldenShareCost} Golden Shares',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: isUnlocked
-                          ? Colors.white54
-                          : (canAfford ? const Color(0xFFFFD54F) : Colors.white54),
+              Expanded(
+                child: Row(
+                  children: [
+                    const Text('🌟', style: TextStyle(fontSize: 14)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Cost: ${perk.goldenShareCost} Golden Shares',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: isUnlocked
+                                ? Colors.white54
+                                : (canAfford ? const Color(0xFFFFD54F) : Colors.white54),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               if (isUnlocked)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -696,18 +761,21 @@ class PrestigeCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFFB300),
                     foregroundColor: Colors.black,
-                    disabledBackgroundColor: Colors.grey[800],
+                    disabledBackgroundColor: Colors.grey[850],
                     disabledForegroundColor: Colors.white30,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(
-                    canAfford ? 'Acquire Perk' : 'Need ${perk.goldenShareCost} 🌟',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      canAfford ? 'Acquire Perk' : 'Need ${perk.goldenShareCost} 🌟',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -742,15 +810,21 @@ class PrestigeCard extends StatelessWidget {
             children: [
               const Text('🔬', style: TextStyle(fontSize: 20)),
               const SizedBox(width: 8),
-              const Text(
-                'Prototype Flagship Blueprints',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              const Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Prototype Flagship Blueprints',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(

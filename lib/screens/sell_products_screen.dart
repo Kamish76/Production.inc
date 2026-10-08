@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
+import '../utils/responsive_utils.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/financial_status_display.dart';
 import '../widgets/message_display.dart';
@@ -973,48 +974,55 @@ class _SellProductsScreenState extends State<SellProductsScreen>
       onExpansionChanged: (expanded) => _toggleTierExpansion(tierName),
       child: Column(
         children: [
-          // Dynamic Grid layout with proper mobile sizing
+          // Responsive row-grid matching TierContentWidget
           LayoutBuilder(
             builder: (context, constraints) {
-        // Responsive: 3 columns for wide displays (>=1080px), otherwise 2
-        int crossAxisCount = constraints.maxWidth >= 1080 ? 3 : 2;
-              double cardWidth =
-                  (constraints.maxWidth -
-                      (crossAxisCount - 1) *
-                          8 - // Spacing between cards
-                      24) / // Margins
-                  crossAxisCount;
+              final columnsCount =
+                  ResponsiveUtils.getGridColumnCount(constraints.maxWidth);
+              const spacing = ResponsiveUtils.defaultGridSpacing;
 
-              return Wrap(
-                spacing: 8, // Optimized spacing for mobile
-                runSpacing: 12,
-                children:
-                    availableProducts.map((product) {
-                      return SizedBox(
-                        width: cardWidth,
-                        child: IntrinsicHeight(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                child: ItemCard(
-                                  item: product,
-                                  gameService: gameService,
-                                  mode: ItemCardMode.sell,
-                                  onProductDetails: () => showDialog(
-                                    context: context,
-                                    builder: (context) => GameDialog.productDetails(
-                                      product: product,
+              // Group products into rows based on dynamic column count
+              final rows = <List<game.Product>>[];
+              for (int i = 0; i < availableProducts.length; i += columnsCount) {
+                final end = (i + columnsCount < availableProducts.length)
+                    ? i + columnsCount
+                    : availableProducts.length;
+                rows.add(availableProducts.sublist(i, end));
+              }
+
+              return Column(
+                children: rows.map((rowProducts) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (int i = 0; i < columnsCount; i++) ...[
+                            if (i > 0) const SizedBox(width: spacing),
+                            Expanded(
+                              child: i < rowProducts.length
+                                  ? ItemCard(
+                                      item: rowProducts[i],
                                       gameService: gameService,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                                      mode: ItemCardMode.sell,
+                                      onProductDetails: () => showDialog(
+                                        context: context,
+                                        builder: (context) =>
+                                            GameDialog.productDetails(
+                                          product: rowProducts[i],
+                                          gameService: gameService,
+                                        ),
+                                      ),
+                                    )
+                                  : const SizedBox(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
               );
             },
           ),

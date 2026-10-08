@@ -30,6 +30,8 @@ class QuantitySelectorButton extends StatelessWidget {
               ? (canAfford ? Colors.green[600] : Colors.orange[600])
               : (canAfford ? Colors.grey[700] : Colors.red[800]),
           foregroundColor: Colors.white,
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(6),

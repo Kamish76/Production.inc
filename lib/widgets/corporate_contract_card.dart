@@ -342,71 +342,77 @@ class CorporateContractCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Reward summary
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.greenAccent.withValues(alpha: 0.3),
+                      Flexible(
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.attach_money,
-                                  color: Colors.greenAccent,
-                                  size: 14,
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.greenAccent.withValues(alpha: 0.3),
                                 ),
-                                Text(
-                                  '\$${contract.cashReward.toStringAsFixed(0)}',
-                                  style: const TextStyle(
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.attach_money,
                                     color: Colors.greenAccent,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                                    size: 14,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.purple.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.purpleAccent.withValues(alpha: 0.3),
+                                  Text(
+                                    '\$${contract.cashReward.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      color: Colors.greenAccent,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.star_rounded,
-                                  color: Colors.purpleAccent,
-                                  size: 14,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.purpleAccent.withValues(alpha: 0.3),
                                 ),
-                                Text(
-                                  '+${contract.repReward} Rep',
-                                  style: const TextStyle(
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.star_rounded,
                                     color: Colors.purpleAccent,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                                    size: 14,
                                   ),
-                                ),
-                              ],
+                                  Text(
+                                    '+${contract.repReward} Rep',
+                                    style: const TextStyle(
+                                      color: Colors.purpleAccent,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
 
                       // Action Button (B5)
                       if (isCompleted)

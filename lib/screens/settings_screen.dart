@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/game_data.dart';
+import '../providers/ui_settings_provider.dart';
 import '../services/production_game_service.dart';
 import '../widgets/game_dialog.dart';
 import '../widgets/game_icon.dart';
@@ -423,7 +424,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             sectionWidget = _buildRedeemCodeSection(context, gameService);
                             break;
                           case 2:
-                            sectionWidget = _buildAppSettingsSection();
+                            sectionWidget = _buildAppSettingsSection(context);
                             break;
                           case 3:
                             sectionWidget = _buildHelpTutorialSection(context);
@@ -648,7 +649,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   /// Section 2: App Settings Section
-  Widget _buildAppSettingsSection() {
+  Widget _buildAppSettingsSection(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -781,7 +782,171 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
+
+          _buildUiScaleSection(context),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUiScaleSection(BuildContext context) {
+    UiSettingsProvider? uiSettings;
+    try {
+      uiSettings = Provider.of<UiSettingsProvider>(context);
+    } catch (_) {
+      uiSettings = null;
+    }
+
+    if (uiSettings == null) {
+      return const SizedBox.shrink();
+    }
+
+    final currentPercent = (uiSettings.uiScale * 100).round();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        const Divider(color: Colors.white24),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.aspect_ratio,
+                  color: Colors.blue[300],
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'UI Zoom / Scale',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.blue.withValues(alpha: 0.4),
+                ),
+              ),
+              child: Text(
+                (uiSettings.uiScale - UiSettingsProvider.defaultScale).abs() < 0.005
+                    ? '$currentPercent% (Default)'
+                    : '$currentPercent%',
+                style: TextStyle(
+                  color: Colors.blue[200],
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Adjust interface scale (75% - 125%) to fit your device or personal comfort. Zoom out to fit more content; zoom in to increase readability.',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 12,
+            height: 1.3,
+          ),
+        ),
+        const SizedBox(height: 10),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: Colors.blue[400],
+            inactiveTrackColor: Colors.white24,
+            thumbColor: Colors.blue[300],
+            overlayColor: Colors.blue.withValues(alpha: 0.2),
+            valueIndicatorColor: Colors.blue[700],
+            valueIndicatorTextStyle: const TextStyle(color: Colors.white),
+          ),
+          child: Slider(
+            value: uiSettings.uiScale,
+            min: UiSettingsProvider.minScale,
+            max: UiSettingsProvider.maxScale,
+            divisions: 10,
+            label: '$currentPercent%',
+            onChanged: (val) {
+              uiSettings!.setUiScale(val);
+            },
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Wrap(
+              spacing: 6,
+              children: [
+                _buildScalePresetChip(uiSettings, 0.75, '75%'),
+                _buildScalePresetChip(uiSettings, 0.85, '85%'),
+                _buildScalePresetChip(uiSettings, 1.0, '100%'),
+                _buildScalePresetChip(uiSettings, 1.15, '115%'),
+                _buildScalePresetChip(uiSettings, 1.25, '125%'),
+              ],
+            ),
+            TextButton.icon(
+              onPressed: (uiSettings.uiScale - UiSettingsProvider.defaultScale).abs() < 0.001
+                  ? null
+                  : () => uiSettings!.resetUiScale(),
+              icon: const Icon(Icons.refresh, size: 14),
+              label: const Text('Reset', style: TextStyle(fontSize: 12)),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.orange[300],
+                disabledForegroundColor: Colors.white24,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScalePresetChip(
+    UiSettingsProvider uiSettings,
+    double targetScale,
+    String label,
+  ) {
+    final isSelected = (uiSettings.uiScale - targetScale).abs() < 0.01;
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => uiSettings.setUiScale(targetScale),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.blue.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? Colors.blue[400]! : Colors.white24,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.white70,
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
       ),
     );
   }

@@ -454,14 +454,17 @@ class ItemCard extends StatelessWidget {
                     : Colors.white30,
               ),
               const SizedBox(width: 4),
-              Text(
-                '+ Manifest',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: canStageMore && available > 0
-                      ? Colors.purple[200]
-                      : Colors.white30,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '+ Manifest',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: canStageMore && available > 0
+                        ? Colors.purple[200]
+                        : Colors.white30,
+                  ),
                 ),
               ),
             ],
@@ -495,12 +498,15 @@ class ItemCard extends StatelessWidget {
           ),
           Expanded(
             child: Center(
-              child: Text(
-                '🛒 $stagedQty Staged',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.purple[100],
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '🛒 $stagedQty Staged',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple[100],
+                  ),
                 ),
               ),
             ),

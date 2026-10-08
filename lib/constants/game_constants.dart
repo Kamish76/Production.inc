@@ -170,20 +170,23 @@ class TypographyConstants {
 
 /// Grid layout constants
 class LayoutConstants {
-  /// Number of columns for mobile 3-column layout
-  static const int mobileColumns = 3;
+  /// Standard minimum width allocated to an item card
+  static const double minItemCardWidth = 160.0;
 
-  /// Number of columns for tablet layout
-  static const int tabletColumns = 4;
+  /// Default columns for phone layouts
+  static const int phoneColumns = 2;
 
-  /// Number of columns for desktop layout
-  static const int desktopColumns = 5;
+  /// Default columns for tablet layouts
+  static const int tabletColumns = 3;
 
-  /// Breakpoint for narrow screens (switches to 2 columns)
-  static const double narrowScreenBreakpoint = 400.0;
+  /// Default columns for desktop layouts
+  static const int desktopColumns = 4;
+
+  /// Breakpoint where phones switch to 3 columns (foldables/mini-tablets)
+  static const double narrowScreenBreakpoint = 580.0;
 
   /// Breakpoint for tablet layout
-  static const double tabletBreakpoint = 768.0;
+  static const double tabletBreakpoint = 600.0;
 
   /// Breakpoint for desktop layout
   static const double desktopBreakpoint = 1024.0;

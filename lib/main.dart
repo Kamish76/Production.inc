@@ -6,6 +6,8 @@ import 'screens/main_menu_screen.dart';
 import 'screens/main_game_screen.dart';
 import 'services/production_game_service.dart';
 import 'services/game_persistence_service.dart';
+import 'providers/ui_settings_provider.dart';
+import 'widgets/ui_scale_wrapper.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,17 +82,30 @@ class _ProductionIncAppState extends State<ProductionIncApp>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _gameService,
-      child: MaterialApp.router(
-        title: 'Production.INC',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          brightness: Brightness.dark,
-          fontFamily: 'Roboto',
-        ),
-        routerConfig: _router,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: _gameService),
+        ChangeNotifierProvider(create: (_) => UiSettingsProvider()),
+      ],
+      child: Consumer<UiSettingsProvider>(
+        builder: (context, uiSettings, child) {
+          return MaterialApp.router(
+            title: 'Production.INC',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              brightness: Brightness.dark,
+              fontFamily: 'Roboto',
+            ),
+            routerConfig: _router,
+            builder: (context, routerWidget) {
+              return UiScaleWrapper(
+                scale: uiSettings.uiScale,
+                child: routerWidget ?? const SizedBox.shrink(),
+              );
+            },
+          );
+        },
       ),
     );
   }

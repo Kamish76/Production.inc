@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
+import '../utils/responsive_utils.dart';
 import 'item_card.dart';
 
 /// Content widget for a tier section showing products in a responsive grid
@@ -66,13 +67,12 @@ class TierContentWidget extends StatelessWidget {
             ),
           )
         else
-          // Responsive column grid using screen-width breakpoints
+          // Responsive column grid using container constraints
           LayoutBuilder(
             builder: (context, constraints) {
-              final screenWidth = MediaQuery.of(context).size.width;
-              final columnsCount = _resolveColumnCount(screenWidth);
+              final columnsCount = _resolveColumnCount(constraints.maxWidth);
 
-              const spacing = 8.0;
+              const spacing = ResponsiveUtils.defaultGridSpacing;
 
               // Group unlocked products into rows based on responsive column count
               final rows = <List<game.Product>>[];
@@ -131,11 +131,7 @@ class TierContentWidget extends StatelessWidget {
     }
   }
 
-  int _resolveColumnCount(double screenWidth) {
-    if (screenWidth > 400) {
-      return 3;
-    }
-
-    return 2;
+  int _resolveColumnCount(double availableWidth) {
+    return ResponsiveUtils.getGridColumnCount(availableWidth);
   }
 }

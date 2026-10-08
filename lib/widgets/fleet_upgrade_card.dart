@@ -60,17 +60,17 @@ class FleetUpgradeCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Fleet Tier ${currentTier.tierNumber}: ${currentTier.name}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Fleet Tier ${currentTier.tierNumber}: ${currentTier.name}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -105,24 +105,27 @@ class FleetUpgradeCard extends StatelessWidget {
                           : Colors.white12,
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.route,
-                        size: 16,
-                        color: activeCount >= maxSlots ? Colors.redAccent : Colors.orangeAccent,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Dispatch Slots: $activeCount / $maxSlots',
-                        style: TextStyle(
-                          color: activeCount >= maxSlots ? Colors.redAccent : Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.route,
+                          size: 16,
+                          color: activeCount >= maxSlots ? Colors.redAccent : Colors.orangeAccent,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          'Dispatch Slots: $activeCount / $maxSlots',
+                          style: TextStyle(
+                            color: activeCount >= maxSlots ? Colors.redAccent : Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -135,20 +138,23 @@ class FleetUpgradeCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.white12),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.speed, size: 16, color: Colors.greenAccent),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Speed: ${(currentTier.speedMultiplier * 100).round()}% (${((currentTier.speedMultiplier - 1.0) * 100).round()}% boost)',
-                        style: const TextStyle(
-                          color: Colors.greenAccent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.speed, size: 16, color: Colors.greenAccent),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Speed: ${(currentTier.speedMultiplier * 100).round()}% (${((currentTier.speedMultiplier - 1.0) * 100).round()}% boost)',
+                          style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -166,27 +172,41 @@ class FleetUpgradeCard extends StatelessWidget {
               border: Border.all(color: Colors.white12),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildPayloadBadge(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'Payload',
-                  value: '${currentTier.maxPayloadUnits} Max',
-                  color: Colors.amberAccent,
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: _buildPayloadBadge(
+                      icon: Icons.inventory_2_outlined,
+                      label: 'Payload',
+                      value: '${currentTier.maxPayloadUnits} Max',
+                      color: Colors.amberAccent,
+                    ),
+                  ),
                 ),
                 Container(width: 1, height: 24, color: Colors.white10),
-                _buildPayloadBadge(
-                  icon: Icons.category_outlined,
-                  label: 'Varieties',
-                  value: '${currentTier.maxProductVarieties} Types',
-                  color: Colors.cyanAccent,
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: _buildPayloadBadge(
+                      icon: Icons.category_outlined,
+                      label: 'Varieties',
+                      value: '${currentTier.maxProductVarieties} Types',
+                      color: Colors.cyanAccent,
+                    ),
+                  ),
                 ),
                 Container(width: 1, height: 24, color: Colors.white10),
-                _buildPayloadBadge(
-                  icon: Icons.format_list_numbered,
-                  label: 'Single-Type',
-                  value: '${currentTier.maxUnitsPerType} Max',
-                  color: Colors.purpleAccent,
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: _buildPayloadBadge(
+                      icon: Icons.format_list_numbered,
+                      label: 'Single-Type',
+                      value: '${currentTier.maxUnitsPerType} Max',
+                      color: Colors.purpleAccent,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -260,11 +280,14 @@ class FleetUpgradeCard extends StatelessWidget {
                             }
                           }
                         : null,
-                    child: Text(
-                      canUpgrade
-                          ? 'Upgrade (\$${nextTier.upgradeCost.toStringAsFixed(0)})'
-                          : 'Need \$${(nextTier.upgradeCost - gameService.state.money).toStringAsFixed(0)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        canUpgrade
+                            ? 'Upgrade (\$${nextTier.upgradeCost.toStringAsFixed(0)})'
+                            : 'Need \$${(nextTier.upgradeCost - gameService.state.money).toStringAsFixed(0)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
                     ),
                   ),
                 ],

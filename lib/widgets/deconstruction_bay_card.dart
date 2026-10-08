@@ -253,22 +253,25 @@ class _DeconstructionBayCardState extends State<DeconstructionBayCard> {
           const SizedBox(height: 10),
 
           // Quantity selector chips: 1, 5, 10, All
-          Row(
-            children: [
-              const Text('Qty: ', style: TextStyle(color: Colors.white54, fontSize: 11)),
-              const SizedBox(width: 4),
-              _buildQtyButton(product.id, 1, ownedCount, selectedQty),
-              const SizedBox(width: 6),
-              if (ownedCount >= 5) ...[
-                _buildQtyButton(product.id, 5, ownedCount, selectedQty),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                const Text('Qty: ', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                const SizedBox(width: 4),
+                _buildQtyButton(product.id, 1, ownedCount, selectedQty),
                 const SizedBox(width: 6),
+                if (ownedCount >= 5) ...[
+                  _buildQtyButton(product.id, 5, ownedCount, selectedQty),
+                  const SizedBox(width: 6),
+                ],
+                if (ownedCount >= 10) ...[
+                  _buildQtyButton(product.id, 10, ownedCount, selectedQty),
+                  const SizedBox(width: 6),
+                ],
+                _buildQtyButton(product.id, ownedCount, ownedCount, selectedQty, label: 'All ($ownedCount)'),
               ],
-              if (ownedCount >= 10) ...[
-                _buildQtyButton(product.id, 10, ownedCount, selectedQty),
-                const SizedBox(width: 6),
-              ],
-              _buildQtyButton(product.id, ownedCount, ownedCount, selectedQty, label: 'All ($ownedCount)'),
-            ],
+            ),
           ),
 
           const SizedBox(height: 10),
@@ -295,9 +298,12 @@ class _DeconstructionBayCardState extends State<DeconstructionBayCard> {
                 }
               },
               icon: const Icon(Icons.recycling, size: 16),
-              label: Text(
-                'Deconstruct $selectedQty → Gain +$totalRpYield RP',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              label: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Deconstruct $selectedQty → Gain +$totalRpYield RP',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.purple[600],
