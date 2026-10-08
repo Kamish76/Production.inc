@@ -2505,13 +2505,16 @@ class ProductionGameService extends ChangeNotifier {
   List<Product> get complexProducts => GameData.getComplexProducts();
   List<Product> get retailProducts => GameData.getRetailProducts();
 
-  // Get products organized by tiers for UI display
-  Map<ProductLevel, List<Product>> get productsByTier => {
-    ProductLevel.basicParts: basicPartsProducts,
-    ProductLevel.intermediate: intermediateProducts,
-    ProductLevel.complex: complexProducts,
-    ProductLevel.retail: retailProducts,
-  };
+  // Static cached unmodifiable map of products by tier for UI display
+  static final Map<ProductLevel, List<Product>> _productsByTierCache = Map.unmodifiable({
+    ProductLevel.basicParts: GameData.getBasicPartsProducts(),
+    ProductLevel.intermediate: GameData.getIntermediateProducts(),
+    ProductLevel.complex: GameData.getComplexProducts(),
+    ProductLevel.retail: GameData.getRetailProducts(),
+  });
+
+  // Get products organized by tiers for UI display (cached)
+  Map<ProductLevel, List<Product>> get productsByTier => _productsByTierCache;
 
   // Error feedback methods for user notifications
   String? getLastErrorMessage(String operation) {
@@ -3265,17 +3268,8 @@ class ProductionGameService extends ChangeNotifier {
       final currentAmount = _state.materials[resourceId] ?? 0;
       if (currentAmount < _state.autoBuyResourceCapacity) {
         // Find the material name from game data
-        final material = GameData.materials.firstWhere(
-          (m) => m.id == resourceId,
-          orElse: () => Material(
-            id: resourceId,
-            name: resourceId,
-            description: '',
-            buyPrice: 0,
-            emoji: '❓',
-          ),
-        );
-        return material.name;
+        final material = GameData.getMaterial(resourceId);
+        return material?.name ?? resourceId;
       }
     }
     

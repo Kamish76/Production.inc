@@ -486,17 +486,8 @@ class GameState {
     double total = 0.0;
     for (final entry in materials.entries) {
       if (entry.value <= 0) continue;
-      final mat = GameData.materials.firstWhere(
-        (m) => m.id == entry.key,
-        orElse: () => Material(
-          id: entry.key,
-          name: entry.key,
-          description: '',
-          buyPrice: 1.0,
-          emoji: '📦',
-        ),
-      );
-      total += entry.value * mat.buyPrice;
+      final mat = GameData.getMaterial(entry.key);
+      total += entry.value * (mat?.buyPrice ?? 1.0);
     }
     return total;
   }
@@ -506,21 +497,8 @@ class GameState {
     double total = 0.0;
     for (final entry in products.entries) {
       if (entry.value <= 0) continue;
-      final prod = GameData.products.firstWhere(
-        (p) => p.id == entry.key,
-        orElse: () => Product(
-          id: entry.key,
-          name: entry.key,
-          description: '',
-          sellPrice: 4.0,
-          emoji: '📦',
-          requiredMaterials: const {},
-          productionTimeSeconds: 1.0,
-          baseShippingTimeSeconds: 1.0,
-          levelId: ProductLevel.basicParts,
-        ),
-      );
-      total += entry.value * prod.sellPrice;
+      final prod = GameData.getProduct(entry.key);
+      total += entry.value * (prod?.sellPrice ?? 4.0);
     }
     return total;
   }

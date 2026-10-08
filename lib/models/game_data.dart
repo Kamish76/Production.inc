@@ -693,40 +693,40 @@ class GameData {
     ),
   ];
 
-  // Helper methods to find items by ID
-  static Material? getMaterial(String id) {
-    try {
-      return materials.firstWhere((m) => m.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
+  // Pre-indexed lookup maps for O(1) retrieval
+  static final Map<String, Material> _materialsById = {
+    for (final m in materials) m.id: m,
+  };
+  static final Map<String, Product> _productsById = {
+    for (final p in products) p.id: p,
+  };
+  static final Map<String, Machine> _machinesById = {
+    for (final m in machines) m.id: m,
+  };
 
-  static Product? getProduct(String id) {
-    try {
-      return products.firstWhere((p) => p.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
+  // Pre-indexed level and branch product groups
+  static final Map<ProductLevel, List<Product>> _productsByLevel = {
+    for (final level in ProductLevel.values)
+      level: List.unmodifiable(products.where((p) => p.levelId == level)),
+  };
 
-  static Machine? getMachine(String id) {
-    try {
-      return machines.firstWhere((m) => m.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
+  static final Map<IndustryBranch, List<Product>> _productsByBranch = {
+    for (final branch in IndustryBranch.values)
+      branch: List.unmodifiable(products.where((p) => p.industryBranch == branch)),
+  };
 
-  // Helper methods to filter products by level
-  static List<Product> getProductsByLevel(ProductLevel level) {
-    return products.where((p) => p.levelId == level).toList();
-  }
+  // Helper methods to find items by ID (O(1))
+  static Material? getMaterial(String id) => _materialsById[id];
+  static Product? getProduct(String id) => _productsById[id];
+  static Machine? getMachine(String id) => _machinesById[id];
 
-  // Phase 3: Helper methods to filter products by industry branch
-  static List<Product> getProductsByBranch(IndustryBranch branch) {
-    return products.where((p) => p.industryBranch == branch).toList();
-  }
+  // Helper methods to filter products by level (O(1) pre-computed)
+  static List<Product> getProductsByLevel(ProductLevel level) =>
+      _productsByLevel[level] ?? const [];
+
+  // Phase 3: Helper methods to filter products by industry branch (O(1) pre-computed)
+  static List<Product> getProductsByBranch(IndustryBranch branch) =>
+      _productsByBranch[branch] ?? const [];
 
   static List<Product> getMaterialProducts() =>
       getProductsByLevel(ProductLevel.material);

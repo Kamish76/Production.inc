@@ -32,29 +32,48 @@ import '../constants/game_constants.dart';
 class ProductUnlockService {
   // Cache for unlock condition results to avoid repeated calculations
   static final Map<String, bool> _unlockCache = {};
-  static String? _lastGameStateHash;
+  static GameState? _lastGameState;
+  static int? _lastGameStateHash;
 
   /// Clear the unlock cache when game state changes significantly
   static void clearCache() {
     _unlockCache.clear();
+    _lastGameState = null;
     _lastGameStateHash = null;
   }
 
-  /// Generate a hash key for the current game state to detect changes
-  static String _generateGameStateHash(GameState gameState) {
-    final materialsHash = gameState.materials.entries
-        .map((e) => '${e.key}:${e.value}')
-        .join(',');
-    final productsHash = gameState.products.entries
-        .map((e) => '${e.key}:${e.value}')
-        .join(',');
-    final producedHash = gameState.unlockedProducts.join(',');
-    final perksHash = gameState.unlockedPrestigePerks.join(',');
-    return '$materialsHash|$productsHash|$producedHash|tier:${gameState.factoryTier}|prestige:${gameState.prestigeCount}|perks:$perksHash';
+  /// Generate a numeric hash signature for the current game state to detect changes
+  static int _generateGameStateHash(GameState gameState) {
+    var h = Object.hash(
+      gameState.factoryTier,
+      gameState.prestigeCount,
+      gameState.materials.length,
+      gameState.products.length,
+      gameState.unlockedProducts.length,
+      gameState.unlockedPrestigePerks.length,
+    );
+    for (final e in gameState.materials.entries) {
+      h = Object.hash(h, e.key, e.value);
+    }
+    for (final e in gameState.products.entries) {
+      h = Object.hash(h, e.key, e.value);
+    }
+    for (final p in gameState.unlockedProducts) {
+      h = Object.hash(h, p);
+    }
+    for (final perk in gameState.unlockedPrestigePerks) {
+      h = Object.hash(h, perk);
+    }
+    return h;
   }
 
   /// Check if cache is still valid for the current game state
   static bool _isCacheValid(GameState gameState) {
+    // Ultra fast-path: identical GameState reference in the same build/update cycle
+    if (identical(_lastGameState, gameState)) {
+      return true;
+    }
+
     final currentHash = _generateGameStateHash(gameState);
     final isValid = _lastGameStateHash == currentHash;
 
@@ -63,6 +82,7 @@ class ProductUnlockService {
       _unlockCache.clear();
     }
 
+    _lastGameState = gameState;
     return isValid;
   }
 
@@ -100,10 +120,10 @@ class ProductUnlockService {
       return _unlockCache[productId]!;
     }
 
-    final product = GameData.products.firstWhere(
-      (p) => p.id == productId,
-      orElse: () => throw Exception('Product not found: $productId'),
-    );
+    final product = GameData.getProduct(productId);
+    if (product == null) {
+      throw Exception('Product not found: $productId');
+    }
 
     // Phase 5: Prototype products require Prototype Blueprints prestige perk
     if (product.isPrototype &&
@@ -309,12 +329,12 @@ class ProductUnlockService {
     String productId,
     GameState gameState,
   ) {
-    final product = GameData.products.firstWhere((p) => p.id == productId);
+    final product = GameData.getProduct(productId);
+    if (product == null) return false;
 
     // For intermediate parts, check if player has produced ALL required basic parts
     for (final materialId in product.requiredMaterials.keys) {
-      final requiredProduct =
-          GameData.products.where((p) => p.id == materialId).firstOrNull;
+      final requiredProduct = GameData.getProduct(materialId);
 
       // If it's a basic part, check if it has been produced
       if (requiredProduct?.levelId == ProductLevel.basicParts) {
@@ -358,12 +378,12 @@ class ProductUnlockService {
     String productId,
     GameState gameState,
   ) {
-    final product = GameData.products.firstWhere((p) => p.id == productId);
+    final product = GameData.getProduct(productId);
+    if (product == null) return false;
 
     // For complex parts, check if player has produced ALL required intermediate parts
     for (final materialId in product.requiredMaterials.keys) {
-      final requiredProduct =
-          GameData.products.where((p) => p.id == materialId).firstOrNull;
+      final requiredProduct = GameData.getProduct(materialId);
 
       // If it's an intermediate part, check if it has been produced
       if (requiredProduct?.levelId == ProductLevel.intermediate) {
@@ -408,12 +428,12 @@ class ProductUnlockService {
     String productId,
     GameState gameState,
   ) {
-    final product = GameData.products.firstWhere((p) => p.id == productId);
+    final product = GameData.getProduct(productId);
+    if (product == null) return false;
 
     // For retail products, check if player has produced ALL required components
     for (final materialId in product.requiredMaterials.keys) {
-      final requiredProduct =
-          GameData.products.where((p) => p.id == materialId).firstOrNull;
+      final requiredProduct = GameData.getProduct(materialId);
 
       // If it's a product component (not a raw material), check if it has been produced
       if (requiredProduct != null) {
@@ -460,8 +480,7 @@ class ProductUnlockService {
     ProductLevel tier,
     GameState gameState,
   ) {
-    final tierProducts =
-        GameData.products.where((p) => p.levelId == tier).toList();
+    final tierProducts = GameData.getProductsByLevel(tier);
     final unlockedCount =
         tierProducts.where((p) => isProductUnlocked(p.id, gameState)).length;
 

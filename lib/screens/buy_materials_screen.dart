@@ -6,32 +6,8 @@ import '../widgets/screen_header.dart';
 import '../widgets/financial_status_display.dart';
 import '../widgets/item_card.dart';
 
-class BuyMaterialsScreen extends StatefulWidget {
+class BuyMaterialsScreen extends StatelessWidget {
   const BuyMaterialsScreen({super.key});
-
-  @override
-  State<BuyMaterialsScreen> createState() => _BuyMaterialsScreenState();
-}
-
-class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
-  Timer? _countdownTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    // Start a timer to update countdown every second
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {}); // Trigger rebuild for countdown
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,9 +36,9 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
                   mode: FinancialDisplayMode.moneyOnly,
                 ),
 
-                // Auto-Buy Machine Status Info (v1.5.0) - Now includes controls
+                // Auto-Buy Machine Status Info (v1.5.0) - Isolated stateful countdown
                 if (gameService.state.autoBuyMachinesOwned > 0)
-                  _buildAutoBuyStatusWithControls(gameService),
+                  const _AutoBuyStatusWidget(),
 
                 // Materials list with single-column layout for better readability
                 Expanded(
@@ -89,9 +65,49 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
       },
     );
   }
+}
 
-  /// Build auto-buy machine status with embedded controls (v1.5.0)
-  Widget _buildAutoBuyStatusWithControls(ProductionGameService gameService) {
+/// Isolated widget for auto-buy machine status and 1-second countdown
+/// Only ticks and updates when auto-buy machines are owned and active,
+/// preventing screen-wide rebuild churn.
+class _AutoBuyStatusWidget extends StatefulWidget {
+  const _AutoBuyStatusWidget();
+
+  @override
+  State<_AutoBuyStatusWidget> createState() => _AutoBuyStatusWidgetState();
+}
+
+class _AutoBuyStatusWidgetState extends State<_AutoBuyStatusWidget> {
+  Timer? _countdownTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      final gameService =
+          Provider.of<ProductionGameService>(context, listen: false);
+      if (gameService.state.autoBuyMachinesOwned > 0 &&
+          gameService.state.autoBuyEnabled) {
+        setState(() {}); // Rebuild only this widget for the countdown
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gameService = Provider.of<ProductionGameService>(context);
     final secondsRemaining = gameService.getSecondsUntilNextAutoBuyTick();
     final nextMaterial = gameService.getNextMaterialToBuy();
     final isActive = gameService.state.autoBuyEnabled;
@@ -133,7 +149,8 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
               const Spacer(),
               // On/Off toggle
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: isActive
                       ? Colors.green.withValues(alpha: 0.2)
@@ -183,14 +200,16 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
                   valueColor: Colors.white,
                 ),
               ),
-              
+
               // Next tick countdown
               Expanded(
                 child: _buildStatusItem(
                   icon: Icons.timer_outlined,
                   label: 'Next Tick',
                   value: isActive
-                      ? (secondsRemaining != null ? '${secondsRemaining}s' : '--')
+                      ? (secondsRemaining != null
+                          ? '${secondsRemaining}s'
+                          : '--')
                       : 'Paused',
                   valueColor: isActive
                       ? (secondsRemaining != null && secondsRemaining <= 2
@@ -199,7 +218,7 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
                       : Colors.grey,
                 ),
               ),
-              
+
               // Current/next material
               Expanded(
                 child: _buildStatusItem(
@@ -211,11 +230,11 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
           const Divider(color: Colors.white24, height: 1),
           const SizedBox(height: 12),
-          
+
           // Capacity controls embedded in status
           Row(
             children: [
@@ -234,7 +253,7 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
                 ),
               ),
               const Spacer(),
-              
+
               // Decrement button
               IconButton(
                 onPressed: gameService.state.autoBuyResourceCapacity > 10
@@ -247,12 +266,13 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
                 padding: const EdgeInsets.all(4),
                 constraints: const BoxConstraints(),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Capacity display
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.cyan.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
@@ -270,9 +290,9 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Increment button
               IconButton(
                 onPressed: gameService.increaseAutoBuyCapacity,
@@ -284,7 +304,7 @@ class _BuyMaterialsScreenState extends State<BuyMaterialsScreen> {
               ),
             ],
           ),
-          
+
           // Info text
           const SizedBox(height: 8),
           Text(

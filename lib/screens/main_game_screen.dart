@@ -44,58 +44,50 @@ class _MainGameScreenState extends State<MainGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProductionGameService>(
-      builder: (context, gameService, child) {
-        // Show loading screen while game state is being loaded
-        if (!gameService.isLoaded) {
-          return Scaffold(
-            body: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF0F3460), Color(0xFF533483)],
-                ),
-              ),
-              child: const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 3,
-                    ),
-                    SizedBox(height: 24),
-                    Text(
-                      'Loading Game...',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Restoring your progress',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
+    // Show loading screen while game state is being loaded
+    final isLoaded =
+        context.select<ProductionGameService, bool>((s) => s.isLoaded);
+    if (!isLoaded) {
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0F3460), Color(0xFF533483)],
             ),
-          );
-        }
+          ),
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
+                ),
+                SizedBox(height: 24),
+                Text(
+                  'Loading Game...',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Restoring your progress',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
-        // Calculate badges
-        final int freeSlots = gameService.state.maxSimultaneousShipments - gameService.state.activeShippingOrders.length;
-        final int readyContracts = gameService.state.corporateContracts.where((c) {
-          if (c.status != ContractStatus.active && c.status != ContractStatus.available) return false;
-          return c.canFulfill(gameService.state.products);
-        }).length;
-        final int shippingBadgeCount = (freeSlots > 0 ? freeSlots : 0) + readyContracts;
-
-        // Game is loaded, show normal interface
-        return Scaffold(
+    // Game is loaded, show normal interface
+    return Scaffold(
           body: PageView(
             controller: _pageController,
             onPageChanged: (index) {
@@ -213,10 +205,29 @@ class _MainGameScreenState extends State<MainGameScreen> {
                               : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Badge(
-                      isLabelVisible: shippingBadgeCount > 0,
-                      label: Text('$shippingBadgeCount'),
-                      backgroundColor: Colors.redAccent,
+                    child: Selector<ProductionGameService, int>(
+                      selector: (context, gameService) {
+                        final int freeSlots =
+                            gameService.state.maxSimultaneousShipments -
+                                gameService.state.activeShippingOrders.length;
+                        final int readyContracts =
+                            gameService.state.corporateContracts.where((c) {
+                          if (c.status != ContractStatus.active &&
+                              c.status != ContractStatus.available) {
+                            return false;
+                          }
+                          return c.canFulfill(gameService.state.products);
+                        }).length;
+                        return (freeSlots > 0 ? freeSlots : 0) + readyContracts;
+                      },
+                      builder: (context, shippingBadgeCount, child) {
+                        return Badge(
+                          isLabelVisible: shippingBadgeCount > 0,
+                          label: Text('$shippingBadgeCount'),
+                          backgroundColor: Colors.redAccent,
+                          child: child,
+                        );
+                      },
                       child: Icon(
                         Icons.local_shipping,
                         color:
@@ -252,7 +263,5 @@ class _MainGameScreenState extends State<MainGameScreen> {
             ),
           ),
         );
-      },
-    );
   }
 }

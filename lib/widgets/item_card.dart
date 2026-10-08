@@ -75,7 +75,6 @@ class ItemCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(8),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -266,16 +265,16 @@ class ItemCard extends StatelessWidget {
 
               String name = id;
               String emoji = '';
-              try {
-                final m = data.GameData.materials.firstWhere((m) => m.id == id);
+              final m = data.GameData.getMaterial(id);
+              if (m != null) {
                 name = m.name;
                 emoji = m.emoji;
-              } catch (_) {
-                try {
-                  final p = data.GameData.products.firstWhere((p) => p.id == id);
+              } else {
+                final p = data.GameData.getProduct(id);
+                if (p != null) {
                   name = p.name;
                   emoji = p.emoji;
-                } catch (_) {}
+                }
               }
 
               return Padding(
@@ -773,16 +772,16 @@ class ItemCard extends StatelessWidget {
               final qty = e.value;
               String name = id;
               String emoji = '';
-              try {
-                final m = data.GameData.materials.firstWhere((m) => m.id == id);
+              final m = data.GameData.getMaterial(id);
+              if (m != null) {
                 name = m.name;
                 emoji = m.emoji;
-              } catch (_) {
-                try {
-                  final p = data.GameData.products.firstWhere((p) => p.id == id);
+              } else {
+                final p = data.GameData.getProduct(id);
+                if (p != null) {
                   name = p.name;
                   emoji = p.emoji;
-                } catch (_) {}
+                }
               }
 
               return Container(
@@ -832,16 +831,16 @@ class ItemCard extends StatelessWidget {
         // Try to resolve a display name and emoji (fallback to id)
         String displayName = id;
         String emoji = '';
-        try {
-          final m = data.GameData.materials.firstWhere((m) => m.id == id);
+        final m = data.GameData.getMaterial(id);
+        if (m != null) {
           displayName = m.name;
           emoji = m.emoji;
-        } catch (_) {
-          try {
-            final p = data.GameData.products.firstWhere((p) => p.id == id);
+        } else {
+          final p = data.GameData.getProduct(id);
+          if (p != null) {
             displayName = p.name;
             emoji = p.emoji;
-          } catch (_) {}
+          }
         }
 
         return Padding(

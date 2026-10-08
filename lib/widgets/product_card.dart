@@ -263,23 +263,16 @@ class ProductCard extends StatelessWidget {
                 String displayName = materialId;
                 String emoji = '';
 
-                // Check if it's a product
-                try {
-                  final materialProduct = GameData.products.firstWhere(
-                    (p) => p.id == materialId,
-                  );
+                // Check if it's a product or material
+                final materialProduct = GameData.getProduct(materialId);
+                if (materialProduct != null) {
                   displayName = materialProduct.name;
                   emoji = materialProduct.emoji;
-                } catch (e) {
-                  // Check if it's a material
-                  try {
-                    final material = GameData.materials.firstWhere(
-                      (m) => m.id == materialId,
-                    );
+                } else {
+                  final material = GameData.getMaterial(materialId);
+                  if (material != null) {
                     displayName = material.name;
                     emoji = material.emoji;
-                  } catch (e) {
-                    // Use ID as fallback
                   }
                 }
 
