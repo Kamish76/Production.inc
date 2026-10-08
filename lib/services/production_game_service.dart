@@ -104,13 +104,34 @@ class ProductionGameService extends ChangeNotifier {
   bool get isTestMode => _isTestMode;
   bool get isDeveloperModeUnlocked => _isDeveloperModeUnlocked;
 
-  /// Whether the R&D Lab is unlocked (via Discord beta code RNDBETA2026 or developer mode)
+  /// Whether the R&D Lab is unlocked (strictly via Discord beta code RNDBETA2026)
   bool get isRnDLabUnlocked =>
-      _state.redeemedCodes.contains('RNDBETA2026') || _isDeveloperModeUnlocked;
+      _state.redeemedCodes.contains('RNDBETA2026');
 
   /// Whether the player specifically redeemed the Discord beta code
   bool get isRnDLabBetaUnlocked =>
       _state.redeemedCodes.contains('RNDBETA2026');
+
+  /// Re-lock R&D Lab for testing or reset
+  void relockRnDLab() {
+    final updatedCodes = Set<String>.from(_state.redeemedCodes)..remove('RNDBETA2026');
+    _state = _state.copyWith(redeemedCodes: updatedCodes);
+    _persistenceService.markDirty('game_state');
+    _persistenceService.markDirty('redeemed_codes');
+    notifyListeners();
+    if (!_isTestMode) {
+      saveGame();
+    }
+  }
+
+  /// Toggle R&D Lab unlock state for dev testing
+  void toggleRnDLabLock() {
+    if (isRnDLabUnlocked) {
+      relockRnDLab();
+    } else {
+      redeemCode('RNDBETA2026');
+    }
+  }
 
   void setDeveloperModeUnlocked(bool value) {
     if (_isDeveloperModeUnlocked != value) {

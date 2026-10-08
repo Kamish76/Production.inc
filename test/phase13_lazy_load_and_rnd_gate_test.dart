@@ -167,11 +167,18 @@ void main() {
       expect(repeatResult.status, RedeemCodeResult.alreadyRedeemed);
     });
 
-    test('redeeming 888888 dev code unlocks developer session and R&D lab', () {
+    test('redeeming 888888 dev code unlocks developer session but keeps R&D lab locked', () {
       final result = gameService.redeemCode('888888');
       expect(result.status, RedeemCodeResult.devUnlocked);
       expect(gameService.isDeveloperModeUnlocked, isTrue);
+      expect(gameService.isRnDLabUnlocked, isFalse);
+    });
+
+    test('relockRnDLab re-locks R&D lab and removes beta code', () {
+      gameService.redeemCode('RNDBETA2026');
       expect(gameService.isRnDLabUnlocked, isTrue);
+      gameService.relockRnDLab();
+      expect(gameService.isRnDLabUnlocked, isFalse);
     });
   });
 

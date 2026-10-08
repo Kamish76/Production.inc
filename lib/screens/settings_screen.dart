@@ -1244,6 +1244,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 12),
 
+          // R&D Lab Beta Lock / Unlock Toggle
+          _buildDevControl(
+            icon: Icons.science,
+            title: gameService.isRnDLabUnlocked ? 'Re-lock R&D Lab (Beta)' : 'Unlock R&D Lab (Beta)',
+            subtitle: gameService.isRnDLabUnlocked
+                ? 'Relock to "In Development / Closed Beta" teaser screen'
+                : 'Unlock full R&D facility with test key',
+            color: Colors.purpleAccent,
+            onPressed: () {
+              gameService.toggleRnDLabLock();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    gameService.isRnDLabUnlocked
+                        ? '🧪 R&D Lab unlocked for testing!'
+                        : '🔒 R&D Lab re-locked to "In Development" teaser!',
+                  ),
+                  backgroundColor: Colors.purple,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 12),
+
           // Database Reset Tool (Dangerous)
           _buildDevControl(
             icon: Icons.warning,
