@@ -11,8 +11,8 @@ import '../widgets/item_card.dart';
 import '../widgets/game_dialog.dart';
 import '../widgets/client_reputation_bar.dart';
 import '../widgets/shipping_manifest_tray.dart';
-import '../widgets/auto_sell_setup_sheet.dart';
 import '../widgets/auto_sell_status_card.dart';
+import '../widgets/machine_setup_view.dart';
 import '../models/game_data.dart';
 
 class SellProductsScreen extends StatefulWidget {
@@ -32,7 +32,7 @@ class _SellProductsScreenState extends State<SellProductsScreen>
   @override
   void initState() {
     super.initState();
-    _mainTabController = TabController(length: 2, vsync: this);
+    _mainTabController = TabController(length: 3, vsync: this);
     _b2bSubTabController = TabController(length: 3, vsync: this);
     _loadTierPreferences();
   }
@@ -182,7 +182,7 @@ class _SellProductsScreenState extends State<SellProductsScreen>
   }
 
   void _openAutomationSetup(BuildContext context) {
-    AutoSellSetupSheet.show(context);
+    _mainTabController.animateTo(2);
   }
 
   @override
@@ -280,6 +280,10 @@ class _SellProductsScreenState extends State<SellProductsScreen>
                         icon: Icon(Icons.handshake_outlined, size: 18),
                         text: 'B2B Contracts',
                       ),
+                      Tab(
+                        icon: Icon(Icons.precision_manufacturing_outlined, size: 18),
+                        text: 'Machine Setup',
+                      ),
                     ],
                   ),
                 ),
@@ -293,6 +297,7 @@ class _SellProductsScreenState extends State<SellProductsScreen>
                     children: [
                       _buildStorefrontTab(gameService),
                       _buildB2BContractsTab(context, gameService),
+                      const MachineSetupView(),
                     ],
                   ),
                 ),
@@ -316,7 +321,7 @@ class _SellProductsScreenState extends State<SellProductsScreen>
               tooltip:
                   _areAllTiersExpanded() ? 'Collapse All' : 'Expand All',
               icon: AnimatedRotation(
-                turns: _areAllTiersExpanded() ? 0.5 : 0,
+              turns: _areAllTiersExpanded() ? 0.5 : 0,
                 duration: const Duration(milliseconds: 200),
                 child: Icon(
                   Icons.expand_more,
@@ -340,7 +345,9 @@ class _SellProductsScreenState extends State<SellProductsScreen>
         const SizedBox(height: 8),
 
         // Phase 12: Sales Hub Selling Automation Live Status Card
-        const AutoSellStatusCard(),
+        AutoSellStatusCard(
+          onOpenSetup: () => _openAutomationSetup(context),
+        ),
 
         const SizedBox(height: 12),
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:game1/models/game_state.dart';
 import 'package:game1/models/game_models.dart';
 import 'package:game1/models/game_data.dart';
 import 'package:game1/models/auto_sell_preview.dart';
@@ -9,6 +8,7 @@ import 'package:game1/services/game_persistence_service.dart';
 import 'package:game1/services/production_game_service.dart';
 import 'package:game1/widgets/auto_sell_status_card.dart';
 import 'package:game1/widgets/auto_sell_setup_sheet.dart';
+import 'package:game1/widgets/machine_setup_view.dart';
 import 'package:game1/screens/sell_products_screen.dart';
 
 void main() {
@@ -602,7 +602,7 @@ void main() {
         expect(find.text('Clear All'), findsOneWidget);
       });
 
-      testWidgets('SellProductsScreen includes automation action pill in header', (tester) async {
+      testWidgets('SellProductsScreen includes automation action pill in header and 3 tabs', (tester) async {
         gameService.setAutoSellMachineCount(1);
         gameService.setAutoSellEnabled(true);
 
@@ -620,7 +620,74 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Auto: ON'), findsOneWidget);
+        expect(find.text('Storefront'), findsOneWidget);
+        expect(find.text('B2B Contracts'), findsOneWidget);
+        expect(find.text('Machine Setup'), findsOneWidget);
+      });
+
+      testWidgets('Tapping Machine Setup tab or header action pill navigates to MachineSetupView', (tester) async {
+        gameService.setAutoSellMachineCount(2);
+        gameService.setAutoSellEnabled(true);
+
+        await tester.pumpWidget(
+          ChangeNotifierProvider<ProductionGameService>.value(
+            value: gameService,
+            child: const MaterialApp(
+              home: Scaffold(
+                body: SellProductsScreen(),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Initially on Storefront tab
         expect(find.text('Auto-Sell Dispatcher'), findsOneWidget);
+
+        // Tap the header action pill
+        await tester.tap(find.text('Auto: ON'));
+        await tester.pumpAndSettle();
+
+        // Now on Machine Setup tab
+        expect(find.text('Selling Automation & Machine Setup'), findsOneWidget);
+        expect(find.text('AUTOMATION DISPATCH RULES'), findsOneWidget);
+        expect(find.text('PRODUCT WHITELIST MATRIX'), findsOneWidget);
+
+        // Tap Storefront tab to go back
+        await tester.tap(find.text('Storefront'));
+        await tester.pumpAndSettle();
+        expect(find.text('Auto-Sell Dispatcher'), findsOneWidget);
+
+        // Tap Setup button on status card
+        await tester.tap(find.text('Setup'));
+        await tester.pumpAndSettle();
+        expect(find.text('Selling Automation & Machine Setup'), findsOneWidget);
+      });
+
+      testWidgets('MachineSetupView full-page tab renders diagnostics and controls', (tester) async {
+        gameService.setAutoSellMachineCount(4);
+        gameService.setAutoSellEnabled(true);
+
+        await tester.pumpWidget(
+          ChangeNotifierProvider<ProductionGameService>.value(
+            value: gameService,
+            child: const MaterialApp(
+              home: Scaffold(
+                body: MachineSetupView(isBottomSheet: false),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.text('Selling Automation & Machine Setup'), findsOneWidget);
+        expect(find.text('Speed: 1x  •  4 Active Dispatchers'), findsOneWidget);
+        expect(find.text('AUTOMATION DISPATCH RULES'), findsOneWidget);
+        expect(find.text('PRODUCT WHITELIST MATRIX'), findsOneWidget);
+        expect(find.text('Select All'), findsOneWidget);
+        expect(find.text('Clear All'), findsOneWidget);
       });
     });
   });

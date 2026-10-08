@@ -8,7 +8,12 @@ import 'auto_sell_setup_sheet.dart';
 /// Displays master on/off switch, owned machines/speed, live queue ticker,
 /// and quick access to the Selling Automation Setup sheet.
 class AutoSellStatusCard extends StatelessWidget {
-  const AutoSellStatusCard({super.key});
+  final VoidCallback? onOpenSetup;
+
+  const AutoSellStatusCard({
+    super.key,
+    this.onOpenSetup,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -112,12 +117,16 @@ class AutoSellStatusCard extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const Text(
-                              'Auto-Sell Dispatcher',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
+                            const Flexible(
+                              child: Text(
+                                'Auto-Sell Dispatcher',
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -151,6 +160,8 @@ class AutoSellStatusCard extends StatelessWidget {
                           machinesOwned <= 0
                               ? 'Get dispatchers in Machines tab to automate sales'
                               : 'Speed: ${state.autoSellThroughputLevel}x  •  ${state.autoSellWhitelistedProductIds.length} whitelisted items',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                           style: const TextStyle(
                             color: Colors.white54,
                             fontSize: 11,
@@ -186,7 +197,7 @@ class AutoSellStatusCard extends StatelessWidget {
                   // Next action ticker
                   Expanded(
                     child: InkWell(
-                      onTap: () => AutoSellSetupSheet.show(context),
+                      onTap: onOpenSetup ?? () => AutoSellSetupSheet.show(context),
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 2),
@@ -243,7 +254,7 @@ class AutoSellStatusCard extends StatelessWidget {
 
                   // Setup button
                   InkWell(
-                    onTap: () => AutoSellSetupSheet.show(context),
+                    onTap: onOpenSetup ?? () => AutoSellSetupSheet.show(context),
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(

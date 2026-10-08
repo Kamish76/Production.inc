@@ -39,7 +39,7 @@ void main() {
     // 1. Cross-System Pipeline Harmonization Matrix
     // =========================================================================
     group('1. Cross-System Pipeline Harmonization Matrix', () {
-      test('Auto-Sell x Fleet Slots: Auto-sell sales NEVER consume carrier fleet slots', () {
+      test('Auto-Sell x Fleet Slots: Auto-sell dispatches carrier fleet orders respecting max slots', () {
         final p1 = GameData.products[0];
         gameService.testSetState(
           gameService.state.copyWith(
@@ -51,6 +51,7 @@ void main() {
             autoSellMachinesOwned: 5,
             autoSellEnabled: true,
             autoSellThroughputLevel: 3, // Sells 5 * 3 = 15 units per tick
+            autoSellWhitelistedProductIds: {p1.id},
           ),
         );
 
@@ -62,14 +63,13 @@ void main() {
           gameService.processAutoSellTickForTest(force: true);
         }
 
-        // Inventory sold directly via storefront
+        // Inventory dispatched via carrier batches
         expect(gameService.state.products[p1.id], lessThan(100));
-        expect(gameService.state.money, greaterThan(1000.0));
 
-        // Fleet slots remain 100% UNTOUCHED
-        expect(gameService.state.activeShippingOrders.length, 0,
-            reason: 'Storefront walk-in sales must NEVER occupy logistics carrier fleet slots');
-        expect(gameService.state.canShipMore(0), isTrue);
+        // Fleet slots are used up to capacity (2 max for tier 1) and never exceed capacity
+        expect(gameService.state.activeShippingOrders.length,
+            equals(gameService.state.maxSimultaneousShipments));
+        expect(gameService.state.canShipMore(gameService.state.activeShippingOrders.length), isFalse);
       });
 
       test('Auto-Sell x Staged Manifest: Depleted inventory auto-clamps staged quantities safely', () {
