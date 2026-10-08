@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/auto_sell_preview.dart';
@@ -21,6 +22,8 @@ class MachineSetupView extends StatefulWidget {
 }
 
 class _MachineSetupViewState extends State<MachineSetupView> {
+  static const int _batchSize = 15;
+  int _displayedLimit = _batchSize;
   ProductLevel? _selectedTierFilter;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -31,11 +34,41 @@ class _MachineSetupViewState extends State<MachineSetupView> {
     super.dispose();
   }
 
+  bool _onScrollNotification(ScrollNotification notification, int totalFilteredCount) {
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    if (notification is ScrollUpdateNotification || notification is ScrollEndNotification) {
+      final metrics = notification.metrics;
+      if (metrics.maxScrollExtent > 0 && metrics.pixels >= metrics.maxScrollExtent - 250) {
+        if (_displayedLimit < totalFilteredCount) {
+          setState(() {
+            _displayedLimit = math.min(_displayedLimit + _batchSize, totalFilteredCount);
+          });
+        }
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ProductionGameService>(
       builder: (context, gameService, _) {
         final nextAction = gameService.getAutoSellNextAction();
+
+        // Calculate total filtered product count for lazy loading scroll notifications
+        List<Product> filteredProducts = GameData.products;
+        if (_selectedTierFilter != null) {
+          filteredProducts = filteredProducts.where((p) => p.levelId == _selectedTierFilter).toList();
+        }
+        if (_searchQuery.trim().isNotEmpty) {
+          final q = _searchQuery.trim().toLowerCase();
+          filteredProducts = filteredProducts
+              .where((p) => p.name.toLowerCase().contains(q) || p.id.toLowerCase().contains(q))
+              .toList();
+        }
+        final totalFilteredCount = filteredProducts.length;
 
         if (widget.isBottomSheet) {
           return Container(
@@ -78,17 +111,20 @@ class _MachineSetupViewState extends State<MachineSetupView> {
 
                   // Scrollable content
                   Flexible(
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      children: [
-                        _buildLiveQueueCard(nextAction, gameService),
-                        const SizedBox(height: 16),
-                        _buildRecentAutoSoldLogCard(gameService),
-                        const SizedBox(height: 16),
-                        _buildDispatchRulesSection(gameService),
-                        const SizedBox(height: 16),
-                        _buildWhitelistMatrixSection(gameService),
-                      ],
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (n) => _onScrollNotification(n, totalFilteredCount),
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        children: [
+                          _buildLiveQueueCard(nextAction, gameService),
+                          const SizedBox(height: 16),
+                          _buildRecentAutoSoldLogCard(gameService),
+                          const SizedBox(height: 16),
+                          _buildDispatchRulesSection(gameService),
+                          const SizedBox(height: 16),
+                          _buildWhitelistMatrixSection(gameService),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -98,29 +134,32 @@ class _MachineSetupViewState extends State<MachineSetupView> {
         }
 
         // Full-page Tab Mode
-        return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          children: [
-            // Tab Header Banner with Master Switch & Machine Stats
-            _buildTabHeaderBanner(context, gameService),
-            const SizedBox(height: 16),
+        return NotificationListener<ScrollNotification>(
+          onNotification: (n) => _onScrollNotification(n, totalFilteredCount),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            children: [
+              // Tab Header Banner with Master Switch & Machine Stats
+              _buildTabHeaderBanner(context, gameService),
+              const SizedBox(height: 16),
 
-            // Section 1: Live Queue & Next Dispatch Diagnostics Card
-            _buildLiveQueueCard(nextAction, gameService),
-            const SizedBox(height: 16),
+              // Section 1: Live Queue & Next Dispatch Diagnostics Card
+              _buildLiveQueueCard(nextAction, gameService),
+              const SizedBox(height: 16),
 
-            // Section 1B: Recent Automation Dispatches Activity Log
-            _buildRecentAutoSoldLogCard(gameService),
-            const SizedBox(height: 16),
+              // Section 1B: Recent Automation Dispatches Activity Log
+              _buildRecentAutoSoldLogCard(gameService),
+              const SizedBox(height: 16),
 
-            // Section 2: Automation Dispatch Rules
-            _buildDispatchRulesSection(gameService),
-            const SizedBox(height: 16),
+              // Section 2: Automation Dispatch Rules
+              _buildDispatchRulesSection(gameService),
+              const SizedBox(height: 16),
 
-            // Section 3: Product Whitelist Matrix
-            _buildWhitelistMatrixSection(gameService),
-            const SizedBox(height: 24),
-          ],
+              // Section 3: Product Whitelist Matrix
+              _buildWhitelistMatrixSection(gameService),
+              const SizedBox(height: 24),
+            ],
+          ),
         );
       },
     );
@@ -621,6 +660,41 @@ class _MachineSetupViewState extends State<MachineSetupView> {
           .toList();
     }
 
+    // Partition products: Selected (pinned to top) vs Unselected
+    // Order selected products with most recently selected first (based on whitelist insertion order)
+    final whitelistList = whitelistedIds.toList();
+    final selectedProductsMap = {
+      for (final p in products.where((p) => whitelistedIds.contains(p.id))) p.id: p
+    };
+
+    final selectedProducts = <Product>[];
+    for (int i = whitelistList.length - 1; i >= 0; i--) {
+      final id = whitelistList[i];
+      final prod = selectedProductsMap[id];
+      if (prod != null) {
+        selectedProducts.add(prod);
+      }
+    }
+    // Any remaining selected products not captured in whitelistList
+    for (final prod in selectedProductsMap.values) {
+      if (!selectedProducts.contains(prod)) {
+        selectedProducts.add(prod);
+      }
+    }
+
+    final unselectedProducts =
+        products.where((p) => !whitelistedIds.contains(p.id)).toList();
+
+    // Combined list with selected products at the very top
+    final sortedProducts = [...selectedProducts, ...unselectedProducts];
+
+    // Lazy load slice
+    final displayedProducts = sortedProducts.take(_displayedLimit).toList();
+    final displayedSelected =
+        displayedProducts.where((p) => whitelistedIds.contains(p.id)).toList();
+    final displayedUnselected =
+        displayedProducts.where((p) => !whitelistedIds.contains(p.id)).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -727,7 +801,12 @@ class _MachineSetupViewState extends State<MachineSetupView> {
         // Search Bar
         TextField(
           controller: _searchController,
-          onChanged: (val) => setState(() => _searchQuery = val),
+          onChanged: (val) {
+            setState(() {
+              _searchQuery = val;
+              _displayedLimit = _batchSize;
+            });
+          },
           style: const TextStyle(color: Colors.white, fontSize: 13),
           decoration: InputDecoration(
             hintText: 'Search products to whitelist...',
@@ -738,7 +817,10 @@ class _MachineSetupViewState extends State<MachineSetupView> {
                     icon: const Icon(Icons.clear, color: Colors.white38, size: 16),
                     onPressed: () {
                       _searchController.clear();
-                      setState(() => _searchQuery = '');
+                      setState(() {
+                        _searchQuery = '';
+                        _displayedLimit = _batchSize;
+                      });
                     },
                   )
                 : null,
@@ -784,109 +866,231 @@ class _MachineSetupViewState extends State<MachineSetupView> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.white12),
               ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: products.length,
-                separatorBuilder: (_, _) => const Divider(color: Colors.white10, height: 1),
-                itemBuilder: (context, index) {
-                  final product = products[index];
-                  final isWhitelisted = whitelistedIds.contains(product.id);
-                  final stock = gameService.state.getProductCount(product.id);
-
-                  return InkWell(
-                    onTap: () => gameService.toggleProductAutoSellWhitelist(product.id),
-                    borderRadius: index == 0
-                        ? const BorderRadius.vertical(top: Radius.circular(14))
-                        : index == products.length - 1
-                            ? const BorderRadius.vertical(bottom: Radius.circular(14))
-                            : BorderRadius.zero,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Section 1: Selected / Whitelisted Items (Pinned to Top)
+                  if (displayedSelected.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      color: Colors.purple.withValues(alpha: 0.15),
                       child: Row(
                         children: [
-                          Checkbox(
-                            value: isWhitelisted,
-                            activeColor: Colors.purpleAccent,
-                            checkColor: Colors.white,
-                            onChanged: (_) =>
-                                gameService.toggleProductAutoSellWhitelist(product.id),
-                          ),
-                          Container(
-                            width: 32,
-                            height: 32,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: Colors.white10,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: GameIcon.forProduct(
-                              id: product.id,
-                              fallbackEmoji: product.emoji,
-                              size: 20,
+                          const Icon(Icons.check_circle_outline, size: 14, color: Colors.purpleAccent),
+                          const SizedBox(width: 6),
+                          Text(
+                            'SELECTED FOR AUTO-SELL (${selectedProducts.length})',
+                            style: const TextStyle(
+                              color: Colors.purpleAccent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.8,
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  product.name,
-                                  style: TextStyle(
-                                    color: isWhitelisted ? Colors.white : Colors.white60,
-                                    fontSize: 13,
-                                    fontWeight: isWhitelisted ? FontWeight.bold : FontWeight.normal,
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    Text(
-                                      '\$${product.sellPrice.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        color: Colors.greenAccent,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        color: stock > 0
-                                            ? Colors.blue.withValues(alpha: 0.2)
-                                            : Colors.white10,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        'Stock: $stock',
-                                        style: TextStyle(
-                                          color: stock > 0 ? Colors.blue[200] : Colors.white38,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Whitelist status indicator
-                          Icon(
-                            isWhitelisted ? Icons.check_circle : Icons.radio_button_unchecked,
-                            size: 18,
-                            color: isWhitelisted ? Colors.purpleAccent : Colors.white24,
+                          const Spacer(),
+                          const Text(
+                            'Tap to unselect',
+                            style: TextStyle(color: Colors.white38, fontSize: 10),
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
+                    for (int i = 0; i < displayedSelected.length; i++) ...[
+                      if (i > 0) const Divider(color: Colors.white10, height: 1),
+                      _buildProductRow(
+                        product: displayedSelected[i],
+                        isWhitelisted: true,
+                        stock: gameService.state.getProductCount(displayedSelected[i].id),
+                        gameService: gameService,
+                      ),
+                    ],
+                  ],
+
+                  // Section 2: Available Products
+                  if (displayedUnselected.isNotEmpty) ...[
+                    if (displayedSelected.isNotEmpty)
+                      const Divider(color: Colors.white24, height: 1),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      color: Colors.white.withValues(alpha: 0.03),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.add_circle_outline, size: 14, color: Colors.white60),
+                          const SizedBox(width: 6),
+                          Text(
+                            'AVAILABLE PRODUCTS (${unselectedProducts.length})',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const Spacer(),
+                          const Text(
+                            'Tap to enable & pin to top',
+                            style: TextStyle(color: Colors.white38, fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    ),
+                    for (int i = 0; i < displayedUnselected.length; i++) ...[
+                      if (i > 0) const Divider(color: Colors.white10, height: 1),
+                      _buildProductRow(
+                        product: displayedUnselected[i],
+                        isWhitelisted: false,
+                        stock: gameService.state.getProductCount(displayedUnselected[i].id),
+                        gameService: gameService,
+                      ),
+                    ],
+                  ],
+
+                  // Lazy Load Footer (if not all items are currently displayed)
+                  if (displayedProducts.length < sortedProducts.length) ...[
+                    const Divider(color: Colors.white10, height: 1),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1B1F33),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Showing ${displayedProducts.length} of ${sortedProducts.length} products',
+                            style: const TextStyle(color: Colors.white54, fontSize: 11),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _displayedLimit = sortedProducts.length;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.purple.withValues(alpha: 0.4)),
+                              ),
+                              child: const Text(
+                                'Show All',
+                                style: TextStyle(
+                                  color: Colors.purpleAccent,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildProductRow({
+    required Product product,
+    required bool isWhitelisted,
+    required int stock,
+    required ProductionGameService gameService,
+  }) {
+    return RepaintBoundary(
+      child: Material(
+        color: isWhitelisted
+            ? Colors.purple.withValues(alpha: 0.08)
+            : Colors.transparent,
+        child: InkWell(
+          onTap: () => gameService.toggleProductAutoSellWhitelist(product.id),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: isWhitelisted,
+                  activeColor: Colors.purpleAccent,
+                  checkColor: Colors.white,
+                  onChanged: (_) =>
+                      gameService.toggleProductAutoSellWhitelist(product.id),
+                ),
+                Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: GameIcon.forProduct(
+                    id: product.id,
+                    fallbackEmoji: product.emoji,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        style: TextStyle(
+                          color: isWhitelisted ? Colors.white : Colors.white60,
+                          fontSize: 13,
+                          fontWeight: isWhitelisted ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            '\$${product.sellPrice.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              color: Colors.greenAccent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: stock > 0
+                                  ? Colors.blue.withValues(alpha: 0.2)
+                                  : Colors.white10,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Stock: $stock',
+                              style: TextStyle(
+                                color: stock > 0 ? Colors.blue[200] : Colors.white38,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Whitelist status indicator
+                Icon(
+                  isWhitelisted ? Icons.check_circle : Icons.radio_button_unchecked,
+                  size: 18,
+                  color: isWhitelisted ? Colors.purpleAccent : Colors.white24,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -927,7 +1131,14 @@ class _MachineSetupViewState extends State<MachineSetupView> {
   Widget _buildTierChip(String label, ProductLevel? tier) {
     final isSelected = _selectedTierFilter == tier;
     return InkWell(
-      onTap: () => setState(() => _selectedTierFilter = tier),
+      onTap: () {
+        if (_selectedTierFilter != tier) {
+          setState(() {
+            _selectedTierFilter = tier;
+            _displayedLimit = _batchSize;
+          });
+        }
+      },
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

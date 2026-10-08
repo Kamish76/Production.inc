@@ -704,6 +704,121 @@ void main() {
         expect(find.text('Select All'), findsOneWidget);
         expect(find.text('Clear All'), findsOneWidget);
       });
+
+      // =========================================================================
+      // Group 8: Whitelist Lazy Loading & Top-Priority Selection
+      // =========================================================================
+      testWidgets('Initial view lazily loads first batch (15 items) with footer and Show All button', (tester) async {
+        tester.view.physicalSize = const Size(800, 3000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        gameService.setAutoSellMachineCount(1);
+        gameService.setAutoSellEnabled(true);
+
+        await tester.pumpWidget(
+          ChangeNotifierProvider<ProductionGameService>.value(
+            value: gameService,
+            child: const MaterialApp(
+              home: Scaffold(
+                body: MachineSetupView(isBottomSheet: false),
+              ),
+            ),
+          ),
+        );
+        final totalProducts = GameData.products.length;
+
+        // Footer is shown indicating 15 of total products
+        expect(find.text('Showing 15 of $totalProducts products'), findsOneWidget);
+        expect(find.text('Show All'), findsOneWidget);
+
+        // Tap Show All
+        await tester.tap(find.text('Show All'));
+        await tester.pumpAndSettle();
+
+        // Footer is gone because all products are displayed
+        expect(find.text('Show All'), findsNothing);
+      });
+
+      testWidgets('Selected products move to top and can be easily unselected', (tester) async {
+        final totalProducts = GameData.products.length;
+        tester.view.physicalSize = const Size(800, 3000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        gameService.setAutoSellMachineCount(1);
+        gameService.setAutoSellEnabled(true);
+
+        await tester.pumpWidget(
+          ChangeNotifierProvider<ProductionGameService>.value(
+            value: gameService,
+            child: const MaterialApp(
+              home: Scaffold(
+                body: MachineSetupView(isBottomSheet: false),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Initially no items selected
+        expect(find.text('AVAILABLE PRODUCTS ($totalProducts)'), findsOneWidget);
+        expect(find.textContaining('SELECTED FOR AUTO-SELL'), findsNothing);
+
+        // Tap 'Box' item in available products to select it
+        await tester.tap(find.text('Box'));
+        await tester.pumpAndSettle();
+
+        // Now 'SELECTED FOR AUTO-SELL (1)' header appears at top
+        expect(find.text('SELECTED FOR AUTO-SELL (1)'), findsOneWidget);
+        expect(find.text('AVAILABLE PRODUCTS (${totalProducts - 1})'), findsOneWidget);
+        expect(find.text('Tap to unselect'), findsOneWidget);
+        expect(gameService.isProductWhitelistedForAutoSell('box'), isTrue);
+
+        // Tap 'Box' under the selected section at the top to unselect it
+        await tester.tap(find.text('Box').first);
+        await tester.pumpAndSettle();
+
+        // Now 'Box' is unselected and moved back down
+        expect(gameService.isProductWhitelistedForAutoSell('box'), isFalse);
+        expect(find.textContaining('SELECTED FOR AUTO-SELL'), findsNothing);
+        expect(find.text('AVAILABLE PRODUCTS ($totalProducts)'), findsOneWidget);
+      });
+
+      testWidgets('Scrolling near bottom auto-loads the next batch of items', (tester) async {
+        final totalProducts = GameData.products.length;
+        tester.view.physicalSize = const Size(800, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        gameService.setAutoSellMachineCount(1);
+        gameService.setAutoSellEnabled(true);
+
+        await tester.pumpWidget(
+          ChangeNotifierProvider<ProductionGameService>.value(
+            value: gameService,
+            child: const MaterialApp(
+              home: Scaffold(
+                body: MachineSetupView(isBottomSheet: false),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Initial view shows batch of 15
+        expect(find.text('Showing 15 of $totalProducts products'), findsOneWidget);
+
+        // Fling down towards bottom of list
+        await tester.fling(find.byType(ListView), const Offset(0, -800), 2000);
+        await tester.pumpAndSettle();
+
+        // After scrolling, next batch is loaded (30 items)
+        expect(find.text('Showing 30 of $totalProducts products'), findsOneWidget);
+      });
     });
   });
 }
