@@ -55,39 +55,42 @@ class ItemCard extends StatelessWidget {
       ? AppColors.productionActive.withValues(alpha: 0.45)
       : Colors.black.withValues(alpha: 0.3);
 
-    return Card(
-      color: cardColor,
-      margin: const EdgeInsets.all(2),
-      elevation: elevation,
-      shadowColor: shadowColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: borderColor.withValues(alpha: borderOpacity),
-          width: borderWidth,
+    return RepaintBoundary(
+      child: Card(
+        color: cardColor,
+        margin: const EdgeInsets.all(2),
+        elevation: elevation,
+        shadowColor: shadowColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(
+            color: borderColor.withValues(alpha: borderOpacity),
+            width: borderWidth,
+          ),
         ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () => _handleCardTap(context),
-        onLongPress: () => _showDetailsSheet(context),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 8),
-              // Show a compact per-unit materials summary for build items (always visible when unlocked)
-              if (mode == ItemCardMode.build && _isProduct && gameService.isProductUnlocked(_product.id)) ...[
-                _buildScaledMaterialsSummary(),
-                const SizedBox(height: 6),
-              ] else ...[
-                const SizedBox(height: 2),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => _handleCardTap(context),
+          onLongPress: () => _showDetailsSheet(context),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 8),
+                // Show a compact per-unit materials summary for build items (always visible when unlocked)
+                if (mode == ItemCardMode.build && _isProduct && gameService.isProductUnlocked(_product.id)) ...[
+                  _buildScaledMaterialsSummary(),
+                  const SizedBox(height: 6),
+                ] else ...[
+                  const SizedBox(height: 2),
+                ],
+                if (mode != ItemCardMode.build || _canProduce) _buildActionButtons(context),
               ],
-              if (mode != ItemCardMode.build || _canProduce) _buildActionButtons(context),
-            ],
+            ),
           ),
         ),
       ),

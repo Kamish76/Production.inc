@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 
 class TierExpansionPanel extends StatefulWidget {
   final String title;
-  final Widget child;
+  final Widget? child;
+  final WidgetBuilder? contentBuilder;
   final bool initiallyExpanded;
   final ValueChanged<bool>? onExpansionChanged;
   final IconData? icon;
@@ -15,7 +16,8 @@ class TierExpansionPanel extends StatefulWidget {
   const TierExpansionPanel({
     super.key,
     required this.title,
-    required this.child,
+    this.child,
+    this.contentBuilder,
     this.initiallyExpanded = false,
     this.onExpansionChanged,
     this.icon,
@@ -23,7 +25,7 @@ class TierExpansionPanel extends StatefulWidget {
     this.subtitle,
     this.primaryColor,
     this.backgroundColor,
-  });
+  }) : assert(child != null || contentBuilder != null, 'Either child or contentBuilder must be provided');
 
   @override
   State<TierExpansionPanel> createState() => _TierExpansionPanelState();
@@ -132,8 +134,9 @@ class _TierExpansionPanelState extends State<TierExpansionPanel> {
           ),
         ),
 
-        // Collapsible content
-        if (_expanded) widget.child,
+        // Collapsible content (lazy evaluated if contentBuilder is provided)
+        if (_expanded)
+          (widget.contentBuilder?.call(context) ?? widget.child!),
       ],
     );
   }

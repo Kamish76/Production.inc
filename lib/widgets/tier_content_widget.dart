@@ -87,9 +87,8 @@ class TierContentWidget extends StatelessWidget {
                 children: rows.map((rowProducts) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           for (int i = 0; i < columnsCount; i++) ...[
                             if (i > 0) const SizedBox(width: spacing),
@@ -105,7 +104,6 @@ class TierContentWidget extends StatelessWidget {
                           ],
                         ],
                       ),
-                    ),
                   );
                 }).toList(),
               );

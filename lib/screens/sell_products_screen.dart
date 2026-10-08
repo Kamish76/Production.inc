@@ -375,28 +375,36 @@ class _SellProductsScreenState extends State<SellProductsScreen>
           )
         else
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                16,
-                16,
-                gameService.stagedManifest.isNotEmpty ? 80 : 16,
-              ),
-              addAutomaticKeepAlives: false,
-              addRepaintBoundaries: true,
-              children: [
-                ...gameService.productsByTier.entries
-                    .map(
-                      (entry) => _buildEnhancedTierSection(
-                        context,
-                        gameService.getTierName(entry.key),
-                        entry.value,
-                        gameService,
-                      ),
-                    )
-                    .where((widget) => widget != null)
-                    .cast<Widget>(),
-              ],
+            child: Builder(
+              builder: (context) {
+                final visibleTierEntries = gameService.productsByTier.entries
+                    .where((entry) => entry.value.any((product) {
+                      if (_selectedBranch != null && product.industryBranch != _selectedBranch) {
+                        return false;
+                      }
+                      return gameService.state.getProductCount(product.id) > 0;
+                    }))
+                    .toList();
+
+                return ListView.builder(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    gameService.stagedManifest.isNotEmpty ? 80 : 16,
+                  ),
+                  itemCount: visibleTierEntries.length,
+                  itemBuilder: (context, index) {
+                    final entry = visibleTierEntries[index];
+                    return _buildEnhancedTierSection(
+                      context,
+                      gameService.getTierName(entry.key),
+                      entry.value,
+                      gameService,
+                    ) ?? const SizedBox.shrink();
+                  },
+                );
+              },
             ),
           ),
 
@@ -972,7 +980,7 @@ class _SellProductsScreenState extends State<SellProductsScreen>
       primaryColor: Colors.purple[400]!,
       backgroundColor: Colors.purple[900]!.withValues(alpha: 0.3),
       onExpansionChanged: (expanded) => _toggleTierExpansion(tierName),
-      child: Column(
+      contentBuilder: (_) => Column(
         children: [
           // Responsive row-grid matching TierContentWidget
           LayoutBuilder(
@@ -994,32 +1002,30 @@ class _SellProductsScreenState extends State<SellProductsScreen>
                 children: rows.map((rowProducts) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (int i = 0; i < columnsCount; i++) ...[
-                            if (i > 0) const SizedBox(width: spacing),
-                            Expanded(
-                              child: i < rowProducts.length
-                                  ? ItemCard(
-                                      item: rowProducts[i],
-                                      gameService: gameService,
-                                      mode: ItemCardMode.sell,
-                                      onProductDetails: () => showDialog(
-                                        context: context,
-                                        builder: (context) =>
-                                            GameDialog.productDetails(
-                                          product: rowProducts[i],
-                                          gameService: gameService,
-                                        ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (int i = 0; i < columnsCount; i++) ...[
+                          if (i > 0) const SizedBox(width: spacing),
+                          Expanded(
+                            child: i < rowProducts.length
+                                ? ItemCard(
+                                    item: rowProducts[i],
+                                    gameService: gameService,
+                                    mode: ItemCardMode.sell,
+                                    onProductDetails: () => showDialog(
+                                      context: context,
+                                      builder: (context) =>
+                                          GameDialog.productDetails(
+                                        product: rowProducts[i],
+                                        gameService: gameService,
                                       ),
-                                    )
-                                  : const SizedBox(),
-                            ),
-                          ],
+                                    ),
+                                  )
+                                : const SizedBox(),
+                          ),
                         ],
-                      ),
+                      ],
                     ),
                   );
                 }).toList(),

@@ -215,31 +215,39 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
 
                 const SizedBox(height: 12),
 
-                // Products list - organized by tiers with unlock filtering
+                // Products list - organized by tiers with unlock filtering (virtualized)
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    addAutomaticKeepAlives: false,
-                    addRepaintBoundaries: true,
-                    children: [
-                      // Show welcome message for completely new players
-                      if (gameService.state.unlockedProducts.isEmpty)
-                        const MessageDisplay.welcome(),
-
-                      // Build sections for each tier (always show for discovery)
-                      ...gameService.productsByTier.entries
+                  child: Builder(
+                    builder: (context) {
+                      final showWelcome = gameService.state.unlockedProducts.isEmpty;
+                      final visibleTierEntries = gameService.productsByTier.entries
                           .where((entry) => entry.value.isNotEmpty)
-                          .map(
-                            (entry) => _buildTierSection(
-                              context,
-                              gameService.getTierName(entry.key),
-                              entry.value,
-                              gameService,
-                              tierLevel: entry.key,
-                            ),
-                          )
-                          .whereType<Widget>(),
-                    ],
+                          .where((entry) {
+                            if (_selectedBranch == null) return true;
+                            return entry.value.any((p) => p.industryBranch == _selectedBranch);
+                          })
+                          .toList();
+                      final int itemCount = (showWelcome ? 1 : 0) + visibleTierEntries.length;
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: itemCount,
+                        itemBuilder: (context, index) {
+                          if (showWelcome && index == 0) {
+                            return const MessageDisplay.welcome();
+                          }
+                          final tierIndex = showWelcome ? index - 1 : index;
+                          final entry = visibleTierEntries[tierIndex];
+                          return _buildTierSection(
+                            context,
+                            gameService.getTierName(entry.key),
+                            entry.value,
+                            gameService,
+                            tierLevel: entry.key,
+                          ) ?? const SizedBox.shrink();
+                        },
+                      );
+                    },
                   ),
                 ),
               ],
@@ -312,7 +320,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
             });
             _saveTierPreference(tierName, expanded);
           },
-          child: TierContentWidget(
+          contentBuilder: (_) => TierContentWidget(
             products: branchFilteredProducts,
             gameService: gameService,
             tierName: tierName,
