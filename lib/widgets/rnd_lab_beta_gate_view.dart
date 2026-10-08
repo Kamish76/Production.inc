@@ -280,7 +280,7 @@ class _RnDLabBetaGateViewState extends State<RnDLabBetaGateView> {
                               letterSpacing: 1.2,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'e.g. RNDBETA2026',
+                              hintText: 'Enter secret beta access key...',
                               hintStyle: TextStyle(
                                 color: Colors.grey[500],
                                 letterSpacing: 0.5,

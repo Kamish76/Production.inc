@@ -599,7 +599,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     letterSpacing: 1.2,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'e.g. PRODUCTION2026',
+                    hintText: 'Enter redeem code...',
                     hintStyle: TextStyle(
                       color: Colors.white.withValues(alpha: 0.4),
                       fontWeight: FontWeight.normal,
