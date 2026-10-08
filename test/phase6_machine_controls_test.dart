@@ -213,7 +213,8 @@ void main() {
         expect(find.text('Auto-Build: Basic Parts'), findsOneWidget);
         expect(find.text('Auto-Build: Intermediate'), findsOneWidget);
         expect(find.text('Auto-Build: Complex'), findsOneWidget);
-        expect(find.text('per product'), findsNWidgets(3));
+        expect(find.text('Auto-Build: Retail'), findsOneWidget);
+        expect(find.text('per product'), findsNWidgets(4));
       });
     });
   });

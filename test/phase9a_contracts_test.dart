@@ -250,6 +250,20 @@ void main() {
           createdAt: DateTime.now(),
         );
 
+        // Pre-saturate slots with unfulfillable contract so _processContractsTick does not generate a random second contract
+        final dummyContract = CorporateContract(
+          id: 'dummy_unfulfillable_slot',
+          clientId: 'apex_telecom',
+          title: 'Dummy Order',
+          description: 'Test',
+          contractType: ContractType.manufacturing,
+          requiredProducts: const {'quantum_computer': 9999},
+          cashReward: 1.0,
+          repReward: 1,
+          expiresAt: DateTime.now().add(const Duration(minutes: 30)),
+          createdAt: DateTime.now(),
+        );
+        gameService.addContractForTest(dummyContract);
         gameService.addContractForTest(contract);
         gameService.addProductToInventory('box', 10);
         gameService.setAutoShipRetail(true);
@@ -280,6 +294,20 @@ void main() {
           createdAt: DateTime.now(),
         );
 
+        // Pre-saturate slots with unfulfillable contract so _processContractsTick does not generate a random second contract
+        final dummyContract = CorporateContract(
+          id: 'dummy_unfulfillable_slot_2',
+          clientId: 'apex_telecom',
+          title: 'Dummy Order',
+          description: 'Test',
+          contractType: ContractType.manufacturing,
+          requiredProducts: const {'quantum_computer': 9999},
+          cashReward: 1.0,
+          repReward: 1,
+          expiresAt: DateTime.now().add(const Duration(minutes: 30)),
+          createdAt: DateTime.now(),
+        );
+        gameService.addContractForTest(dummyContract);
         gameService.addContractForTest(retailContract);
         gameService.addProductToInventory('box', 10);
         gameService.setAutoShipRetail(false);
