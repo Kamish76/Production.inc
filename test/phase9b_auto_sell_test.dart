@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:game1/models/game_state.dart';
+import 'package:game1/models/game_models.dart';
 import 'package:game1/services/game_persistence_service.dart';
 import 'package:game1/services/production_game_service.dart';
 import 'package:game1/widgets/machine_card.dart';
@@ -354,26 +355,30 @@ void main() {
         expect(gameService.state.money, 100.0);
       });
 
-      test('Consumes ZERO fleet slots (no ShippingOrder created)', () {
+      test('Dispatches ShippingOrder taking 1 fleet slot', () {
         gameService.setAutoSellMachineCount(3);
         gameService.setAutoSellThroughputLevel(2);
         gameService.setAutoSellEnabled(true);
+        gameService.setProductAutoSellWhitelist('box', true);
         gameService.addProductToInventory('box', 10);
 
         expect(gameService.state.activeShippingOrders.length, 0);
 
         gameService.processAutoSellTickForTest(force: true);
 
-        // 3 machines * 2 throughput = 6 boxes sold directly
+        // 3 machines * 2 throughput = 6 boxes dispatched
         expect(gameService.state.products['box'], 4);
-        // Shipping orders must remain completely untouched (0 fleet slots)
-        expect(gameService.state.activeShippingOrders.length, 0);
+        // Shipping order created taking 1 fleet slot
+        expect(gameService.state.activeShippingOrders.length, 1);
+        expect(gameService.state.activeShippingOrders.first.items.first.productId, 'box');
+        expect(gameService.state.activeShippingOrders.first.items.first.quantity, 6);
       });
 
-      test('Only sells finished products and strictly skips raw materials', () {
+      test('Only sells whitelisted finished products and strictly skips raw materials', () {
         gameService.setAutoSellMachineCount(5);
         gameService.setAutoSellThroughputLevel(2); // Capacity = 10
         gameService.setAutoSellEnabled(true);
+        gameService.setProductAutoSellWhitelist('box', true);
 
         // Add raw materials and some finished products
         gameService.addMaterialToInventory('cardboard', 50);
@@ -396,11 +401,14 @@ void main() {
         expect(gameService.state.materials['plastic'], initialPlastic);
       });
 
-      test('Prioritizes lowest-tier products first (basicParts -> intermediate -> complex -> retail)', () {
+      test('Prioritizes lowest-tier products first among whitelisted products', () {
         gameService.setAutoSellMachineCount(1);
         gameService.setAutoSellThroughputLevel(5); // Capacity = 5 units
         gameService.setAutoSellEnabled(true);
         gameService.setMoney(0.0);
+        gameService.setProductAutoSellWhitelist('box', true);
+        gameService.setProductAutoSellWhitelist('display_screen', true);
+        gameService.setProductAutoSellWhitelist('speaker', true);
 
         // Box: basicParts (Tier 1), sellPrice = 4.0
         // Display Screen: intermediate (Tier 2), sellPrice = 77.0
@@ -419,14 +427,16 @@ void main() {
         expect(gameService.state.products['display_screen'], 2);
         expect(gameService.state.products['speaker'], 2);
 
-        // Revenue: (3 * 4.0) + (2 * 77.0) = 12.0 + 154.0 = 166.0
-        expect(gameService.state.money, 166.0);
+        // Dispatched order with revenue: (3 * 4.0) + (2 * 77.0) = 12.0 + 154.0 = 166.0
+        expect(gameService.state.activeShippingOrders.length, 1);
+        expect(gameService.state.activeShippingOrders.first.totalRevenue, 166.0);
       });
 
-      test('Directly increases money by quantity * sellPrice without shipping delays', () {
+      test('Dispatches order which awards revenue upon delivery', () {
         gameService.setAutoSellMachineCount(2);
         gameService.setAutoSellThroughputLevel(1); // Capacity = 2 units
         gameService.setAutoSellEnabled(true);
+        gameService.setProductAutoSellWhitelist('box', true);
         gameService.setMoney(100.0);
 
         gameService.addProductToInventory('box', 5); // Box sell price is 4.0
@@ -434,6 +444,24 @@ void main() {
         gameService.processAutoSellTickForTest(force: true);
 
         expect(gameService.state.products['box'], 3);
+        expect(gameService.state.activeShippingOrders.length, 1);
+
+        // Simulate order completion
+        final order = gameService.state.activeShippingOrders.first;
+        final completedOrder = ShippingOrder(
+          id: order.id,
+          items: order.items,
+          startTime: DateTime.now().subtract(const Duration(minutes: 5)),
+          totalShippingTime: order.totalShippingTime,
+          totalRevenue: order.totalRevenue,
+        );
+        gameService.testSetState(
+          gameService.state.copyWith(
+            activeShippingOrders: [completedOrder],
+          ),
+        );
+        gameService.updateProductions();
+
         // 2 * 4.0 = +8.0 cash
         expect(gameService.state.money, 108.0);
       });
@@ -442,6 +470,7 @@ void main() {
         gameService.setAutoSellMachineCount(5);
         gameService.setAutoSellThroughputLevel(10); // Capacity = 50 units
         gameService.setAutoSellEnabled(true);
+        gameService.setProductAutoSellWhitelist('box', true);
         gameService.setMoney(0.0);
 
         gameService.addProductToInventory('box', 7);
@@ -450,14 +479,15 @@ void main() {
 
         // All 7 sold, 0 remaining
         expect(gameService.state.products['box'], isNull);
-        // 7 * 4.0 = 28.0 cash
-        expect(gameService.state.money, 28.0);
+        expect(gameService.state.activeShippingOrders.length, 1);
+        expect(gameService.state.activeShippingOrders.first.totalRevenue, 28.0);
       });
 
       test('_processAutoSellTick executes during updateProductions() without exceptions', () {
         gameService.setAutoSellMachineCount(1);
         gameService.setAutoSellThroughputLevel(2);
         gameService.setAutoSellEnabled(true);
+        gameService.setProductAutoSellWhitelist('box', true);
         gameService.addProductToInventory('box', 5);
 
         // Must run smoothly without throwing

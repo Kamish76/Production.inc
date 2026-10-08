@@ -96,6 +96,9 @@ class GameState {
   final int autoSellMachinesOwned; // Number of auto-sell dispatchers owned
   final bool autoSellEnabled; // Master on/off toggle for auto-sell dispatchers
   final int autoSellThroughputLevel; // Throughput level multiplier for auto-sell
+  final Set<String> autoSellWhitelistedProductIds; // Product IDs permitted to be automatically sold
+  final bool autoSellBatchDispatch; // Auto-dispatch assembled batches via shipping fleet
+  final bool autoSellFulfillContracts; // Auto-fulfill eligible B2B corporate contracts
 
   // Factory Tier progression state (Phase 1)
   final int factoryTier; // Current factory license tier (1: Garage, 2: Light Assembly, 3: Precision, 4: Megafactory)
@@ -148,6 +151,9 @@ class GameState {
     this.autoSellMachinesOwned = 0,
     this.autoSellEnabled = false,
     this.autoSellThroughputLevel = 1,
+    this.autoSellWhitelistedProductIds = const {},
+    this.autoSellBatchDispatch = true,
+    this.autoSellFulfillContracts = true,
     this.factoryTier = 1, // Default to Tier 1: Garage Workshop
     this.fleetTier = 1, // Default to Tier 1: Courier Bikes
     this.clientReputation = const {},
@@ -193,6 +199,9 @@ class GameState {
     int? autoSellMachinesOwned,
     bool? autoSellEnabled,
     int? autoSellThroughputLevel,
+    Set<String>? autoSellWhitelistedProductIds,
+    bool? autoSellBatchDispatch,
+    bool? autoSellFulfillContracts,
     int? factoryTier,
     int? fleetTier,
     Map<String, int>? clientReputation,
@@ -242,6 +251,12 @@ class GameState {
       autoSellEnabled: autoSellEnabled ?? this.autoSellEnabled,
       autoSellThroughputLevel:
           autoSellThroughputLevel ?? this.autoSellThroughputLevel,
+      autoSellWhitelistedProductIds:
+          autoSellWhitelistedProductIds ?? this.autoSellWhitelistedProductIds,
+      autoSellBatchDispatch:
+          autoSellBatchDispatch ?? this.autoSellBatchDispatch,
+      autoSellFulfillContracts:
+          autoSellFulfillContracts ?? this.autoSellFulfillContracts,
       factoryTier: factoryTier ?? this.factoryTier,
       fleetTier: fleetTier ?? this.fleetTier,
       clientReputation: clientReputation ?? this.clientReputation,
@@ -580,6 +595,9 @@ class GameState {
       'autoSellMachinesOwned': autoSellMachinesOwned,
       'autoSellEnabled': autoSellEnabled,
       'autoSellThroughputLevel': autoSellThroughputLevel,
+      'autoSellWhitelistedProductIds': autoSellWhitelistedProductIds.toList(),
+      'autoSellBatchDispatch': autoSellBatchDispatch,
+      'autoSellFulfillContracts': autoSellFulfillContracts,
       'factoryTier': factoryTier,
       'fleetTier': fleetTier,
       'clientReputation': clientReputation,
@@ -695,6 +713,18 @@ class GameState {
       autoSellThroughputLevel: json['autoSellThroughputLevel'] as int? ??
           json['auto_sell_throughput_level'] as int? ??
           1,
+      autoSellWhitelistedProductIds:
+          (json['autoSellWhitelistedProductIds'] as List<dynamic>? ??
+                  json['auto_sell_whitelisted_product_ids'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toSet() ??
+          const {},
+      autoSellBatchDispatch: json['autoSellBatchDispatch'] as bool? ??
+          json['auto_sell_batch_dispatch'] as bool? ??
+          true,
+      autoSellFulfillContracts: json['autoSellFulfillContracts'] as bool? ??
+          json['auto_sell_fulfill_contracts'] as bool? ??
+          true,
       factoryTier: json['factoryTier'] as int? ??
           json['factory_tier'] as int? ??
           1,

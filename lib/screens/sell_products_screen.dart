@@ -11,6 +11,8 @@ import '../widgets/item_card.dart';
 import '../widgets/game_dialog.dart';
 import '../widgets/client_reputation_bar.dart';
 import '../widgets/shipping_manifest_tray.dart';
+import '../widgets/auto_sell_setup_sheet.dart';
+import '../widgets/auto_sell_status_card.dart';
 import '../models/game_data.dart';
 
 class SellProductsScreen extends StatefulWidget {
@@ -179,6 +181,10 @@ class _SellProductsScreenState extends State<SellProductsScreen>
     );
   }
 
+  void _openAutomationSetup(BuildContext context) {
+    AutoSellSetupSheet.show(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ProductionGameService>(
@@ -199,6 +205,53 @@ class _SellProductsScreenState extends State<SellProductsScreen>
                   icon: Icons.attach_money,
                   title: 'Sales Hub',
                   iconColor: Colors.purple[400]!,
+                  actions: [
+                    InkWell(
+                      onTap: () => _openAutomationSetup(context),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: gameService.state.autoSellEnabled && gameService.state.autoSellMachinesOwned > 0
+                              ? Colors.purple.withValues(alpha: 0.25)
+                              : Colors.white10,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: gameService.state.autoSellEnabled && gameService.state.autoSellMachinesOwned > 0
+                                ? Colors.purple[300]!
+                                : Colors.white24,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.smart_toy_outlined,
+                              size: 16,
+                              color: gameService.state.autoSellEnabled && gameService.state.autoSellMachinesOwned > 0
+                                  ? Colors.purple[300]
+                                  : Colors.white60,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              gameService.state.autoSellEnabled && gameService.state.autoSellMachinesOwned > 0
+                                  ? 'Auto: ON'
+                                  : 'Auto: OFF',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: gameService.state.autoSellEnabled && gameService.state.autoSellMachinesOwned > 0
+                                    ? Colors.purple[200]
+                                    : Colors.white60,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.tune, size: 14, color: Colors.white54),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
 
                 // Main TabBar: Storefront | B2B Contracts
@@ -283,6 +336,11 @@ class _SellProductsScreenState extends State<SellProductsScreen>
           gameService: gameService,
           mode: FinancialDisplayMode.portfolio,
         ),
+
+        const SizedBox(height: 8),
+
+        // Phase 12: Sales Hub Selling Automation Live Status Card
+        const AutoSellStatusCard(),
 
         const SizedBox(height: 12),
 

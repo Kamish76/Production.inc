@@ -14,7 +14,7 @@ class GamePersistenceService {
     static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      14; // Updated for Phase A / v2.0: Persistent redeemed codes
+      15; // Updated for Phase 12: Sales Hub Selling Automation Setup
 
   Database? _database;
 
@@ -201,6 +201,10 @@ class GamePersistenceService {
       case 14:
         // Phase A migrations - Persistent Redeem Codes System
         await _migrateToVersion14(db);
+        break;
+      case 15:
+        // Phase 12 migrations - Sales Hub Selling Automation (Whitelist and modes)
+        await _migrateToVersion15(db);
         break;
       default:
         if (kDebugMode) {
@@ -897,6 +901,55 @@ class GamePersistenceService {
     }
   }
 
+  /// Migration to version 15 (Phase 12: Sales Hub Selling Automation Setup)
+  Future<void> _migrateToVersion15(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 15 (Selling Automation Setup)');
+    }
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS auto_sell_whitelist (
+          product_id TEXT PRIMARY KEY
+        )
+      ''');
+      if (kDebugMode) print('Created auto_sell_whitelist table');
+    } catch (e) {
+      if (kDebugMode) print('Migration warning (auto_sell_whitelist): $e');
+    }
+
+    final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+    final existingColumns =
+        tableInfo.map((row) => row['name'] as String).toSet();
+
+    if (!existingColumns.contains('auto_sell_batch_dispatch')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_sell_batch_dispatch INTEGER NOT NULL DEFAULT 1
+        ''');
+        if (kDebugMode) print('Added column: auto_sell_batch_dispatch');
+      } catch (e) {
+        if (kDebugMode) print('Migration warning (auto_sell_batch_dispatch): $e');
+      }
+    }
+
+    if (!existingColumns.contains('auto_sell_fulfill_contracts')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_sell_fulfill_contracts INTEGER NOT NULL DEFAULT 1
+        ''');
+        if (kDebugMode) print('Added column: auto_sell_fulfill_contracts');
+      } catch (e) {
+        if (kDebugMode) print('Migration warning (auto_sell_fulfill_contracts): $e');
+      }
+    }
+
+    if (kDebugMode) {
+      print('Migration to version 15 completed');
+    }
+  }
+
   /// Create backup of existing database before major operations
   Future<void> _createDatabaseBackup() async {
     if (_database == null) return;
@@ -1047,6 +1100,8 @@ class GamePersistenceService {
         auto_sell_machines_owned INTEGER NOT NULL DEFAULT 0,
         auto_sell_enabled INTEGER NOT NULL DEFAULT 0,
         auto_sell_throughput_level INTEGER NOT NULL DEFAULT 1,
+        auto_sell_batch_dispatch INTEGER NOT NULL DEFAULT 1,
+        auto_sell_fulfill_contracts INTEGER NOT NULL DEFAULT 1,
         factory_tier INTEGER NOT NULL DEFAULT 1,
         fleet_tier INTEGER NOT NULL DEFAULT 1,
         research_points INTEGER NOT NULL DEFAULT 0,
@@ -1253,6 +1308,13 @@ class GamePersistenceService {
       )
     ''');
 
+    // Auto-sell whitelist table (Phase 12: Sales Hub Selling Automation)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS auto_sell_whitelist (
+        product_id TEXT PRIMARY KEY
+      )
+    ''');
+
     // Insert initial game state record
     await db.insert('game_state', {
       'id': 1,
@@ -1263,6 +1325,8 @@ class GamePersistenceService {
       'auto_sell_machines_owned': 0,
       'auto_sell_enabled': 0,
       'auto_sell_throughput_level': 1,
+      'auto_sell_batch_dispatch': 1,
+      'auto_sell_fulfill_contracts': 1,
       'research_points': 0,
       'overclock_active': 0,
       'maintenance_wear': 1.0,
@@ -1292,6 +1356,7 @@ class GamePersistenceService {
       await _saveTechnologies(txn, state);
       await _savePrestigePerks(txn, state);
       await _saveRedeemedCodes(txn, state);
+      await _saveAutoSellWhitelist(txn, state);
     });
   }
 
@@ -1312,6 +1377,8 @@ class GamePersistenceService {
         'auto_sell_machines_owned': state.autoSellMachinesOwned,
         'auto_sell_enabled': state.autoSellEnabled ? 1 : 0,
         'auto_sell_throughput_level': state.autoSellThroughputLevel,
+        'auto_sell_batch_dispatch': state.autoSellBatchDispatch ? 1 : 0,
+        'auto_sell_fulfill_contracts': state.autoSellFulfillContracts ? 1 : 0,
         'factory_tier': state.factoryTier,
         'fleet_tier': state.fleetTier,
         'research_points': state.researchPoints,
@@ -1576,6 +1643,8 @@ class GamePersistenceService {
     final autoSellMachinesOwned = (row['auto_sell_machines_owned'] as int?) ?? 0;
     final autoSellEnabled = ((row['auto_sell_enabled'] as int?) ?? 0) == 1;
     final autoSellThroughputLevel = (row['auto_sell_throughput_level'] as int?) ?? 1;
+    final autoSellBatchDispatch = ((row['auto_sell_batch_dispatch'] as int?) ?? 1) == 1;
+    final autoSellFulfillContracts = ((row['auto_sell_fulfill_contracts'] as int?) ?? 1) == 1;
     final factoryTier = (row['factory_tier'] as int?) ?? 1;
     final fleetTier = (row['fleet_tier'] as int?) ?? 1;
     final researchPoints = (row['research_points'] as int?) ?? 0;
@@ -1601,6 +1670,7 @@ class GamePersistenceService {
     final techLevels = await _loadTechnologies(db);
     final unlockedPrestigePerks = await _loadPrestigePerks(db);
     final redeemedCodes = await _loadRedeemedCodes(db);
+    final autoSellWhitelistedProductIds = await _loadAutoSellWhitelist(db);
 
     return GameState(
       money: money,
@@ -1628,6 +1698,9 @@ class GamePersistenceService {
       autoSellMachinesOwned: autoSellMachinesOwned,
       autoSellEnabled: autoSellEnabled,
       autoSellThroughputLevel: autoSellThroughputLevel,
+      autoSellWhitelistedProductIds: autoSellWhitelistedProductIds,
+      autoSellBatchDispatch: autoSellBatchDispatch,
+      autoSellFulfillContracts: autoSellFulfillContracts,
       factoryTier: factoryTier,
       fleetTier: fleetTier,
       corporateContracts: corporateContracts,
@@ -1993,6 +2066,39 @@ class GamePersistenceService {
     }
   }
 
+  /// Save auto-sell whitelist table (Phase 12)
+  Future<void> _saveAutoSellWhitelist(
+    DatabaseExecutor txn,
+    GameState state,
+  ) async {
+    try {
+      await txn.delete('auto_sell_whitelist');
+      for (final productId in state.autoSellWhitelistedProductIds) {
+        await txn.insert('auto_sell_whitelist', {
+          'product_id': productId,
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error saving auto-sell whitelist: $e');
+      }
+    }
+  }
+
+  /// Load auto-sell whitelist from database (Phase 12)
+  Future<Set<String>> _loadAutoSellWhitelist(Database db) async {
+    try {
+      final result = await db.query('auto_sell_whitelist');
+      final set = <String>{};
+      for (final row in result) {
+        set.add(row['product_id'] as String);
+      }
+      return set;
+    } catch (_) {
+      return {};
+    }
+  }
+
   /// Check if a save file exists
   Future<bool> hasSaveData() async {
     final db = await database;
@@ -2233,6 +2339,10 @@ class GamePersistenceService {
       if (_dirtyTables.contains('redeemed_codes')) {
         await _saveRedeemedCodes(txn, state);
       }
+
+      if (_dirtyTables.contains('auto_sell_whitelist')) {
+        await _saveAutoSellWhitelist(txn, state);
+      }
     });
 
     if (kDebugMode) {
@@ -2251,6 +2361,11 @@ class GamePersistenceService {
         {
           'money': state.money,
           'last_saved': DateTime.now().millisecondsSinceEpoch,
+          'auto_sell_machines_owned': state.autoSellMachinesOwned,
+          'auto_sell_enabled': state.autoSellEnabled ? 1 : 0,
+          'auto_sell_throughput_level': state.autoSellThroughputLevel,
+          'auto_sell_batch_dispatch': state.autoSellBatchDispatch ? 1 : 0,
+          'auto_sell_fulfill_contracts': state.autoSellFulfillContracts ? 1 : 0,
           'factory_tier': state.factoryTier,
           'fleet_tier': state.fleetTier,
           'research_points': state.researchPoints,
@@ -2286,6 +2401,7 @@ class GamePersistenceService {
       await _saveTechnologies(txn, state);
       await _savePrestigePerks(txn, state);
       await _saveRedeemedCodes(txn, state);
+      await _saveAutoSellWhitelist(txn, state);
     });
   }
 

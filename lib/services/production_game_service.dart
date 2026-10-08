@@ -7,6 +7,7 @@ import 'dart:math' as math;
 import '../models/game_state.dart';
 import '../models/game_data.dart';
 import '../models/game_models.dart';
+import '../models/auto_sell_preview.dart';
 import '../constants/game_constants.dart';
 import 'game_persistence_service.dart';
 import 'product_unlock_service.dart';
@@ -1670,9 +1671,8 @@ class ProductionGameService extends ChangeNotifier {
 
   DateTime? _lastAutoSellTick;
 
-  /// Process auto-sell tick if enabled and interval has elapsed (Phase 9B: Auto-Sell Dispatchers)
-  /// Automatically sells `machines * throughputLevel` units of finished products per tick directly for cash.
-  /// Consumes 0 fleet slots, targets only finished products in _state.products, and prioritizes lowest-tier products first.
+  /// Process auto-sell tick if enabled and interval has elapsed (Phase 12: Sales Hub Selling Automation)
+  /// Dispatches real logistics shipments taking 1 fleet slot, respecting whitelist and carrier limits.
   void _processAutoSellTick({bool force = false}) {
     // Skip if not enabled or no machines owned
     if (!_state.autoSellEnabled || _state.autoSellMachinesOwned <= 0) {
@@ -1687,96 +1687,365 @@ class ProductionGameService extends ChangeNotifier {
       }
     }
 
-    // Capacity calculation: machines * throughputLevel
-    int unitsToSellRemaining =
-        _state.autoSellMachinesOwned * _state.autoSellThroughputLevel;
-    if (unitsToSellRemaining <= 0) {
+    // Check fleet slot capacity
+    if (!_state.canShipMore(_state.activeShippingOrders.length)) {
       return;
     }
 
-    // Finished products only: targets _state.products, strictly ignores raw materials in _state.materials
-    // Prioritize lowest-tier finished products first (basicParts -> intermediate -> complex -> retail)
-    const tierOrder = [
-      ProductLevel.basicParts,
-      ProductLevel.intermediate,
-      ProductLevel.complex,
-      ProductLevel.retail,
-    ];
-
-    final productsCopy = Map<String, int>.from(_state.products);
-    double totalRevenue = 0.0;
-    int totalUnitsSold = 0;
-
-    for (final tier in tierOrder) {
-      if (unitsToSellRemaining <= 0) break;
-
-      final tierProducts =
-          GameData.products.where((p) => p.levelId == tier).toList();
-
-      for (final product in tierProducts) {
-        if (unitsToSellRemaining <= 0) break;
-
-        final available = productsCopy[product.id] ?? 0;
-        if (available <= 0) continue;
-
-        final quantityToSell = math.min(unitsToSellRemaining, available);
-        final newQuantity = available - quantityToSell;
-        if (newQuantity <= 0) {
-          productsCopy.remove(product.id);
-        } else {
-          productsCopy[product.id] = newQuantity;
+    // 1. Prioritize B2B Corporate Contract fulfillment if enabled
+    if (_state.autoSellFulfillContracts) {
+      for (final contract in _state.corporateContracts) {
+        if (contract.status != ContractStatus.available || contract.isExpired) {
+          continue;
         }
-
-        unitsToSellRemaining -= quantityToSell;
-        totalUnitsSold += quantityToSell;
-        totalRevenue += quantityToSell * product.sellPrice;
+        if (contract.canFulfill(_state.products)) {
+          shipContract(contract.id);
+          _lastAutoSellTick = now;
+          if (kDebugMode) {
+            GameLogger.info(
+              'Auto-sell tick: fulfilled contract ${contract.title}',
+            );
+          }
+          return;
+        }
       }
     }
 
-    if (unitsToSellRemaining > 0) {
-      for (final entry in Map<String, int>.from(productsCopy).entries) {
-        if (unitsToSellRemaining <= 0) break;
-        final available = entry.value;
-        if (available <= 0) continue;
+    // 2. Dispatch Storefront Batch if enabled
+    if (_state.autoSellBatchDispatch) {
+      final fleet = currentFleetTier;
+      int maxBatchUnits = math.min(
+        _state.autoSellMachinesOwned * _state.autoSellThroughputLevel,
+        fleet.maxPayloadUnits,
+      );
 
-        final prod =
-            GameData.products.where((p) => p.id == entry.key).firstOrNull;
-        final sellPrice = prod?.sellPrice ?? 4.0;
-        final quantityToSell = math.min(unitsToSellRemaining, available);
-        final newQuantity = available - quantityToSell;
-        if (newQuantity <= 0) {
-          productsCopy.remove(entry.key);
-        } else {
-          productsCopy[entry.key] = newQuantity;
-        }
+      final eligibleProductIds = _state.autoSellWhitelistedProductIds
+          .where((id) => (_state.products[id] ?? 0) > 0)
+          .toList();
 
-        unitsToSellRemaining -= quantityToSell;
-        totalUnitsSold += quantityToSell;
-        totalRevenue += quantityToSell * sellPrice;
+      if (eligibleProductIds.isEmpty) {
+        return;
       }
-    }
 
-    _lastAutoSellTick = now;
+      const tierOrder = [
+        ProductLevel.basicParts,
+        ProductLevel.intermediate,
+        ProductLevel.complex,
+        ProductLevel.retail,
+      ];
+      final batch = <String, int>{};
+      for (final tier in tierOrder) {
+        if (maxBatchUnits <= 0) break;
+        final tierProds = GameData.products.where((p) => p.levelId == tier);
+        for (final prod in tierProds) {
+          if (maxBatchUnits <= 0) break;
+          if (!_state.autoSellWhitelistedProductIds.contains(prod.id)) continue;
+          final available = _state.products[prod.id] ?? 0;
+          if (available <= 0) continue;
+          if (batch.length >= fleet.maxProductVarieties &&
+              !batch.containsKey(prod.id)) {
+            continue;
+          }
+          final take = math.min(
+            available,
+            math.min(maxBatchUnits, fleet.maxUnitsPerType),
+          );
+          if (take > 0) {
+            batch[prod.id] = take;
+            maxBatchUnits -= take;
+          }
+        }
+      }
 
-    if (totalUnitsSold > 0) {
-      final newMoney =
-          _addRevenueWithOverflowProtection(_state.money, totalRevenue);
+      if (maxBatchUnits > 0) {
+        for (final id in _state.autoSellWhitelistedProductIds) {
+          if (maxBatchUnits <= 0) break;
+          if (batch.containsKey(id)) continue;
+          final available = _state.products[id] ?? 0;
+          if (available <= 0) continue;
+          if (batch.length >= fleet.maxProductVarieties) continue;
+          final take = math.min(
+            available,
+            math.min(maxBatchUnits, fleet.maxUnitsPerType),
+          );
+          if (take > 0) {
+            batch[id] = take;
+            maxBatchUnits -= take;
+          }
+        }
+      }
+
+      if (batch.isEmpty) {
+        return;
+      }
+
+      double maxBaseTime = 0.0;
+      int totalUnits = 0;
+      double totalRevenue = 0.0;
+      final shippingItems = <ShippingItem>[];
+      final newProducts = Map<String, int>.from(_state.products);
+
+      for (final entry in batch.entries) {
+        final product = GameData.products.firstWhere(
+          (p) => p.id == entry.key,
+          orElse: () => GameData.products.first,
+        );
+        if (product.baseShippingTimeSeconds > maxBaseTime) {
+          maxBaseTime = product.baseShippingTimeSeconds;
+        }
+        totalUnits += entry.value;
+        totalRevenue += product.sellPrice * entry.value;
+        shippingItems.add(
+          ShippingItem(productId: entry.key, quantity: entry.value),
+        );
+
+        final remaining = (newProducts[entry.key] ?? 0) - entry.value;
+        if (remaining <= 0) {
+          newProducts.remove(entry.key);
+        } else {
+          newProducts[entry.key] = remaining;
+        }
+      }
+
+      final baseTransitTime =
+          maxBaseTime * math.sqrt(1.0 + 0.04 * (totalUnits - 1));
+      double effectiveSpeedMultiplier =
+          fleet.speedMultiplier * _state.logisticsSpeedMultiplier;
+      final hasActiveContract = _state.corporateContracts.any(
+        (c) =>
+            c.status == ContractStatus.active ||
+            c.status == ContractStatus.shipping,
+      );
+      if (hasActiveContract && _state.hasCorporateContractFastTrack) {
+        effectiveSpeedMultiplier *=
+            ResearchConstants.logisticsContractSpeedBonus;
+      }
+
+      final totalShippingTime =
+          (baseTransitTime / effectiveSpeedMultiplier).clamp(1.0, 86400.0);
+
+      final orderId = DateTime.now().microsecondsSinceEpoch.toString();
+      final shippingOrder = ShippingOrder(
+        id: orderId,
+        items: shippingItems,
+        startTime: DateTime.now(),
+        totalShippingTime: totalShippingTime,
+        totalRevenue: totalRevenue,
+      );
+
+      final newShippingOrders =
+          List<ShippingOrder>.from(_state.activeShippingOrders)..add(shippingOrder);
 
       _state = _state.copyWith(
-        products: productsCopy,
-        money: newMoney,
+        products: newProducts,
+        activeShippingOrders: newShippingOrders,
       );
 
       _persistenceService.markDirty('products');
+      _persistenceService.markDirty('shipping');
       notifyListeners();
       _saveGameStateOptimized();
+      _startUpdateTimer();
+      _lastAutoSellTick = now;
 
       if (kDebugMode) {
         GameLogger.info(
-          'Auto-sell tick: sold $totalUnitsSold units directly for \$${totalRevenue.toStringAsFixed(2)} (0 fleet slots)',
+          'Auto-sell tick: dispatched batch $orderId with $totalUnits units for \$${totalRevenue.toStringAsFixed(2)} taking 1 fleet slot',
         );
       }
     }
+  }
+
+  /// Generates real-time information for the UI on the next action selling automation will take
+  AutoSellNextAction getAutoSellNextAction() {
+    if (!_state.autoSellEnabled || _state.autoSellMachinesOwned <= 0) {
+      return AutoSellNextAction(
+        actionType: AutoSellActionType.idleDisabled,
+        title: 'Selling Automation Paused',
+        subtitle: _state.autoSellMachinesOwned <= 0
+            ? 'Purchase auto-sell dispatchers in Machines tab'
+            : 'Master power switch is turned off',
+        stagedItems: const {},
+        estimatedRevenue: 0.0,
+        estimatedTransitSeconds: 0.0,
+        isReady: false,
+      );
+    }
+
+    if (!_state.canShipMore(_state.activeShippingOrders.length)) {
+      return AutoSellNextAction(
+        actionType: AutoSellActionType.waitingFleet,
+        title: 'Couriers In Transit',
+        subtitle:
+            'Waiting for available fleet slot (${_state.activeShippingOrders.length}/${_state.maxSimultaneousShipments})',
+        stagedItems: const {},
+        estimatedRevenue: 0.0,
+        estimatedTransitSeconds: 0.0,
+        isReady: false,
+      );
+    }
+
+    // Check B2B corporate contracts if enabled
+    if (_state.autoSellFulfillContracts) {
+      for (final contract in _state.corporateContracts) {
+        if (contract.status == ContractStatus.available &&
+            !contract.isExpired &&
+            contract.canFulfill(_state.products)) {
+          final transitSeconds = _calculateContractShippingTime(contract);
+          return AutoSellNextAction(
+            actionType: AutoSellActionType.b2bContract,
+            title: 'Fulfill B2B Contract',
+            subtitle: 'Priority corporate fulfillment: ${contract.title}',
+            stagedItems: Map<String, int>.from(contract.requiredProducts),
+            estimatedRevenue: contract.cashReward,
+            estimatedTransitSeconds: transitSeconds,
+            isReady: true,
+            clientOrBatchName: contract.title,
+          );
+        }
+      }
+    }
+
+    // Check Storefront batch dispatch if enabled
+    if (_state.autoSellBatchDispatch) {
+      final fleet = currentFleetTier;
+      int maxBatchUnits = math.min(
+        _state.autoSellMachinesOwned * _state.autoSellThroughputLevel,
+        fleet.maxPayloadUnits,
+      );
+
+      final eligibleProductIds = _state.autoSellWhitelistedProductIds
+          .where((id) => (_state.products[id] ?? 0) > 0)
+          .toList();
+
+      if (eligibleProductIds.isEmpty) {
+        return AutoSellNextAction(
+          actionType: AutoSellActionType.waitingStock,
+          title: 'Waiting for Inventory',
+          subtitle: _state.autoSellWhitelistedProductIds.isEmpty
+              ? 'No products selected in whitelist'
+              : 'No whitelisted products currently in stock',
+          stagedItems: const {},
+          estimatedRevenue: 0.0,
+          estimatedTransitSeconds: 0.0,
+          isReady: false,
+        );
+      }
+
+      const tierOrder = [
+        ProductLevel.basicParts,
+        ProductLevel.intermediate,
+        ProductLevel.complex,
+        ProductLevel.retail,
+      ];
+      final batch = <String, int>{};
+      for (final tier in tierOrder) {
+        if (maxBatchUnits <= 0) break;
+        final tierProds = GameData.products.where((p) => p.levelId == tier);
+        for (final prod in tierProds) {
+          if (maxBatchUnits <= 0) break;
+          if (!_state.autoSellWhitelistedProductIds.contains(prod.id)) continue;
+          final available = _state.products[prod.id] ?? 0;
+          if (available <= 0) continue;
+          if (batch.length >= fleet.maxProductVarieties &&
+              !batch.containsKey(prod.id)) {
+            continue;
+          }
+          final take = math.min(
+            available,
+            math.min(maxBatchUnits, fleet.maxUnitsPerType),
+          );
+          if (take > 0) {
+            batch[prod.id] = take;
+            maxBatchUnits -= take;
+          }
+        }
+      }
+
+      if (maxBatchUnits > 0) {
+        for (final id in _state.autoSellWhitelistedProductIds) {
+          if (maxBatchUnits <= 0) break;
+          if (batch.containsKey(id)) continue;
+          final available = _state.products[id] ?? 0;
+          if (available <= 0) continue;
+          if (batch.length >= fleet.maxProductVarieties) continue;
+          final take = math.min(
+            available,
+            math.min(maxBatchUnits, fleet.maxUnitsPerType),
+          );
+          if (take > 0) {
+            batch[id] = take;
+            maxBatchUnits -= take;
+          }
+        }
+      }
+
+      if (batch.isEmpty) {
+        return const AutoSellNextAction(
+          actionType: AutoSellActionType.waitingStock,
+          title: 'Waiting for Inventory',
+          subtitle: 'Available inventory exceeds carrier constraints',
+          stagedItems: {},
+          estimatedRevenue: 0.0,
+          estimatedTransitSeconds: 0.0,
+          isReady: false,
+        );
+      }
+
+      double maxBaseTime = 0.0;
+      int totalUnits = 0;
+      double totalRevenue = 0.0;
+
+      for (final entry in batch.entries) {
+        final product = GameData.products.firstWhere(
+          (p) => p.id == entry.key,
+          orElse: () => GameData.products.first,
+        );
+        if (product.baseShippingTimeSeconds > maxBaseTime) {
+          maxBaseTime = product.baseShippingTimeSeconds;
+        }
+        totalUnits += entry.value;
+        totalRevenue += product.sellPrice * entry.value;
+      }
+
+      final baseTransitTime =
+          maxBaseTime * math.sqrt(1.0 + 0.04 * (totalUnits - 1));
+      double effectiveSpeedMultiplier =
+          fleet.speedMultiplier * _state.logisticsSpeedMultiplier;
+      final hasActiveContract = _state.corporateContracts.any(
+        (c) =>
+            c.status == ContractStatus.active ||
+            c.status == ContractStatus.shipping,
+      );
+      if (hasActiveContract && _state.hasCorporateContractFastTrack) {
+        effectiveSpeedMultiplier *=
+            ResearchConstants.logisticsContractSpeedBonus;
+      }
+      final totalShippingTime =
+          (baseTransitTime / effectiveSpeedMultiplier).clamp(1.0, 86400.0);
+
+      return AutoSellNextAction(
+        actionType: AutoSellActionType.batchDispatch,
+        title: 'Storefront Batch Dispatch',
+        subtitle:
+            'Assembling $totalUnits units (${batch.length} ${batch.length == 1 ? "type" : "types"}) for courier dispatch',
+        stagedItems: batch,
+        estimatedRevenue: totalRevenue,
+        estimatedTransitSeconds: totalShippingTime,
+        isReady: true,
+        clientOrBatchName: 'Storefront Courier Batch',
+      );
+    }
+
+    return const AutoSellNextAction(
+      actionType: AutoSellActionType.waitingStock,
+      title: 'Waiting for Inventory',
+      subtitle: 'No dispatch modes currently enabled',
+      stagedItems: {},
+      estimatedRevenue: 0.0,
+      estimatedTransitSeconds: 0.0,
+      isReady: false,
+    );
   }
 
   /// Trigger auto-sell tick directly for testing (Phase 9B)
@@ -2667,6 +2936,99 @@ class ProductionGameService extends ChangeNotifier {
   void resetAutoSellTickTimer() {
     _lastAutoSellTick = null;
   }
+
+  // =========================================================================
+  // Selling Automation Setup & Whitelist API (Phase 12)
+  // =========================================================================
+
+  /// Toggle product auto-sell whitelist inclusion
+  void toggleProductAutoSellWhitelist(String productId) {
+    final set = Set<String>.from(_state.autoSellWhitelistedProductIds);
+    if (set.contains(productId)) {
+      set.remove(productId);
+    } else {
+      set.add(productId);
+    }
+    _state = _state.copyWith(autoSellWhitelistedProductIds: set);
+    _persistenceService.markDirty('auto_sell_whitelist');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Explicitly set product auto-sell whitelist permission
+  void setProductAutoSellWhitelist(String productId, bool allowed) {
+    final set = Set<String>.from(_state.autoSellWhitelistedProductIds);
+    if (allowed) {
+      set.add(productId);
+    } else {
+      set.remove(productId);
+    }
+    _state = _state.copyWith(autoSellWhitelistedProductIds: set);
+    _persistenceService.markDirty('auto_sell_whitelist');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Whitelist all products (or clear whitelist)
+  void setAllProductsAutoSellWhitelist(bool allowAll) {
+    final Set<String> newSet =
+        allowAll ? GameData.products.map((p) => p.id).toSet() : const {};
+    _state = _state.copyWith(autoSellWhitelistedProductIds: newSet);
+    _persistenceService.markDirty('auto_sell_whitelist');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Whitelist or unwhitelist all products in a specific tier
+  void setTierAutoSellWhitelist(ProductLevel tier, bool allowed) {
+    final set = Set<String>.from(_state.autoSellWhitelistedProductIds);
+    final tierProducts = GameData.products.where((p) => p.levelId == tier);
+    for (final prod in tierProducts) {
+      if (allowed) {
+        set.add(prod.id);
+      } else {
+        set.remove(prod.id);
+      }
+    }
+    _state = _state.copyWith(autoSellWhitelistedProductIds: set);
+    _persistenceService.markDirty('auto_sell_whitelist');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Check if a product is allowed in auto-sell whitelist
+  bool isProductWhitelistedForAutoSell(String productId) {
+    return _state.autoSellWhitelistedProductIds.contains(productId);
+  }
+
+  /// Enable or disable storefront batch auto-dispatch
+  void setAutoSellBatchDispatch(bool enabled) {
+    _state = _state.copyWith(autoSellBatchDispatch: enabled);
+    _persistenceService.markDirty('game_state');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Enable or disable corporate B2B contracts auto-fulfillment
+  void setAutoSellFulfillContracts(bool enabled) {
+    _state = _state.copyWith(autoSellFulfillContracts: enabled);
+    _persistenceService.markDirty('game_state');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Toggle storefront batch auto-dispatch
+  void toggleAutoSellBatchDispatch() {
+    setAutoSellBatchDispatch(!_state.autoSellBatchDispatch);
+  }
+
+  /// Toggle corporate B2B contracts auto-fulfillment
+  void toggleAutoSellFulfillContracts() {
+    setAutoSellFulfillContracts(!_state.autoSellFulfillContracts);
+  }
+
+  /// Alias for master toggle
+  void toggleAutoSellMaster() => toggleAutoSell();
 
   /// Set auto-buy intake level directly (for testing/dev)
   void setAutoBuyIntakeLevel(int level) {

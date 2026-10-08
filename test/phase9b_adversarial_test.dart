@@ -162,6 +162,7 @@ void main() {
         gameService.setAutoSellMachineCount(2);
         gameService.setAutoSellThroughputLevel(2); // Capacity = 4 items
         gameService.setAutoSellEnabled(true);
+        gameService.setProductAutoSellWhitelist('box', true);
         gameService.setMoney(10.0);
 
         gameService.addMaterialToInventory('cardboard', 100);
@@ -177,14 +178,16 @@ void main() {
         expect(gameService.state.materials['cardboard'], 100);
         expect(gameService.state.materials['plastic'], 100);
 
-        // Revenue: 4 * 4.0 = +16.0 -> total 26.0
-        expect(gameService.state.money, 26.0);
+        // Dispatched shipping order taking 1 fleet slot with $16.0 revenue
+        expect(gameService.state.activeShippingOrders.length, 1);
+        expect(gameService.state.activeShippingOrders.first.totalRevenue, 16.0);
       });
 
       test('Resilience: Unknown product ID gracefully falls back to default price without error', () {
         gameService.setAutoSellMachineCount(1);
         gameService.setAutoSellThroughputLevel(2);
         gameService.setAutoSellEnabled(true);
+        gameService.setProductAutoSellWhitelist('custom_gadget_99', true);
         gameService.setMoney(0.0);
 
         // Add unknown custom product directly into products map
@@ -192,9 +195,10 @@ void main() {
 
         expect(() => gameService.processAutoSellTickForTest(force: true), returnsNormally);
 
-        // Should have sold 2 units using fallback price ($4.0)
+        // Should have sold 2 units using fallback price ($4.0) into a shipping order
         expect(gameService.state.products['custom_gadget_99'], 3);
-        expect(gameService.state.money, 8.0); // 2 * 4.0
+        expect(gameService.state.activeShippingOrders.length, 1);
+        expect(gameService.state.activeShippingOrders.first.totalRevenue, 8.0); // 2 * 4.0
       });
     });
 
@@ -221,6 +225,25 @@ void main() {
         gameService.setAutoSellThroughputLevel(3); // Capacity = 3 units per tick
         gameService.setAutoSellEnabled(true);
         gameService.setMoney(0.0);
+        gameService.setProductAutoSellWhitelist(basicProd.id, true);
+        gameService.setProductAutoSellWhitelist(interProd.id, true);
+        gameService.setProductAutoSellWhitelist(complexProd.id, true);
+        gameService.setProductAutoSellWhitelist(retailProd.id, true);
+
+        void completeLatestOrder() {
+          final order = gameService.state.activeShippingOrders.first;
+          final completedOrder = ShippingOrder(
+            id: order.id,
+            items: order.items,
+            startTime: DateTime.now().subtract(const Duration(minutes: 5)),
+            totalShippingTime: order.totalShippingTime,
+            totalRevenue: order.totalRevenue,
+          );
+          gameService.testSetState(
+            gameService.state.copyWith(activeShippingOrders: [completedOrder]),
+          );
+          gameService.updateProductions();
+        }
 
         // Load 5 units of each tier
         gameService.addProductToInventory(basicProd.id, 5);
@@ -230,6 +253,7 @@ void main() {
 
         // Step 1: Capacity 3. Should sell 3 basicParts only!
         gameService.processAutoSellTickForTest(force: true);
+        completeLatestOrder();
         expect(gameService.state.products[basicProd.id], 2);
         expect(gameService.state.products[interProd.id], 5);
         expect(gameService.state.products[complexProd.id], 5);
@@ -239,6 +263,7 @@ void main() {
 
         // Step 2: Capacity 3. Should sell remaining 2 basicParts, then 1 intermediate!
         gameService.processAutoSellTickForTest(force: true);
+        completeLatestOrder();
         expect(gameService.state.products[basicProd.id], isNull); // 0 remaining
         expect(gameService.state.products[interProd.id], 4); // 5 - 1 = 4
         expect(gameService.state.products[complexProd.id], 5);
@@ -248,6 +273,7 @@ void main() {
 
         // Step 3: Capacity 3. Should sell 3 intermediate (leaving 1 intermediate).
         gameService.processAutoSellTickForTest(force: true);
+        completeLatestOrder();
         expect(gameService.state.products[basicProd.id], isNull);
         expect(gameService.state.products[interProd.id], 1); // 4 - 3 = 1
         expect(gameService.state.products[complexProd.id], 5);
@@ -257,6 +283,7 @@ void main() {
 
         // Step 4: Capacity 3. Should sell 1 intermediate (exhausting Tier 2), then 2 complex!
         gameService.processAutoSellTickForTest(force: true);
+        completeLatestOrder();
         expect(gameService.state.products[basicProd.id], isNull);
         expect(gameService.state.products[interProd.id], isNull); // 0 remaining
         expect(gameService.state.products[complexProd.id], 3); // 5 - 2 = 3
@@ -266,6 +293,7 @@ void main() {
 
         // Step 5: Capacity 3. Should sell remaining 3 complex (exhausting Tier 3)!
         gameService.processAutoSellTickForTest(force: true);
+        completeLatestOrder();
         expect(gameService.state.products[basicProd.id], isNull);
         expect(gameService.state.products[interProd.id], isNull);
         expect(gameService.state.products[complexProd.id], isNull); // 0 remaining
@@ -275,12 +303,15 @@ void main() {
 
         // Step 6: Capacity 3. Should sell 3 retail!
         gameService.processAutoSellTickForTest(force: true);
+        completeLatestOrder();
         expect(gameService.state.products[retailProd.id], 2); // 5 - 3 = 2
+        expect(gameService.state.products[retailProd.id], 2);
         expectedMoney += 3 * retailProd.sellPrice;
         expect(gameService.state.money, closeTo(expectedMoney, 0.001));
 
         // Step 7: Capacity 3. Should sell remaining 2 retail (exhausting Tier 4). Excess capacity 1 does not crash.
         gameService.processAutoSellTickForTest(force: true);
+        completeLatestOrder();
         expect(gameService.state.products[retailProd.id], isNull);
         expect(gameService.state.products.isEmpty, isTrue);
         expectedMoney += 2 * retailProd.sellPrice;
@@ -306,9 +337,14 @@ void main() {
           final throughput = entry['throughput']!;
           final expectedCap = entry['expectedCap']!;
 
+          gameService.testSetState(gameService.state.copyWith(
+            fleetTier: 4,
+            activeShippingOrders: [],
+          ));
           gameService.setAutoSellMachineCount(machines);
           gameService.setAutoSellThroughputLevel(throughput);
           gameService.setAutoSellEnabled(true);
+          gameService.setProductAutoSellWhitelist('box', true);
           gameService.setMoney(0.0);
 
           // Add more products to inventory
@@ -329,9 +365,11 @@ void main() {
       });
 
       test('Inventory smaller than capacity sells exactly available amount and never overshoots', () {
+        gameService.testSetState(gameService.state.copyWith(fleetTier: 4));
         gameService.setAutoSellMachineCount(5);
         gameService.setAutoSellThroughputLevel(10); // Capacity = 50 units
         gameService.setAutoSellEnabled(true);
+        gameService.setProductAutoSellWhitelist('box', true);
         gameService.setMoney(0.0);
 
         gameService.addProductToInventory('box', 17); // 17 available
@@ -340,8 +378,8 @@ void main() {
 
         expect(gameService.state.products['box'], isNull);
         expect(gameService.state.products.isEmpty, isTrue);
-        // Revenue: 17 * 4.0 = 68.0
-        expect(gameService.state.money, 68.0);
+        expect(gameService.state.activeShippingOrders.length, 1);
+        expect(gameService.state.activeShippingOrders.first.totalRevenue, 68.0);
       });
     });
 
@@ -349,10 +387,11 @@ void main() {
     // Challenge 5: Fleet Slots Verification & Shipping Order Isolation
     // =========================================================================
     group('5. Fleet Slots & Shipping Order Isolation', () {
-      test('Active shipping orders are completely unmolested by auto-sell ticks', () {
+      test('Active shipping orders are preserved and fleet slots are checked', () {
         gameService.setAutoSellMachineCount(3);
         gameService.setAutoSellThroughputLevel(2);
         gameService.setAutoSellEnabled(true);
+        gameService.setProductAutoSellWhitelist('box', true);
         gameService.addProductToInventory('box', 15);
 
         // Create an existing manual shipping order in flight
@@ -364,50 +403,59 @@ void main() {
           totalRevenue: 20.0,
         );
 
-        // Verify simulated state with active shipping order
-        final stateWithShip = gameService.state.copyWith(
-          activeShippingOrders: [activeOrder],
+        // Put active shipping order into state (1 out of 2 slots used)
+        gameService.testSetState(
+          gameService.state.copyWith(activeShippingOrders: [activeOrder]),
         );
-        expect(stateWithShip.activeShippingOrders.length, 1);
-        gameService.resetAutoSellTickTimer();
+        expect(gameService.state.activeShippingOrders.length, 1);
+
         // Trigger auto-sell
         gameService.processAutoSellTickForTest(force: true);
 
-        // Verify activeShippingOrders is still exactly 0 from default state (auto-sell never adds ShippingOrder)
-        expect(gameService.state.activeShippingOrders.length, 0);
+        // Auto-sell dispatched into the remaining fleet slot (2 total active orders)
+        expect(gameService.state.activeShippingOrders.length, 2);
+        // First manual order preserved intact
+        expect(gameService.state.activeShippingOrders.first.id, 'manual_ship_001');
 
-        // Now test with simulated saturated shipping orders
-        final saturatedState = gameService.state.copyWith(
-          activeShippingOrders: [
-            activeOrder,
-            ShippingOrder(
-              id: 'manual_ship_002',
-              items: const [ShippingItem(productId: 'display_screen', quantity: 2)],
-              startTime: DateTime.now(),
-              totalShippingTime: 300.0,
-              totalRevenue: 154.0,
-            ),
-          ],
-        );
+        // Now test when fleet is 100% saturated (2/2 slots)
+        gameService.resetAutoSellTickTimer();
+        gameService.processAutoSellTickForTest(force: true);
 
-        // Auto-sell operates directly even when fleet is 100% busy
-        expect(saturatedState.activeShippingOrders.length, 2);
+        // Fleet is full: auto-sell waits and does not add a 3rd order
+        expect(gameService.state.activeShippingOrders.length, 2);
       });
 
-      test('Auto-sell awards money instantaneously without shipping delay', () {
+      test('Auto-sell awards money upon shipping order delivery', () {
         gameService.setAutoSellMachineCount(1);
         gameService.setAutoSellThroughputLevel(1);
         gameService.setAutoSellEnabled(true);
+        gameService.setProductAutoSellWhitelist('box', true);
         gameService.setMoney(0.0);
         gameService.addProductToInventory('box', 1);
 
         // Before tick
         expect(gameService.state.money, 0.0);
 
-        // Tick
+        // Tick dispatches order
         gameService.processAutoSellTickForTest(force: true);
 
-        // Instant cash delivery: 1 box = $4.00 immediately
+        expect(gameService.state.activeShippingOrders.length, 1);
+
+        // Complete order upon arrival
+        final order = gameService.state.activeShippingOrders.first;
+        final completedOrder = ShippingOrder(
+          id: order.id,
+          items: order.items,
+          startTime: DateTime.now().subtract(const Duration(minutes: 5)),
+          totalShippingTime: order.totalShippingTime,
+          totalRevenue: order.totalRevenue,
+        );
+        gameService.testSetState(
+          gameService.state.copyWith(activeShippingOrders: [completedOrder]),
+        );
+        gameService.updateProductions();
+
+        // 1 box = $4.00 delivered
         expect(gameService.state.money, 4.0);
         expect(gameService.state.activeShippingOrders.isEmpty, isTrue);
       });
@@ -514,11 +562,15 @@ void main() {
         gameService.setAutoSellMachineCount(2);
         gameService.setAutoSellThroughputLevel(1);
         gameService.setAutoSellEnabled(true);
+        gameService.setAutoSellFulfillContracts(false);
+        gameService.setProductAutoSellWhitelist('box', true);
         gameService.addProductToInventory('box', 20);
 
         // Tick 1 (initial run): executes because _lastAutoSellTick was null
         gameService.processAutoSellTickForTest(force: false);
         expect(gameService.state.products['box'], 18); // 2 units sold
+        // Clear order to keep fleet slot open for next test step
+        gameService.testSetState(gameService.state.copyWith(activeShippingOrders: []));
 
         // Immediate subsequent tick without force: should be blocked by 5s cooldown!
         gameService.processAutoSellTickForTest(force: false);
