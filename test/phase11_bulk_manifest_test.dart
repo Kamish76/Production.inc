@@ -448,5 +448,334 @@ void main() {
         expect(gameService.getStagedQuantity(p1.id), greaterThan(0));
       });
     });
+
+    // =========================================================================
+    // Group 7: Manifest-Only Sales & Accidental Sell Prevention
+    // =========================================================================
+    group('7. Manifest-Only Sales & Accidental Sell Prevention', () {
+      testWidgets('Tapping the card body in ItemCardMode.sell does NOT sell products or decrease inventory', (tester) async {
+        final p1 = GameData.products[0];
+        gameService.testSetState(
+          gameService.state.copyWith(
+            unlockedProducts: {p1.id},
+            products: {p1.id: 50},
+            money: 1000.0,
+            fleetTier: 1,
+          ),
+        );
+
+        bool detailsCallbackCalled = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ChangeNotifierProvider<ProductionGameService>.value(
+                value: gameService,
+                child: Consumer<ProductionGameService>(
+                  builder: (context, service, _) => ItemCard(
+                    item: p1,
+                    gameService: service,
+                    mode: ItemCardMode.sell,
+                    onProductDetails: () {
+                      detailsCallbackCalled = true;
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Tap the card body
+        await tester.tap(find.byType(ItemCard));
+        await tester.pumpAndSettle();
+
+        // Details callback was invoked
+        expect(detailsCallbackCalled, isTrue);
+
+        // Inventory is intact (never sold)
+        expect(gameService.state.getProductCount(p1.id), 50);
+        expect(gameService.state.money, 1000.0);
+        expect(gameService.stagedManifest.isEmpty, isTrue);
+        expect(gameService.state.activeShippingOrders.isEmpty, isTrue);
+      });
+
+      testWidgets('Tapping card body without onProductDetails opens details sheet without selling', (tester) async {
+        final p1 = GameData.products[0];
+        gameService.testSetState(
+          gameService.state.copyWith(
+            unlockedProducts: {p1.id},
+            products: {p1.id: 50},
+            money: 1000.0,
+            fleetTier: 1,
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ChangeNotifierProvider<ProductionGameService>.value(
+                value: gameService,
+                child: Consumer<ProductionGameService>(
+                  builder: (context, service, _) => ItemCard(
+                    item: p1,
+                    gameService: service,
+                    mode: ItemCardMode.sell,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Tap the card body
+        await tester.tap(find.byType(ItemCard));
+        await tester.pumpAndSettle();
+
+        // Bottom sheet details opened
+        expect(find.byType(BottomSheet), findsOneWidget);
+
+        // Inventory and money are intact
+        expect(gameService.state.getProductCount(p1.id), 50);
+        expect(gameService.state.money, 1000.0);
+        expect(gameService.stagedManifest.isEmpty, isTrue);
+        expect(gameService.state.activeShippingOrders.isEmpty, isTrue);
+      });
+
+      testWidgets('Shortcut buttons (1, 5, Max) update preference only without staging units into manifest', (tester) async {
+        final p1 = GameData.products[0];
+        gameService.testSetState(
+          gameService.state.copyWith(
+            unlockedProducts: {p1.id},
+            products: {p1.id: 50},
+            money: 1000.0,
+            fleetTier: 1, // Courier Bikes: maxUnitsPerType = 10, maxPayload = 20
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ChangeNotifierProvider<ProductionGameService>.value(
+                value: gameService,
+                child: Consumer<ProductionGameService>(
+                  builder: (context, service, _) => ItemCard(
+                    item: p1,
+                    gameService: service,
+                    mode: ItemCardMode.sell,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // 1. Tap "1" shortcut - updates preference only, does NOT stage
+        await tester.tap(find.text('1'));
+        await tester.pump();
+        expect(gameService.getSellQuantityPreference(p1.id), 1);
+        expect(gameService.getStagedQuantity(p1.id), 0);
+        expect(gameService.state.getProductCount(p1.id), 50); // Unchanged!
+        expect(gameService.state.money, 1000.0); // No instant cash!
+        expect(gameService.state.activeShippingOrders.isEmpty, isTrue);
+
+        // 2. Tap "5" shortcut - updates preference to 5 without staging
+        await tester.tap(find.text('5'));
+        await tester.pump();
+        expect(gameService.getSellQuantityPreference(p1.id), 5);
+        expect(gameService.getStagedQuantity(p1.id), 0);
+        expect(gameService.state.getProductCount(p1.id), 50); // Unchanged!
+        expect(gameService.state.money, 1000.0); // Unchanged!
+        expect(gameService.state.activeShippingOrders.isEmpty, isTrue);
+
+        // 3. Tap "Max" shortcut - updates preference to maxUnitsPerType (10) without staging
+        await tester.tap(find.text('Max'));
+        await tester.pump();
+        expect(gameService.getSellQuantityPreference(p1.id), 10);
+        expect(gameService.getStagedQuantity(p1.id), 0);
+        expect(gameService.state.getProductCount(p1.id), 50); // Unchanged!
+        expect(gameService.state.money, 1000.0); // Unchanged!
+        expect(gameService.state.activeShippingOrders.isEmpty, isTrue);
+      });
+
+      testWidgets('+ Manifest button stages active preference quantity and stepper adjusts by preference amount', (tester) async {
+        final p1 = GameData.products[0];
+        gameService.testSetState(
+          gameService.state.copyWith(
+            unlockedProducts: {p1.id},
+            products: {p1.id: 50},
+            money: 1000.0,
+            fleetTier: 1, // Courier Bikes: maxUnitsPerType = 10, maxPayload = 20
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ChangeNotifierProvider<ProductionGameService>.value(
+                value: gameService,
+                child: Consumer<ProductionGameService>(
+                  builder: (context, service, _) => ItemCard(
+                    item: p1,
+                    gameService: service,
+                    mode: ItemCardMode.sell,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Select '5' preference
+        await tester.tap(find.text('5'));
+        await tester.pump();
+        expect(gameService.getSellQuantityPreference(p1.id), 5);
+        expect(gameService.getStagedQuantity(p1.id), 0);
+
+        // Tap '+ Manifest' to stage preference amount (5)
+        await tester.tap(find.text('+ Manifest'));
+        await tester.pump();
+        expect(gameService.getStagedQuantity(p1.id), 5);
+        expect(find.text('🛒 5 Staged'), findsOneWidget);
+
+        // Tap stepper '+' (Icon Icons.add) -> increments by preference (5), reaching 10 (max per type)
+        await tester.tap(find.byIcon(Icons.add));
+        await tester.pump();
+        expect(gameService.getStagedQuantity(p1.id), 10);
+        expect(find.text('🛒 10 Staged'), findsOneWidget);
+
+        // Tap stepper '-' (Icon Icons.remove) -> decrements by preference (5), down to 5
+        await tester.tap(find.byIcon(Icons.remove));
+        await tester.pump();
+        expect(gameService.getStagedQuantity(p1.id), 5);
+        expect(find.text('🛒 5 Staged'), findsOneWidget);
+
+        // Tap stepper '-' again -> decrements by preference (5), down to 0 (removed from manifest)
+        await tester.tap(find.byIcon(Icons.remove));
+        await tester.pump();
+        expect(gameService.getStagedQuantity(p1.id), 0);
+        expect(find.text('+ Manifest'), findsOneWidget);
+      });
+
+      testWidgets('Dispatch button in ShippingManifestTray remains the only way to dispatch and sell staged goods', (tester) async {
+        final p1 = GameData.products[0];
+        gameService.testSetState(
+          gameService.state.copyWith(
+            unlockedProducts: {p1.id},
+            products: {p1.id: 50},
+            money: 1000.0,
+            fleetTier: 1, // Courier Bikes
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ChangeNotifierProvider<ProductionGameService>.value(
+                value: gameService,
+                child: Column(
+                  children: [
+                    Consumer<ProductionGameService>(
+                      builder: (context, service, _) => ItemCard(
+                        item: p1,
+                        gameService: service,
+                        mode: ItemCardMode.sell,
+                      ),
+                    ),
+                    const Spacer(),
+                    const ShippingManifestTray(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Stage 5 units via selecting 5 and tapping + Manifest
+        await tester.tap(find.text('5'));
+        await tester.pump();
+        await tester.tap(find.text('+ Manifest'));
+        await tester.pump();
+
+        // Goods are staged; inventory is still 50, money is still 1000.0
+        expect(gameService.getStagedQuantity(p1.id), 5);
+        expect(gameService.state.getProductCount(p1.id), 50);
+        expect(gameService.state.money, 1000.0);
+        expect(gameService.state.activeShippingOrders.isEmpty, isTrue);
+
+        // ShippingManifestTray has appeared with Dispatch button
+        final dispatchButton = find.text('🚚 Dispatch');
+        expect(dispatchButton, findsOneWidget);
+
+        // Tap Dispatch
+        await tester.tap(dispatchButton);
+        await tester.pump();
+
+        // Now inventory is deducted (50 - 5 = 45), manifest is cleared, active shipping order created
+        expect(gameService.state.getProductCount(p1.id), 45);
+        expect(gameService.stagedManifest.isEmpty, isTrue);
+        expect(gameService.state.activeShippingOrders.length, 1);
+        final order = gameService.state.activeShippingOrders.first;
+        expect(order.items.first.productId, p1.id);
+        expect(order.items.first.quantity, 5);
+        expect(order.totalRevenue, p1.sellPrice * 5);
+      });
+
+      testWidgets('Shortcut buttons visually highlight based on current sell quantity preference', (tester) async {
+        final p1 = GameData.products[0];
+        gameService.testSetState(
+          gameService.state.copyWith(
+            unlockedProducts: {p1.id},
+            products: {p1.id: 50},
+            money: 1000.0,
+            fleetTier: 1, // Courier bikes (maxUnitsPerType = 10)
+          ),
+        );
+
+        // Set preference to 5
+        gameService.setSellQuantityPreference(p1.id, 5);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ChangeNotifierProvider<ProductionGameService>.value(
+                value: gameService,
+                child: Consumer<ProductionGameService>(
+                  builder: (context, service, _) => ItemCard(
+                    item: p1,
+                    gameService: service,
+                    mode: ItemCardMode.sell,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // When preference is 5, 5 button is selected (Color(0xFF5A2A82))
+        final inkWidgets = tester.widgetList<Ink>(find.byType(Ink));
+        expect(
+          inkWidgets.any((ink) {
+            final decoration = ink.decoration as BoxDecoration?;
+            return decoration?.color == const Color(0xFF5A2A82);
+          }),
+          isTrue,
+        );
+
+        // Tap 1 button
+        await tester.tap(find.text('1'));
+        await tester.pump();
+
+        // Preference updated to 1
+        expect(gameService.getSellQuantityPreference(p1.id), 1);
+
+        // Tap Max button
+        await tester.tap(find.text('Max'));
+        await tester.pump();
+
+        // Preference updated to maxUnitsPerType (10)
+        expect(gameService.getSellQuantityPreference(p1.id), 10);
+      });
+    });
   });
 }

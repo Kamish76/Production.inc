@@ -69,7 +69,7 @@ class ItemCard extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onTap: _handleCardTap,
+        onTap: () => _handleCardTap(context),
         onLongPress: () => _showDetailsSheet(context),
         child: Container(
           padding: const EdgeInsets.all(8),
@@ -356,12 +356,12 @@ class ItemCard extends StatelessWidget {
 
   Widget _buildSellButtons(BuildContext context) {
     final available = gameService.state.getProductCount(_product.id);
-    final currentPreference = gameService.getSellQuantityPreference(_product.id);
-    final maxTierQty = gameService.currentFleetTier.maxUnitsPerType;
     final stagedQty = gameService.getStagedQuantity(_product.id);
     final fleet = gameService.currentFleetTier;
+    final maxTierQty = fleet.maxUnitsPerType;
+    final currentPreference = gameService.getSellQuantityPreference(_product.id);
     final canStageMore = stagedQty < available &&
-        stagedQty < fleet.maxUnitsPerType &&
+        stagedQty < maxTierQty &&
         gameService.manifestTotalUnits < fleet.maxPayloadUnits &&
         (stagedQty > 0 || gameService.manifestVarietyCount < fleet.maxProductVarieties);
 
@@ -371,15 +371,42 @@ class ItemCard extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _buildQuantitySelectorButton(context, 1, currentPreference, available),
+              child: _buildManifestShortcutButton(
+                context: context,
+                label: '1',
+                quantity: 1,
+                isMax: false,
+                isSelected: currentPreference == 1,
+                available: available,
+                stagedQty: stagedQty,
+                fleet: fleet,
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildQuantitySelectorButton(context, 5, currentPreference, available),
+              child: _buildManifestShortcutButton(
+                context: context,
+                label: '5',
+                quantity: 5,
+                isMax: false,
+                isSelected: currentPreference == 5,
+                available: available,
+                stagedQty: stagedQty,
+                fleet: fleet,
+              ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildQuantitySelectorButton(context, maxTierQty, currentPreference, available),
+              child: _buildManifestShortcutButton(
+                context: context,
+                label: 'Max',
+                quantity: maxTierQty,
+                isMax: true,
+                isSelected: currentPreference >= fleet.maxUnitsPerType,
+                available: available,
+                stagedQty: stagedQty,
+                fleet: fleet,
+              ),
             ),
           ],
         ),
@@ -398,12 +425,7 @@ class ItemCard extends StatelessWidget {
     if (stagedQty <= 0) {
       return InkWell(
         onTap: canStageMore && available > 0
-            ? () {
-                HapticFeedback.lightImpact();
-                final pref = gameService.getSellQuantityPreference(_product.id);
-                final qtyToAdd = math.min(pref, available);
-                gameService.addToManifest(_product.id, math.max(1, qtyToAdd));
-              }
+            ? () => _handleAddToManifestFromPreference(context)
             : null,
         borderRadius: BorderRadius.circular(6),
         child: Container(
@@ -464,10 +486,7 @@ class ItemCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           InkWell(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              gameService.updateManifestQuantity(_product.id, stagedQty - 1);
-            },
+            onTap: () => _handleManifestStepperDecrement(context, stagedQty),
             borderRadius: const BorderRadius.horizontal(left: Radius.circular(5)),
             child: const Padding(
               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -488,10 +507,7 @@ class ItemCard extends StatelessWidget {
           ),
           InkWell(
             onTap: canStageMore
-                ? () {
-                    HapticFeedback.lightImpact();
-                    gameService.updateManifestQuantity(_product.id, stagedQty + 1);
-                  }
+                ? () => _handleManifestStepperIncrement(context, stagedQty, available)
                 : null,
             borderRadius: const BorderRadius.horizontal(right: Radius.circular(5)),
             child: Padding(
@@ -508,51 +524,80 @@ class ItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildQuantitySelectorButton(
-    BuildContext context,
-    int quantity,
-    int currentPreference,
-    int available,
-  ) {
-    final revenue = _product.sellPrice * quantity;
-    final isSelected = currentPreference == quantity;
-    final withinCarrierCap = quantity <= gameService.currentFleetTier.maxUnitsPerType &&
-        quantity <= gameService.currentFleetTier.maxPayloadUnits;
-    final canSell = available >= quantity && withinCarrierCap;
+  Widget _buildManifestShortcutButton({
+    required BuildContext context,
+    required String label,
+    required int quantity,
+    required bool isMax,
+    required bool isSelected,
+    required int available,
+    required int stagedQty,
+    required game.LogisticsFleetTier fleet,
+  }) {
+    final double revenue = isMax
+        ? _product.sellPrice * fleet.maxUnitsPerType
+        : _product.sellPrice * quantity;
 
-    return GestureDetector(
-      onTap: () => _handleSellQuantitySelection(context, quantity),
-      child: Container(
-        height: 36,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (canSell ? Colors.green[700] : Colors.orange[700])
-              : (canSell ? Colors.blue[800] : Colors.grey[700]),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isSelected
-                ? Colors.white.withValues(alpha: 0.8)
-                : Colors.transparent,
-            width: 2,
+    final Color backgroundColor;
+    final Color borderColor;
+    final double borderWidth;
+    final Color labelColor;
+    final Color subtitleColor;
+
+    if (isSelected) {
+      // Vibrant illuminated purple with prominent active border
+      backgroundColor = const Color(0xFF5A2A82);
+      borderColor = Colors.white.withValues(alpha: 0.85);
+      borderWidth = 1.8;
+      labelColor = Colors.white;
+      subtitleColor = Colors.purple[100]!;
+    } else {
+      backgroundColor = const Color(0xFF282545);
+      borderColor = Colors.purple[400]!.withValues(alpha: 0.6);
+      borderWidth = 1.2;
+      labelColor = Colors.purple[100]!;
+      subtitleColor = Colors.purple[200]!.withValues(alpha: 0.8);
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _handleSellQuantityPreferenceSelection(quantity, isMax: isMax),
+        borderRadius: BorderRadius.circular(6),
+        child: Ink(
+          height: 36,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: borderColor,
+              width: borderWidth,
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Sell $quantity',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: labelColor,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            Text(
-              '\$${revenue.toStringAsFixed(2)}',
-              style: const TextStyle(fontSize: 8),
-              textAlign: TextAlign.center,
-            ),
-          ],
+              const SizedBox(height: 1),
+              Text(
+                '+\$${revenue.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: subtitleColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -826,6 +871,10 @@ class ItemCard extends StatelessWidget {
         final cost = _material.buyPrice * gameService.getBuyQuantityPreference(_material.id);
         return gameService.state.canAfford(cost) ? Colors.green : Colors.red;
       case ItemCardMode.sell:
+        final staged = gameService.getStagedQuantity(_product.id);
+        if (staged > 0) {
+          return Colors.purpleAccent;
+        }
         final stockLevel = _getStockLevel();
         return _getStockLevelColor(stockLevel);
       case ItemCardMode.build:
@@ -870,7 +919,7 @@ class ItemCard extends StatelessWidget {
   // Note: production queuing now handled by service; removed _isInProduction guard.
 
   // Action handlers
-  void _handleCardTap() {
+  void _handleCardTap(BuildContext context) {
     switch (mode) {
       case ItemCardMode.buy:
         final currentPreference = gameService.getBuyQuantityPreference(_material.id);
@@ -883,18 +932,11 @@ class ItemCard extends StatelessWidget {
         }
         break;
       case ItemCardMode.sell:
-        final quantity = gameService.getSellQuantityPreference(_product.id);
-        final available = gameService.state.getProductCount(_product.id);
-        final fleet = gameService.currentFleetTier;
-        if (quantity > fleet.maxUnitsPerType || quantity > fleet.maxPayloadUnits) {
-          HapticFeedback.lightImpact();
-          break;
-        }
-        if (available >= quantity) {
-          HapticFeedback.mediumImpact();
-          gameService.sellProduct(_product.id, quantity);
+        HapticFeedback.lightImpact();
+        if (onProductDetails != null) {
+          onProductDetails!();
         } else {
-          HapticFeedback.lightImpact();
+          _showDetailsSheet(context);
         }
         break;
       case ItemCardMode.build:
@@ -923,33 +965,216 @@ class ItemCard extends StatelessWidget {
     }
   }
 
-  void _handleSellQuantitySelection(BuildContext context, int quantity) {
-    final available = gameService.state.getProductCount(_product.id);
+  void _handleSellQuantityPreferenceSelection(int quantity, {bool isMax = false}) {
+    HapticFeedback.lightImpact();
     final fleet = gameService.currentFleetTier;
-    final withinCarrierCap = quantity <= fleet.maxUnitsPerType &&
-        quantity <= fleet.maxPayloadUnits;
+    final prefQty = isMax ? fleet.maxUnitsPerType : quantity;
+    gameService.setSellQuantityPreference(_product.id, prefQty);
+  }
 
-    if (!withinCarrierCap) {
+  void _handleAddToManifestFromPreference(BuildContext context) {
+    final available = gameService.state.getProductCount(_product.id);
+    if (available <= 0) {
       HapticFeedback.lightImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '⚠️ Exceeds ${fleet.name} capacity (max ${fleet.maxUnitsPerType} units/type).',
-          ),
-          backgroundColor: Colors.orange[800],
-          duration: const Duration(seconds: 2),
-        ),
-      );
       return;
     }
 
-    if (available >= quantity) {
-      HapticFeedback.mediumImpact();
-      gameService.sellProduct(_product.id, quantity);
+    final fleet = gameService.currentFleetTier;
+    final currentPreference = gameService.getSellQuantityPreference(_product.id);
+    final isMax = currentPreference >= fleet.maxUnitsPerType;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
+    if (isMax) {
+      final prevStaged = gameService.getStagedQuantity(_product.id);
+      gameService.setManifestMaxForProduct(_product.id);
+      final newStaged = gameService.getStagedQuantity(_product.id);
+      final success = newStaged > prevStaged;
+
+      if (success) {
+        HapticFeedback.mediumImpact();
+      } else {
+        HapticFeedback.lightImpact();
+        if (newStaged >= fleet.maxUnitsPerType) {
+          messenger?.hideCurrentSnackBar();
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(
+                '⚠️ Reached carrier per-type limit (${fleet.maxUnitsPerType} units for ${fleet.name}).',
+              ),
+              backgroundColor: Colors.orange[800],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else if (gameService.manifestTotalUnits >= fleet.maxPayloadUnits) {
+          messenger?.hideCurrentSnackBar();
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(
+                '⚠️ Reached carrier payload capacity (${fleet.maxPayloadUnits} units for ${fleet.name}).',
+              ),
+              backgroundColor: Colors.orange[800],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else if (gameService.manifestVarietyCount >= fleet.maxProductVarieties && prevStaged == 0) {
+          messenger?.hideCurrentSnackBar();
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(
+                '⚠️ Reached carrier variety limit (${fleet.maxProductVarieties} types for ${fleet.name}).',
+              ),
+              backgroundColor: Colors.orange[800],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } else {
+      final qtyToAdd = math.min(currentPreference, available);
+      final success = gameService.addToManifest(_product.id, qtyToAdd);
+      if (success) {
+        HapticFeedback.mediumImpact();
+      } else {
+        HapticFeedback.lightImpact();
+        final currentStaged = gameService.getStagedQuantity(_product.id);
+        if (currentStaged + qtyToAdd > fleet.maxUnitsPerType) {
+          messenger?.hideCurrentSnackBar();
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(
+                '⚠️ Exceeds carrier per-type limit (${fleet.maxUnitsPerType} units for ${fleet.name}).',
+              ),
+              backgroundColor: Colors.orange[800],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else if (gameService.manifestTotalUnits + qtyToAdd > fleet.maxPayloadUnits) {
+          messenger?.hideCurrentSnackBar();
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(
+                '⚠️ Exceeds carrier payload capacity (${fleet.maxPayloadUnits} units for ${fleet.name}).',
+              ),
+              backgroundColor: Colors.orange[800],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else if (gameService.manifestVarietyCount >= fleet.maxProductVarieties && currentStaged == 0) {
+          messenger?.hideCurrentSnackBar();
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(
+                '⚠️ Exceeds carrier variety limit (${fleet.maxProductVarieties} types for ${fleet.name}).',
+              ),
+              backgroundColor: Colors.orange[800],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  void _handleManifestStepperIncrement(BuildContext context, int stagedQty, int available) {
+    final fleet = gameService.currentFleetTier;
+    final currentPreference = gameService.getSellQuantityPreference(_product.id);
+    final isMax = currentPreference >= fleet.maxUnitsPerType;
+
+    if (isMax) {
+      final prevStaged = stagedQty;
+      gameService.setManifestMaxForProduct(_product.id);
+      final newStaged = gameService.getStagedQuantity(_product.id);
+      if (newStaged > prevStaged) {
+        HapticFeedback.lightImpact();
+      } else {
+        HapticFeedback.lightImpact();
+        final messenger = ScaffoldMessenger.maybeOf(context);
+        messenger?.hideCurrentSnackBar();
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text(
+              '⚠️ Already at maximum capacity (${fleet.maxUnitsPerType} units for ${fleet.name}).',
+            ),
+            backgroundColor: Colors.orange[800],
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    final stepQty = currentPreference;
+    final remainingInventory = available - stagedQty;
+    final remainingTypeCap = fleet.maxUnitsPerType - stagedQty;
+    final remainingPayloadCap = fleet.maxPayloadUnits - gameService.manifestTotalUnits;
+    final maxAddable = [remainingInventory, remainingTypeCap, remainingPayloadCap].reduce(math.min);
+
+    if (maxAddable <= 0) {
+      HapticFeedback.lightImpact();
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      messenger?.hideCurrentSnackBar();
+      if (remainingTypeCap <= 0) {
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text(
+              '⚠️ Reached carrier per-type limit (${fleet.maxUnitsPerType} units for ${fleet.name}).',
+            ),
+            backgroundColor: Colors.orange[800],
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else if (remainingPayloadCap <= 0) {
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text(
+              '⚠️ Reached carrier payload capacity (${fleet.maxPayloadUnits} units for ${fleet.name}).',
+            ),
+            backgroundColor: Colors.orange[800],
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    final toAdd = math.min(stepQty, maxAddable);
+    final targetQty = stagedQty + toAdd;
+    final success = gameService.updateManifestQuantity(_product.id, targetQty);
+    if (success) {
+      HapticFeedback.lightImpact();
+      if (toAdd < stepQty) {
+        final messenger = ScaffoldMessenger.maybeOf(context);
+        messenger?.hideCurrentSnackBar();
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text('⚠️ Added $toAdd units (carrier/inventory limit reached).'),
+            backgroundColor: Colors.orange[800],
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } else {
       HapticFeedback.lightImpact();
     }
-    gameService.setSellQuantityPreference(_product.id, quantity);
+  }
+
+  void _handleManifestStepperDecrement(BuildContext context, int stagedQty) {
+    HapticFeedback.lightImpact();
+    final fleet = gameService.currentFleetTier;
+    final currentPreference = gameService.getSellQuantityPreference(_product.id);
+    final isMax = currentPreference >= fleet.maxUnitsPerType;
+
+    if (isMax) {
+      gameService.removeFromManifest(_product.id);
+      return;
+    }
+
+    final stepQty = currentPreference;
+    if (stagedQty - stepQty <= 0) {
+      gameService.removeFromManifest(_product.id);
+    } else {
+      gameService.updateManifestQuantity(_product.id, stagedQty - stepQty);
+    }
   }
 
   void _handleBuildQuantitySelection(int quantity) {

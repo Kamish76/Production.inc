@@ -293,10 +293,11 @@ void main() {
           ),
         );
 
-        // At Tier 1: Sell 1, Sell 5, Sell 10
-        expect(find.text('Sell 1'), findsOneWidget);
-        expect(find.text('Sell 5'), findsOneWidget);
-        expect(find.text('Sell 10'), findsOneWidget);
+        // At Tier 1: 1, 5, Max (Max = 10 units = +$40.00)
+        expect(find.text('1'), findsOneWidget);
+        expect(find.text('5'), findsOneWidget);
+        expect(find.text('Max'), findsOneWidget);
+        expect(find.text('+\$40.00'), findsOneWidget);
 
         // Upgrade fleet to Tier 2 (Delivery Vans, max 20)
         await gameService.setFleetTierForDev(2);
@@ -312,10 +313,11 @@ void main() {
           ),
         );
 
-        // At Tier 2: Sell 1, Sell 5, Sell 20
-        expect(find.text('Sell 1'), findsOneWidget);
-        expect(find.text('Sell 5'), findsOneWidget);
-        expect(find.text('Sell 20'), findsOneWidget);
+        // At Tier 2: 1, 5, Max (Max = 20 units = +$80.00)
+        expect(find.text('1'), findsOneWidget);
+        expect(find.text('5'), findsOneWidget);
+        expect(find.text('Max'), findsOneWidget);
+        expect(find.text('+\$80.00'), findsOneWidget);
       });
     });
   });
