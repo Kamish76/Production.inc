@@ -7,6 +7,8 @@ import '../widgets/deconstruction_bay_card.dart';
 import '../widgets/prestige_card.dart';
 import '../widgets/machine_card.dart';
 import '../widgets/game_icon.dart';
+import '../widgets/lazy_indexed_stack.dart';
+import '../widgets/rnd_lab_beta_gate_view.dart';
 import 'settings_screen.dart';
 
 class ControlScreen extends StatefulWidget {
@@ -26,6 +28,7 @@ class _ControlScreenState extends State<ControlScreen> {
   Widget build(BuildContext context) {
     final gameService = Provider.of<ProductionGameService>(context);
     final canIPO = gameService.state.canInitiateIPO;
+    final isRnDUnlocked = gameService.isRnDLabUnlocked;
 
     return Material(
       child: Container(
@@ -94,6 +97,7 @@ class _ControlScreenState extends State<ControlScreen> {
                               icon: Icons.science,
                               label: 'R&D Lab',
                               isSelected: _selectedSection == 2,
+                              showBetaBadge: !isRnDUnlocked,
                               onTap: () => setState(() => _selectedSection = 2),
                             ),
                           ),
@@ -113,18 +117,16 @@ class _ControlScreenState extends State<ControlScreen> {
                   ],
                 ),
               ),
-              // Content area
+              // Content area (Lazy loaded)
               Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child:
-                      _selectedSection == 0
-                          ? _buildMachinesSection(context, gameService)
-                          : _selectedSection == 1
-                              ? _buildTiersSection(context, gameService)
-                              : _selectedSection == 2
-                                  ? _buildRnDLabSection(context, gameService)
-                                  : _buildPrestigeSection(context, gameService),
+                child: LazyIndexedStack(
+                  index: _selectedSection,
+                  builders: [
+                    (ctx) => _buildMachinesSection(ctx, gameService),
+                    (ctx) => _buildTiersSection(ctx, gameService),
+                    (ctx) => _buildRnDLabSection(ctx, gameService),
+                    (ctx) => _buildPrestigeSection(ctx, gameService),
+                  ],
                 ),
               ),
             ],
@@ -142,6 +144,7 @@ class _ControlScreenState extends State<ControlScreen> {
     required VoidCallback onTap,
     Color? activeColor,
     bool showBadge = false,
+    bool showBetaBadge = false,
   }) {
     final effectiveColor = activeColor ?? Colors.cyan;
     return InkWell(
@@ -188,6 +191,29 @@ class _ControlScreenState extends State<ControlScreen> {
                   decoration: const BoxDecoration(
                     color: Color(0xFFFFD54F),
                     shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+              if (showBetaBadge) ...[
+                const SizedBox(width: 3),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.purpleAccent.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: Colors.purpleAccent.withValues(alpha: 0.5),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: const Text(
+                    'BETA',
+                    style: TextStyle(
+                      color: Colors.purpleAccent,
+                      fontSize: 7.5,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.3,
+                    ),
                   ),
                 ),
               ],
@@ -242,6 +268,10 @@ class _ControlScreenState extends State<ControlScreen> {
     BuildContext context,
     ProductionGameService gameService,
   ) {
+    if (!gameService.isRnDLabUnlocked) {
+      return RnDLabBetaGateView(gameService: gameService);
+    }
+
     final state = gameService.state;
     return SingleChildScrollView(
       key: const ValueKey('rnd_lab'),
@@ -284,13 +314,37 @@ class _ControlScreenState extends State<ControlScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'R&D Department',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          const Text(
+                            'R&D Department',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.purpleAccent.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: Colors.purpleAccent.withValues(alpha: 0.5),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Text(
+                              'BETA ACCESS',
+                              style: TextStyle(
+                                color: Colors.purpleAccent,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -365,11 +419,14 @@ class _ControlScreenState extends State<ControlScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Active Sub-Tab View
-          if (_selectedRnDTab == 0)
-            TechTreeCard(gameService: gameService)
-          else
-            DeconstructionBayCard(gameService: gameService),
+          // Active Sub-Tab View (Lazy loaded)
+          LazyIndexedStack(
+            index: _selectedRnDTab,
+            builders: [
+              (ctx) => TechTreeCard(gameService: gameService),
+              (ctx) => DeconstructionBayCard(gameService: gameService),
+            ],
+          ),
         ],
       ),
     );

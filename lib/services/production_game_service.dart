@@ -104,6 +104,14 @@ class ProductionGameService extends ChangeNotifier {
   bool get isTestMode => _isTestMode;
   bool get isDeveloperModeUnlocked => _isDeveloperModeUnlocked;
 
+  /// Whether the R&D Lab is unlocked (via Discord beta code RNDBETA2026 or developer mode)
+  bool get isRnDLabUnlocked =>
+      _state.redeemedCodes.contains('RNDBETA2026') || _isDeveloperModeUnlocked;
+
+  /// Whether the player specifically redeemed the Discord beta code
+  bool get isRnDLabBetaUnlocked =>
+      _state.redeemedCodes.contains('RNDBETA2026');
+
   void setDeveloperModeUnlocked(bool value) {
     if (_isDeveloperModeUnlocked != value) {
       _isDeveloperModeUnlocked = value;
@@ -160,7 +168,25 @@ class ProductionGameService extends ChangeNotifier {
       );
     }
 
-    // 4. Unknown code
+    // 4. Closed Beta Code: RNDBETA2026 (Unlocks R&D Lab)
+    if (cleanCode == 'RNDBETA2026') {
+      final updatedCodes = Set<String>.from(_state.redeemedCodes)..add(cleanCode);
+      _state = _state.copyWith(
+        redeemedCodes: updatedCodes,
+      );
+      _persistenceService.markDirty('game_state');
+      _persistenceService.markDirty('redeemed_codes');
+      notifyListeners();
+      if (!_isTestMode) {
+        saveGame();
+      }
+      return const RedeemResult(
+        status: RedeemCodeResult.rewardClaimed,
+        message: '🧪 R&D Lab Beta Access Unlocked! Welcome to the lab.',
+      );
+    }
+
+    // 5. Unknown code
     return const RedeemResult(
       status: RedeemCodeResult.invalid,
       message: '❌ Invalid redeem code.',

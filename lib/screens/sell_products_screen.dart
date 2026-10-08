@@ -13,6 +13,7 @@ import '../widgets/client_reputation_bar.dart';
 import '../widgets/shipping_manifest_tray.dart';
 import '../widgets/auto_sell_status_card.dart';
 import '../widgets/machine_setup_view.dart';
+import '../widgets/lazy_tab_loader.dart';
 import '../models/game_data.dart';
 
 class SellProductsScreen extends StatefulWidget {
@@ -290,14 +291,22 @@ class _SellProductsScreenState extends State<SellProductsScreen>
 
                 const SizedBox(height: 8),
 
-                // Tab content
+                // Tab content (Storefront eager, Contracts & Setup lazy)
                 Expanded(
                   child: TabBarView(
                     controller: _mainTabController,
                     children: [
                       _buildStorefrontTab(gameService),
-                      _buildB2BContractsTab(context, gameService),
-                      const MachineSetupView(),
+                      LazyTabLoader(
+                        index: 1,
+                        controller: _mainTabController,
+                        builder: (ctx) => _buildB2BContractsTab(ctx, gameService),
+                      ),
+                      LazyTabLoader(
+                        index: 2,
+                        controller: _mainTabController,
+                        builder: (_) => const MachineSetupView(),
+                      ),
                     ],
                   ),
                 ),

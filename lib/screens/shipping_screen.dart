@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/production_game_service.dart';
@@ -7,6 +8,7 @@ import '../widgets/screen_header.dart';
 import '../widgets/message_display.dart';
 import '../widgets/order_card.dart';
 import '../widgets/fleet_upgrade_card.dart';
+import '../widgets/lazy_tab_loader.dart';
 
 /// Phase 2: Upgraded Commercial Dispatch & B2B Logistics Center
 class ShippingScreen extends StatelessWidget {
@@ -72,7 +74,10 @@ class ShippingScreen extends StatelessWidget {
                           child: TabBarView(
                             children: [
                               _buildFleetDispatchTab(gameService),
-                              _buildHistoryTab(gameService),
+                              LazyTabLoader(
+                                index: 1,
+                                builder: (_) => const ShippingHistoryView(),
+                              ),
                             ],
                           ),
                         ),
@@ -193,9 +198,22 @@ class ShippingScreen extends StatelessWidget {
       ],
     );
   }
+}
 
-  /// Tab 2: Combined Shipping & Contract History
-  Widget _buildHistoryTab(ProductionGameService gameService) {
+/// Tab 2: Combined Shipping & Contract History with Capped Pagination
+class ShippingHistoryView extends StatefulWidget {
+  const ShippingHistoryView({super.key});
+
+  @override
+  State<ShippingHistoryView> createState() => _ShippingHistoryViewState();
+}
+
+class _ShippingHistoryViewState extends State<ShippingHistoryView> {
+  int _displayLimit = 30;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameService = Provider.of<ProductionGameService>(context);
     final history = List<game.ShippingHistory>.from(
       gameService.state.shippingHistory.reversed,
     );
@@ -210,12 +228,64 @@ class ShippingScreen extends StatelessWidget {
       );
     }
 
+    final visibleCount = math.min(_displayLimit, history.length);
+    final hasMore = history.length > _displayLimit;
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: history.length,
+      itemCount: visibleCount + (hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        final record = history[index];
-        return OrderCard.completed(record: record);
+        if (index < visibleCount) {
+          final record = history[index];
+          return OrderCard.completed(record: record);
+        }
+
+        // Pagination load more footer
+        final remaining = history.length - _displayLimit;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _displayLimit += 30;
+                    });
+                  },
+                  icon: const Icon(Icons.expand_more, size: 18),
+                  label: Text('Load More (+${math.min(30, remaining)})'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E3856),
+                    foregroundColor: Colors.orangeAccent,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      side: BorderSide(
+                        color: Colors.orangeAccent.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                ),
+                if (remaining > 30) ...[
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _displayLimit = history.length;
+                      });
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey[400],
+                    ),
+                    child: Text('Show All (${history.length})'),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
       },
     );
   }
