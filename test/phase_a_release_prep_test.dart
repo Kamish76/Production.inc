@@ -1116,5 +1116,51 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('🔄 Unlock check completed'), findsOneWidget);
     });
+
+    testWidgets('Privacy Policy button displays offline disclosure dialog',
+        (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final testDbName = 'test_db_privacy_${DateTime.now().microsecondsSinceEpoch}.db';
+      GamePersistenceService.initializeDatabaseFactory(testDatabaseName: testDbName);
+      final gameService = ProductionGameService(testMode: true);
+      addTearDown(() async {
+        await gameService.dispose();
+        final dbPath = await sqflite.getDatabasesPath();
+        final fullPath = [dbPath, testDbName].join(Platform.pathSeparator);
+        await sqflite.databaseFactory.deleteDatabase(fullPath);
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ChangeNotifierProvider.value(
+            value: gameService,
+            child: const SettingsScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final privacyButton = find.text('Privacy Policy');
+      expect(privacyButton, findsOneWidget);
+
+      await tester.tap(privacyButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.textContaining('100% Offline Single-Player'), findsOneWidget);
+      expect(find.textContaining('Local Storage Only'), findsOneWidget);
+      expect(find.textContaining('Zero Ads & Zero Tracking'), findsOneWidget);
+
+      // Close dialog
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+    });
   });
 }

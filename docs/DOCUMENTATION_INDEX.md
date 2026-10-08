@@ -24,6 +24,9 @@ These core documents reflect the current architecture, coding conventions, and s
 
 For quick access at the repository root:
 
+- **[`CHECKLIST.md`](../CHECKLIST.md)**: Master release deliverables and recurring **quarterly maintenance & audit checklist**.
+- **[`RELEASE_PREPARATION_AND_CLEANUP.md`](../RELEASE_PREPARATION_AND_CLEANUP.md)**: Technical tracker for Google Play release prep, asset integration, and sanitization.
+- **[`ICON_DESIGN_ROADMAP.md`](../ICON_DESIGN_ROADMAP.md)**: 80-icon master visual design and integration roadmap (80/80 Complete).
 - **[`README.md`](../README.md)**: Main repository overview, gameplay mechanics, and technical architecture for **Version 2.0.0**.
 - **[`CHANGELOG.md`](../CHANGELOG.md)**: Detailed historical release notes across all versions through **v2.0.0**.
 - **[`pubspec.yaml`](../pubspec.yaml)**: Project dependencies, asset registrations, and build version (`2.0.0+20`).

@@ -46,3 +46,7 @@ app.*.map.json
 
 # Android keystore configuration
 android/key.properties
+*.jks
+*.keystore
+*.p12
+*.cer

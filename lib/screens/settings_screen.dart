@@ -246,6 +246,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Show Privacy Policy dialog (100% Offline, Zero Data Collection)
+  void _showPrivacyPolicy(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.privacy_tip_outlined, color: Colors.teal[400]),
+              const SizedBox(width: 8),
+              const Text(
+                'Privacy Policy',
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildGameTip(
+                  '🛡️ 100% Offline Single-Player',
+                  'Production.Inc does not collect, record, track, transmit, or share any personal information, telemetry, device identifiers, or gameplay analytics.',
+                ),
+                const SizedBox(height: 12),
+                _buildGameTip(
+                  '💾 Local Storage Only',
+                  'All game progress, factory tiers, contracts, and settings are saved strictly on your local device within the private application sandbox (SQLite & SharedPreferences).',
+                ),
+                const SizedBox(height: 12),
+                _buildGameTip(
+                  '🚫 Zero Ads & Zero Tracking',
+                  'The game contains zero third-party advertising SDKs, zero analytics trackers, and requires no account registration or cloud sign-in.',
+                ),
+                const SizedBox(height: 12),
+                _buildGameTip(
+                  '🌐 External Links',
+                  'Any external community links (such as the community Discord button) open externally via your device browser or installed app and never transmit in-game data.',
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Close',
+                style: TextStyle(color: Colors.tealAccent, fontSize: 16),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildHowToPlaySection(String title, String content) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -785,6 +846,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () => _showGameTips(context),
               icon: const Icon(Icons.lightbulb_outline),
               label: const Text('Game Tips'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Privacy Policy Button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _showPrivacyPolicy(context),
+              icon: const Icon(Icons.privacy_tip_outlined),
+              label: const Text('Privacy Policy'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.white,
                 side: BorderSide(

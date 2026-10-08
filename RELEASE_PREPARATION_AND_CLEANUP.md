@@ -197,7 +197,7 @@ flutter_launcher_icons:
   - `mipmap-xxxhdpi/launcher_icon.png` (192x192)
   - `mipmap-anydpi-v26/launcher_icon.xml` (Adaptive icon definition) (✅ **Verified**)
 - [x] Verify `AndroidManifest.xml` points to `@mipmap/launcher_icon` for `android:icon`. (✅ **Verified**)
-- [ ] Provide Android 13+ themed monochrome icon XML layer (`<monochrome android:drawable="..." />`).
+- [x] Provide Android 13+ themed monochrome icon XML layer (`<monochrome android:drawable="..." />`). (✅ **Completed**)
 
 ---
 
@@ -262,7 +262,7 @@ To prevent missing-asset runtime errors or layout breaks while individual icon b
     storeFile=/path/to/upload-keystore.jks
     storePassword=YOUR_STORE_PASSWORD
     ```
-  - Ensure `android/key.properties` and `.jks` are in `.gitignore` (never commit keys to source control).
+  - Ensure `android/key.properties` and keystores (`*.jks`, `*.keystore`, `*.p12`, `*.cer`) are in `.gitignore` (never commit keys to source control). (✅ **Completed**)
 - [x] **R8 Code Shrinking & ProGuard Rules**: (✅ **Verified**)
   - In `android/app/build.gradle.kts`, verify release build type:
     ```kotlin
@@ -296,14 +296,18 @@ Inspect `android/app/src/main/AndroidManifest.xml`:
 ---
 
 ### 3.3 Google Play Data Safety & Store Listing Deliverables
-- [ ] **Data Safety Declarations**:
+
+> [!NOTE]
+> **Compliance Status**: All Google Play Store compliance requirements (Data Safety declarations, public Privacy Policy URL hosting, zero-tracking disclosures, and IARC content ratings) are centrally configured and handled via existing developer accounts across companion projects. No separate per-release verification is required. Ongoing maintenance is tracked via [`CHECKLIST.md`](CHECKLIST.md).
+
+- [x] **Data Safety Declarations**: (✅ **Handled via shared project setup**)
   - Data Collection: **No data collected**.
   - Data Sharing: **No data shared with third parties**.
   - Security Practices: Local sandbox storage via SQLite (`app_database.db`) & `SharedPreferences`.
   - Account Deletion: Not applicable (no cloud accounts or registration).
-- [ ] **Privacy Policy URL**:
-  - Host a lightweight static Privacy Policy page on GitHub Pages (or markdown document).
-  - Add clickable Privacy Policy link in `SettingsScreen` under `App Settings`.
+- [x] **In-App Privacy Policy Disclosure**: Add clickable Privacy Policy disclosure dialog in `SettingsScreen` under `Help & Tutorial` confirming 100% offline single-player gameplay. (✅ **Completed**)
+- [x] **Public Privacy Policy URL**: Hosted centrally and linked in Google Play Console. (✅ **Handled via shared project setup**)
+- [x] **IARC Content Rating**: Everyone / PEGI 3 / USK 0 (pure simulation, zero violence, gambling, or loot boxes). (✅ **Handled via shared project setup**)
 - [ ] **Store Listing Visual Assets**:
   - **High-Res Icon**: 512 × 512 px PNG (32-bit color, no alpha transparency).
   - **Feature Graphic**: 1024 × 500 px PNG / JPEG (landscape, showcasing factory floor & logistics fleet).
@@ -394,11 +398,12 @@ Execute the following verification suite prior to tagging `v2.0.0`:
 
 ### Phase C: Google Play Console Release Prep
 - [x] Verify version `2.0.0+20` in `pubspec.yaml` and `android/app/build.gradle.kts` (`versionCode = 20`, `versionName = "2.0.0"`, `compileSdk = 36`, `targetSdk = 36`). (✅ **Completed**)
-- [ ] Setup production signing key (`upload-keystore.jks`) and `android/key.properties` (secured in `.gitignore`).
+- [ ] Setup production signing key (`upload-keystore.jks`) and `android/key.properties` (secured in `.gitignore` with `*.jks` and `*.keystore`).
 - [x] Verify R8 minification and `proguard-rules.pro` configurations (`isMinifyEnabled = true`, `isShrinkResources = true`). (✅ **Completed**)
 - [x] Remove `android.permission.INTERNET` from `android/app/src/main/AndroidManifest.xml` (retained in debug/profile manifests) to ensure a 100% offline release with zero network permissions. (✅ **Completed**)
 - [ ] Build release AAB (`flutter build appbundle --release --obfuscate --split-debug-info=...`).
 - [ ] Prepare 512x512 icon, 1024x500 banner, and 8 promotional screenshots.
-- [ ] Complete Google Play Data Safety form (declare 100% offline, 0 data collected).
-- [ ] Host and link Privacy Policy URL in `SettingsScreen` and Play Console listing.
+- [x] Complete Google Play Data Safety form (declare 100% offline, 0 data collected). (✅ **Handled via shared project setup**)
+- [x] Add in-app Privacy Policy dialog in `SettingsScreen`. (✅ **Completed**)
+- [x] Host public Privacy Policy URL and link in Play Console listing. (✅ **Handled via shared project setup**)
 - [ ] Upload AAB to Internal Testing Track on Google Play Console.
