@@ -91,6 +91,7 @@ class MachineCard extends StatelessWidget {
     final salvageValue = gameService.getMachineSalvageValue('autoBuy', machineCount);
     final canSalvage = machineCount > 0;
     final canBuy = state.money >= cost && machineCount < machineLimit;
+    final throughputLimit = gameService.getMachineThroughputLimit('autoBuy');
     final throughputLevel = gameService.getAutoBuyIntakeLevel();
     final throughputCost = gameService.getAutoBuyIntakeUpgradeCost();
     final canUpgradeThroughput = state.money >= throughputCost;
@@ -124,8 +125,8 @@ class MachineCard extends StatelessWidget {
       canSalvage: canSalvage,
       throughputLevel: throughputLevel,
       throughputUpgradeCost: throughputCost,
-      canUpgradeThroughput: canUpgradeThroughput && throughputLevel < 5,
-      isMaxThroughput: throughputLevel >= 5,
+      canUpgradeThroughput: canUpgradeThroughput && throughputLevel < throughputLimit,
+      isMaxThroughput: throughputLevel >= throughputLimit,
       throughputLabel: throughputLabel,
       onUpgradeThroughput: () async {
         final success = await gameService.upgradeAutoBuyIntake();
@@ -184,6 +185,7 @@ class MachineCard extends StatelessWidget {
     final salvageValue = gameService.getMachineSalvageValue(tier, machineCount);
     final canSalvage = machineCount > 0;
     final canBuy = state.money >= cost && machineCount < machineLimit;
+    final throughputLimit = gameService.getMachineThroughputLimit(tier);
     final throughputLevel = gameService.getAutoBuildThroughputLevel(tier);
     final throughputCost = gameService.getAutoBuildThroughputUpgradeCost(tier);
     final canUpgradeThroughput = state.money >= throughputCost;
@@ -220,8 +222,8 @@ class MachineCard extends StatelessWidget {
       canSalvage: canSalvage,
       throughputLevel: throughputLevel,
       throughputUpgradeCost: throughputCost,
-      canUpgradeThroughput: canUpgradeThroughput && throughputLevel < 5,
-      isMaxThroughput: throughputLevel >= 5,
+      canUpgradeThroughput: canUpgradeThroughput && throughputLevel < throughputLimit,
+      isMaxThroughput: throughputLevel >= throughputLimit,
       throughputLabel: throughputLabel,
       onUpgradeThroughput: () async {
         final success = await gameService.upgradeAutoBuildThroughput(tier);
@@ -275,6 +277,7 @@ class MachineCard extends StatelessWidget {
         gameService.getMachineSalvageValue('autoSell', machineCount);
     final canSalvage = machineCount > 0;
     final canBuy = state.money >= cost && machineCount < machineLimit;
+    final throughputLimit = gameService.getMachineThroughputLimit('autoSell');
     final throughputLevel = gameService.getAutoSellThroughputLevel();
     final throughputCost = gameService.getAutoSellThroughputUpgradeCost();
     final canUpgradeThroughput = state.money >= throughputCost;
@@ -308,8 +311,8 @@ class MachineCard extends StatelessWidget {
       canSalvage: canSalvage,
       throughputLevel: throughputLevel,
       throughputUpgradeCost: throughputCost,
-      canUpgradeThroughput: canUpgradeThroughput && throughputLevel < 5,
-      isMaxThroughput: throughputLevel >= 5,
+      canUpgradeThroughput: canUpgradeThroughput && throughputLevel < throughputLimit,
+      isMaxThroughput: throughputLevel >= throughputLimit,
       throughputLabel: throughputLabel,
       showCapacity: false,
       capacity: 0,

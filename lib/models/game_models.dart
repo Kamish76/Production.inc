@@ -219,6 +219,7 @@ class FactoryTier {
   final Map<String, int> requiredShippedProducts; // productId -> count required
   final int autoBuyCapacityLimit;
   final int machineLimit;
+  final int throughputLimit;
   final List<String> perkHighlights;
   final Set<ProductLevel> allowedProductLevels;
 
@@ -231,6 +232,7 @@ class FactoryTier {
     this.requiredShippedProducts = const {},
     required this.autoBuyCapacityLimit,
     required this.machineLimit,
+    this.throughputLimit = 5,
     required this.perkHighlights,
     required this.allowedProductLevels,
   });

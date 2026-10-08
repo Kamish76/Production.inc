@@ -789,10 +789,12 @@ class GameData {
       upgradeCost: 0.0,
       autoBuyCapacityLimit: 25,
       machineLimit: 10,
+      throughputLimit: 5,
       perkHighlights: [
         'Manual crafting of basic components',
         'Auto-buy capacity up to 25 units',
         'Tier 1 Auto-build supported',
+        'Machine throughput upgrade limit: Level 5',
       ],
       allowedProductLevels: {
         ProductLevel.material,
@@ -811,10 +813,12 @@ class GameData {
       },
       autoBuyCapacityLimit: 50,
       machineLimit: 20,
+      throughputLimit: 10,
       perkHighlights: [
         'Unlocks Intermediate Parts (Displays, Processors, Motors, Inverters)',
         'Unlocks entry Retail items (Speaker, Power Bank, Wall Clock, Cleaning Drone)',
         'Auto-buy capacity increased to 50 units',
+        'Machine throughput upgrade limit raised to Level 10',
       ],
       allowedProductLevels: {
         ProductLevel.material,
@@ -835,11 +839,13 @@ class GameData {
       },
       autoBuyCapacityLimit: 100,
       machineLimit: 30,
+      throughputLimit: 15,
       perkHighlights: [
         'Unlocks Complex Parts (Camera Modules)',
         'Unlocks advanced Retail items (Cameras, Solar Panels, Powerwalls, Robotic Arms)',
         'Tier 2 Auto-build supported',
         'Auto-buy capacity increased to 100 units',
+        'Machine throughput upgrade limit raised to Level 15',
       ],
       allowedProductLevels: {
         ProductLevel.material,
@@ -861,12 +867,13 @@ class GameData {
       },
       autoBuyCapacityLimit: 250,
       machineLimit: 40,
+      throughputLimit: 20,
       perkHighlights: [
         'Unlocks Flagship Retail items (Smartphone, Wind Turbine Generator)',
         'Tier 3 Auto-build supported',
         'Retail Auto-build supported',
         'Auto-buy capacity increased to 250 units',
-        'Maximum automation throughput',
+        'Maximum automation throughput (Level 20)',
       ],
       allowedProductLevels: {
         ProductLevel.material,

@@ -2718,6 +2718,12 @@ class ProductionGameService extends ChangeNotifier {
     return currentFactoryTier.machineLimit;
   }
 
+  /// Get maximum throughput upgrade level allowed based on current factory tier limit.
+  /// Scales with factory tier: Tier 1 -> 5, Tier 2 -> 10, Tier 3 -> 15, Tier 4 -> 20.
+  int getMachineThroughputLimit([String? category]) {
+    return currentFactoryTier.throughputLimit;
+  }
+
   /// Salvage a machine in the given category ('autoBuy' or auto-build tier like 'basicParts')
   /// Decreases count by 1 and refunds salvage value.
   Future<bool> salvageMachine(String category) async {
@@ -2787,7 +2793,7 @@ class ProductionGameService extends ChangeNotifier {
   /// Upgrade auto-buy intake level
   /// Checks money, deducts cost, increments autoBuyIntakeLevel, notifies listeners, and saves state.
   Future<bool> upgradeAutoBuyIntake() async {
-    if (getAutoBuyIntakeLevel() >= 5) return false;
+    if (getAutoBuyIntakeLevel() >= getMachineThroughputLimit('autoBuy')) return false;
     
     final cost = getAutoBuyIntakeUpgradeCost();
     if (_state.money < cost) {
@@ -2896,8 +2902,8 @@ class ProductionGameService extends ChangeNotifier {
   /// Upgrade auto-build throughput level for a tier
   /// Checks money, deducts cost, increments autoBuildThroughputLevel[tier], notifies listeners, and saves state.
   Future<bool> upgradeAutoBuildThroughput(String tier) async {
-    // Phase 10: Cap throughput upgrade to Level 5
-    if (getAutoBuildThroughputLevel(tier) >= 5) return false;
+    // Cap throughput upgrade to current Factory Tier limit (Tier 1: 5, Tier 2: 10, Tier 3: 15, Tier 4: 20)
+    if (getAutoBuildThroughputLevel(tier) >= getMachineThroughputLimit(tier)) return false;
 
     final cost = getAutoBuildThroughputUpgradeCost(tier);
     if (_state.money < cost) {
@@ -2992,7 +2998,7 @@ class ProductionGameService extends ChangeNotifier {
   /// Upgrade auto-sell throughput level
   /// Checks money, deducts cost, increments autoSellThroughputLevel, notifies listeners, and saves state.
   Future<bool> upgradeAutoSellThroughput() async {
-    if (getAutoSellThroughputLevel() >= 5) return false;
+    if (getAutoSellThroughputLevel() >= getMachineThroughputLimit('autoSell')) return false;
     
     final cost = getAutoSellThroughputUpgradeCost();
     if (_state.money < cost) {

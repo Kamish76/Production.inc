@@ -158,6 +158,10 @@ class FactoryTierCard extends StatelessWidget {
                 icon: Icons.inventory_2_outlined,
                 label: 'Auto-Buy Cap: ${currentTier.autoBuyCapacityLimit}u',
               ),
+              _buildPerkPill(
+                icon: Icons.speed,
+                label: 'Throughput Cap: Lv.${currentTier.throughputLimit}',
+              ),
               ...currentTier.perkHighlights.map(
                 (p) => _buildPerkPill(icon: Icons.check_circle_outline, label: p),
               ),

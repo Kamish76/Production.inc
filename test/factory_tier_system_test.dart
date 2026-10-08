@@ -19,22 +19,30 @@ void main() {
       final tier1 = GameData.getFactoryTier(1);
       expect(tier1.name, 'Garage Workshop');
       expect(tier1.autoBuyCapacityLimit, 25);
+      expect(tier1.machineLimit, 10);
+      expect(tier1.throughputLimit, 5);
       expect(tier1.upgradeCost, 0.0);
 
       final tier2 = GameData.getFactoryTier(2);
       expect(tier2.name, 'Light Assembly Facility');
       expect(tier2.autoBuyCapacityLimit, 50);
+      expect(tier2.machineLimit, 20);
+      expect(tier2.throughputLimit, 10);
       expect(tier2.upgradeCost, 2500.0);
       expect(tier2.requiredShippedProducts, {'box': 20, 'wires': 15});
 
       final tier3 = GameData.getFactoryTier(3);
       expect(tier3.name, 'Precision Tech Plant');
       expect(tier3.autoBuyCapacityLimit, 100);
+      expect(tier3.machineLimit, 30);
+      expect(tier3.throughputLimit, 15);
       expect(tier3.upgradeCost, 25000.0);
 
       final tier4 = GameData.getFactoryTier(4);
       expect(tier4.name, 'Megafactory Cleanroom');
       expect(tier4.autoBuyCapacityLimit, 250);
+      expect(tier4.machineLimit, 40);
+      expect(tier4.throughputLimit, 20);
       expect(tier4.upgradeCost, 150000.0);
 
       expect(GameData.getNextFactoryTier(1)?.tierNumber, 2);
@@ -192,6 +200,72 @@ void main() {
 
       gameService.increaseAutoBuyCapacity();
       expect(gameService.state.autoBuyResourceCapacity, 40);
+    });
+
+    test('Machine throughput upgrade limits scale with Factory Tiers (Tier 1: 5, Tier 2: 10, Tier 3: 15, Tier 4: 20)', () async {
+      gameService.addMoney(1000000.0);
+
+      // --- Factory Tier 1: Limit = 5 ---
+      await gameService.setFactoryTierForDev(1);
+      expect(gameService.getMachineThroughputLimit('autoBuy'), 5);
+      expect(gameService.getMachineThroughputLimit('basicParts'), 5);
+      expect(gameService.getMachineThroughputLimit('autoSell'), 5);
+
+      gameService.setAutoBuyIntakeLevel(5);
+      gameService.setAutoBuildThroughputLevel('basicParts', 5);
+      gameService.setAutoSellThroughputLevel(5);
+
+      // Upgrading at Tier 1 cap (5) must fail
+      expect(await gameService.upgradeAutoBuyIntake(), isFalse);
+      expect(await gameService.upgradeAutoBuildThroughput('basicParts'), isFalse);
+      expect(await gameService.upgradeAutoSellThroughput(), isFalse);
+      expect(gameService.getAutoBuyIntakeLevel(), 5);
+      expect(gameService.getAutoBuildThroughputLevel('basicParts'), 5);
+      expect(gameService.getAutoSellThroughputLevel(), 5);
+
+      // --- Factory Tier 2: Limit = 10 ---
+      await gameService.setFactoryTierForDev(2);
+      expect(gameService.getMachineThroughputLimit('autoBuy'), 10);
+      expect(gameService.getMachineThroughputLimit('basicParts'), 10);
+      expect(gameService.getMachineThroughputLimit('autoSell'), 10);
+
+      // Now upgrades beyond 5 must succeed
+      expect(await gameService.upgradeAutoBuyIntake(), isTrue);
+      expect(await gameService.upgradeAutoBuildThroughput('basicParts'), isTrue);
+      expect(await gameService.upgradeAutoSellThroughput(), isTrue);
+      expect(gameService.getAutoBuyIntakeLevel(), 6);
+      expect(gameService.getAutoBuildThroughputLevel('basicParts'), 6);
+      expect(gameService.getAutoSellThroughputLevel(), 6);
+
+      // Set to Tier 2 cap (10)
+      gameService.setAutoBuyIntakeLevel(10);
+      gameService.setAutoBuildThroughputLevel('basicParts', 10);
+      gameService.setAutoSellThroughputLevel(10);
+      expect(await gameService.upgradeAutoBuyIntake(), isFalse);
+      expect(await gameService.upgradeAutoBuildThroughput('basicParts'), isFalse);
+      expect(await gameService.upgradeAutoSellThroughput(), isFalse);
+
+      // --- Factory Tier 3: Limit = 15 ---
+      await gameService.setFactoryTierForDev(3);
+      expect(gameService.getMachineThroughputLimit(), 15);
+      expect(await gameService.upgradeAutoBuyIntake(), isTrue);
+      expect(await gameService.upgradeAutoBuildThroughput('basicParts'), isTrue);
+      expect(await gameService.upgradeAutoSellThroughput(), isTrue);
+      expect(gameService.getAutoBuyIntakeLevel(), 11);
+
+      // Set to Tier 3 cap (15)
+      gameService.setAutoBuyIntakeLevel(15);
+      expect(await gameService.upgradeAutoBuyIntake(), isFalse);
+
+      // --- Factory Tier 4: Limit = 20 ---
+      await gameService.setFactoryTierForDev(4);
+      expect(gameService.getMachineThroughputLimit(), 20);
+      expect(await gameService.upgradeAutoBuyIntake(), isTrue);
+      expect(gameService.getAutoBuyIntakeLevel(), 16);
+
+      // Set to Tier 4 cap (20)
+      gameService.setAutoBuyIntakeLevel(20);
+      expect(await gameService.upgradeAutoBuyIntake(), isFalse);
     });
   });
 }
