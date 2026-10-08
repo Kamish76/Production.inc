@@ -2206,6 +2206,21 @@ class ProductionGameService extends ChangeNotifier {
     _processContractsTick();
   }
 
+  @visibleForTesting
+  CorporateContract? generateNewContractForTest([List<CorporateContract>? existing]) {
+    return _generateNewContract(existing ?? _state.corporateContracts);
+  }
+
+  @visibleForTesting
+  CorporateContract? generateManufacturingContractForTest(CorporateClient client, [math.Random? random]) {
+    return _generateManufacturingContract(client, random ?? math.Random());
+  }
+
+  @visibleForTesting
+  CorporateContract? generateRetailContractForTest(CorporateClient client, [math.Random? random]) {
+    return _generateRetailContract(client, random ?? math.Random());
+  }
+
   /// Apply completed operations to game state
   void _applyCompletedOperations(_OperationResults results) {
     // Process completed productions and add to inventory
@@ -4045,10 +4060,12 @@ class ProductionGameService extends ChangeNotifier {
     }
     if (targetPool.isEmpty) return null;
 
-    // Product count scales with factory tier: T1-2: 1-2, T3: 2-3, T4: 2-4
+    // Product count scales with factory tier: T1: 1, T2: 1-2, T3: 2-3, T4: 2-4
     int maxProductTypes;
     switch (_state.factoryTier) {
       case 1:
+        maxProductTypes = 1; // Tier 1: strictly 1 product type to prevent overwhelming new players
+        break;
       case 2:
         maxProductTypes = 1 + random.nextInt(2); // 1-2
         break;
@@ -4067,7 +4084,7 @@ class ProductionGameService extends ChangeNotifier {
     final shuffled = List<String>.from(targetPool)..shuffle(random);
     final selectedProducts = shuffled.take(maxProductTypes).toList();
 
-    // Build requiredProducts map with 50-200 units each
+    // Build requiredProducts map with tier-scaled quantities
     final requiredProducts = <String, int>{};
     double totalCashReward = 0;
     int totalRepReward = 0;
@@ -4076,7 +4093,24 @@ class ProductionGameService extends ChangeNotifier {
       final product = GameData.getProduct(productId);
       if (product == null) continue;
 
-      final qty = 50 + random.nextInt(151); // 50 to 200
+      // Tier-scaled quantities: T1: 15-30, T2: 30-60, T3: 60-120, T4: 100-200
+      final int qty;
+      switch (_state.factoryTier) {
+        case 1:
+          qty = 15 + random.nextInt(16); // 15 to 30 units
+          break;
+        case 2:
+          qty = 30 + random.nextInt(31); // 30 to 60 units
+          break;
+        case 3:
+          qty = 60 + random.nextInt(61); // 60 to 120 units
+          break;
+        case 4:
+          qty = 100 + random.nextInt(101); // 100 to 200 units
+          break;
+        default:
+          qty = 15 + random.nextInt(16);
+      }
       requiredProducts[productId] = qty;
 
       // Bulk pricing: 1.2x market price

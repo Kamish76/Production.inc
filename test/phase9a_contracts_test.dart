@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:game1/models/game_data.dart';
 import 'package:game1/models/game_models.dart';
 import 'package:game1/services/game_persistence_service.dart';
 import 'package:game1/services/production_game_service.dart';
@@ -345,6 +346,96 @@ void main() {
 
         expect(find.text('🏷️ RETAIL'), findsOneWidget);
         expect(find.text('🏭 MANUFACTURING'), findsOneWidget);
+      });
+    });
+
+    // =========================================================================
+    // 6. Tier-Scaled Contract Generation & Safety
+    // =========================================================================
+    group('6. Tier-Scaled Contract Generation & Safety', () {
+      test('Tier 1 Manufacturing contracts are strictly single-product and bounded between 15 and 30 units', () {
+        gameService.testSetState(
+          gameService.state.copyWith(
+            factoryTier: 1,
+            unlockedProducts: {'wires', 'box', 'gears'},
+          ),
+        );
+
+        final client = GameData.getCorporateClient('apex_telecom')!;
+
+        for (int i = 0; i < 50; i++) {
+          final contract = gameService.generateManufacturingContractForTest(client);
+          expect(contract, isNotNull);
+          expect(contract!.contractType, ContractType.manufacturing);
+          // Strictly single product line at Tier 1
+          expect(contract.requiredProducts.length, 1,
+              reason: 'Tier 1 must never have multiple product lines');
+          final qty = contract.requiredProducts.values.first;
+          expect(qty, inInclusiveRange(15, 30),
+              reason: 'Tier 1 items must be bounded between 15 and 30');
+          expect(contract.totalRequiredUnits, lessThanOrEqualTo(30),
+              reason: 'Tier 1 contracts must never exceed 30 total items');
+        }
+      });
+
+      test('Tier 2 Manufacturing contracts allow 1-2 product lines and 30-60 units per line', () {
+        gameService.testSetState(
+          gameService.state.copyWith(
+            factoryTier: 2,
+            unlockedProducts: {'wires', 'display_screen', 'gears'},
+          ),
+        );
+
+        final client = GameData.getCorporateClient('apex_telecom')!;
+
+        for (int i = 0; i < 50; i++) {
+          final contract = gameService.generateManufacturingContractForTest(client);
+          expect(contract, isNotNull);
+          expect(contract!.requiredProducts.length, inInclusiveRange(1, 2));
+          for (final qty in contract.requiredProducts.values) {
+            expect(qty, inInclusiveRange(30, 60));
+          }
+        }
+      });
+
+      test('Tier 3 Manufacturing contracts allow 2-3 product lines and 60-120 units per line', () {
+        gameService.testSetState(
+          gameService.state.copyWith(
+            factoryTier: 3,
+            unlockedProducts: {'wires', 'circuits', 'display_screen', 'processor'},
+          ),
+        );
+
+        final client = GameData.getCorporateClient('apex_telecom')!;
+
+        for (int i = 0; i < 50; i++) {
+          final contract = gameService.generateManufacturingContractForTest(client);
+          expect(contract, isNotNull);
+          expect(contract!.requiredProducts.length, inInclusiveRange(2, 3));
+          for (final qty in contract.requiredProducts.values) {
+            expect(qty, inInclusiveRange(60, 120));
+          }
+        }
+      });
+
+      test('Tier 4 Manufacturing contracts allow 2-4 product lines and 100-200 units per line', () {
+        gameService.testSetState(
+          gameService.state.copyWith(
+            factoryTier: 4,
+            unlockedProducts: {'wires', 'circuits', 'display_screen', 'processor', 'silicon_wafer'},
+          ),
+        );
+
+        final client = GameData.getCorporateClient('apex_telecom')!;
+
+        for (int i = 0; i < 50; i++) {
+          final contract = gameService.generateManufacturingContractForTest(client);
+          expect(contract, isNotNull);
+          expect(contract!.requiredProducts.length, inInclusiveRange(2, 4));
+          for (final qty in contract.requiredProducts.values) {
+            expect(qty, inInclusiveRange(100, 200));
+          }
+        }
       });
     });
   });
