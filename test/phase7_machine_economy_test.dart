@@ -49,7 +49,7 @@ void main() {
       });
 
       test('Price scaling matches formula across all machine tiers/categories', () {
-        const categories = ['autoBuy', 'basicParts', 'intermediate', 'complex'];
+        const categories = ['autoBuy', 'basicParts', 'intermediate', 'complex', 'retail'];
         for (final cat in categories) {
           for (int n = 0; n <= 8; n++) {
             final expected = 1000.0 * math.pow(1.15, n);

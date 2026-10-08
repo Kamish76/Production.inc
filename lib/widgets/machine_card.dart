@@ -353,6 +353,8 @@ class MachineCard extends StatelessWidget {
         return Colors.amberAccent;
       case 'complex':
         return Colors.purpleAccent;
+      case 'retail':
+        return Colors.tealAccent;
       default:
         return Colors.blueAccent;
     }
@@ -366,6 +368,8 @@ class MachineCard extends StatelessWidget {
         return Icons.handyman;
       case 'complex':
         return Icons.memory;
+      case 'retail':
+        return Icons.storefront;
       default:
         return Icons.precision_manufacturing;
     }
@@ -379,6 +383,8 @@ class MachineCard extends StatelessWidget {
         return 'Automates sub-assembly production';
       case 'complex':
         return 'Automates advanced manufacturing';
+      case 'retail':
+        return 'Automates finished retail goods fabrication';
       default:
         return 'Automated assembly unit';
     }

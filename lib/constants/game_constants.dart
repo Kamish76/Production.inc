@@ -325,6 +325,20 @@ class AutoBuildConstants {
     'complex': [
       'camera_module', // 50 seconds
     ],
+    'retail': [
+      'speaker', // 25 seconds
+      'wall_clock', // 31 seconds
+      'power_bank', // 35 seconds
+      'solar_panel', // 45 seconds
+      'toy_robot', // 54 seconds
+      'orbital_satellite', // 55 seconds (Prestige prototype)
+      'camera', // 60 seconds
+      'cleaning_drone', // 65 seconds
+      'home_powerwall', // 80 seconds
+      'smartphone', // 90 seconds
+      'robotic_arm', // 110 seconds
+      'wind_turbine_generator', // 140 seconds
+    ],
   };
 }
 

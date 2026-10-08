@@ -691,6 +691,30 @@ class GameData {
       emoji: '🛒',
       type: MachineType.seller,
     ),
+    Machine(
+      id: 'intermediate_assembler',
+      name: 'Intermediate parts manufacturer',
+      description: 'Auto produces intermediate components until a set amount is reached',
+      requiredMaterials: {'box': 12},
+      emoji: '🏭',
+      type: MachineType.producer,
+    ),
+    Machine(
+      id: 'complex_assembler',
+      name: 'Complex parts manufacturer',
+      description: 'Auto produces complex sub-assemblies until a set amount is reached',
+      requiredMaterials: {'box': 15},
+      emoji: '🔬',
+      type: MachineType.producer,
+    ),
+    Machine(
+      id: 'retail_assembler',
+      name: 'Retail products manufacturer',
+      description: 'Auto produces finished retail goods until a set amount is reached',
+      requiredMaterials: {'box': 20},
+      emoji: '🛍️',
+      type: MachineType.producer,
+    ),
   ];
 
   // Pre-indexed lookup maps for O(1) retrieval
@@ -840,6 +864,7 @@ class GameData {
       perkHighlights: [
         'Unlocks Flagship Retail items (Smartphone, Wind Turbine Generator)',
         'Tier 3 Auto-build supported',
+        'Retail Auto-build supported',
         'Auto-buy capacity increased to 250 units',
         'Maximum automation throughput',
       ],

@@ -92,7 +92,7 @@ void main() {
       });
 
       test('Auto-build throughput upgrade costs scale correctly by 1000 * 1.15^(level-1)', () {
-        const tiers = ['basicParts', 'intermediate', 'complex'];
+        const tiers = ['basicParts', 'intermediate', 'complex', 'retail'];
 
         for (final tier in tiers) {
           // Level 1: 1000 * 1.15^0 = 1000.0

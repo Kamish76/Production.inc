@@ -706,7 +706,20 @@ class _ControlScreenState extends State<ControlScreen> {
           tierName: 'Complex',
           accentColor: Colors.purpleAccent,
           icon: Icons.memory,
-          subtitle: 'Automates high-tech products (Smartphones, Drones, Robotics)',
+          subtitle: 'Automates advanced sub-assemblies (Camera Modules, Quantum Cores)',
+        ),
+
+        const SizedBox(height: 14),
+
+        // 5. Auto-Build: Retail Goods Card
+        MachineCard.autoBuild(
+          context: context,
+          gameService: gameService,
+          tier: 'retail',
+          tierName: 'Retail',
+          accentColor: Colors.tealAccent,
+          icon: Icons.storefront,
+          subtitle: 'Automates finished end products (Speakers, Cameras, Powerwalls)',
         ),
       ],
     );

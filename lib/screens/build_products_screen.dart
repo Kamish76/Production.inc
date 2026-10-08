@@ -338,6 +338,8 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
         return 'intermediate';
       case 'Complex':
         return 'complex';
+      case 'Retail':
+        return 'retail';
       default:
         return null;
     }

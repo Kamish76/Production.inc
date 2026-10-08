@@ -511,6 +511,18 @@ void main() {
         'assets/images/icons/machines/mach_build_complex.svg',
       );
       expect(
+        GameIcon.resolveAssetPath('retail_assembler'),
+        'assets/images/icons/machines/mach_build_retail.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('mach_build_retail'),
+        'assets/images/icons/machines/mach_build_retail.svg',
+      );
+      expect(
+        GameIcon.resolveAssetPath('retail'),
+        'assets/images/icons/machines/mach_build_retail.svg',
+      );
+      expect(
         GameIcon.resolveAssetPath('basic_seller'),
         'assets/images/icons/machines/mach_auto_sell.svg',
       );
