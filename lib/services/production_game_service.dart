@@ -8,6 +8,7 @@ import '../models/game_state.dart';
 import '../models/game_data.dart';
 import '../models/game_models.dart';
 import '../models/auto_sell_preview.dart';
+import '../models/auto_sell_log_entry.dart';
 import '../constants/game_constants.dart';
 import 'game_persistence_service.dart';
 import 'product_unlock_service.dart';
@@ -1718,8 +1719,34 @@ class ProductionGameService extends ChangeNotifier {
 
   DateTime? _lastAutoSellTick;
 
+  /// Records an automated sales dispatch or contract fulfillment in the recent activity log (Phase 14)
+  void _recordAutoSellDispatch({
+    required AutoSellActionType actionType,
+    required String title,
+    required Map<String, int> items,
+    required double totalRevenue,
+    String? clientOrBatchName,
+  }) {
+    final entry = AutoSellLogEntry(
+      id: 'sell_log_${DateTime.now().microsecondsSinceEpoch}',
+      timestamp: DateTime.now(),
+      actionType: actionType,
+      title: title,
+      items: Map<String, int>.from(items),
+      totalRevenue: totalRevenue,
+      clientOrBatchName: clientOrBatchName,
+    );
+    final updatedLog = [entry, ..._state.autoSellRecentLog];
+    if (updatedLog.length > 10) {
+      updatedLog.removeRange(10, updatedLog.length);
+    }
+    _state = _state.copyWith(autoSellRecentLog: updatedLog);
+    _persistenceService.markDirty('auto_sell_log');
+    _saveGameStateOptimized();
+  }
+
   /// Process auto-sell tick if enabled and interval has elapsed (Phase 12: Sales Hub Selling Automation)
-  /// Dispatches real logistics shipments taking 1 fleet slot, respecting whitelist and carrier limits.
+  /// Dispatches real logistics shipments taking 1 fleet slot, respecting whitelist, reserve, and carrier limits.
   void _processAutoSellTick({bool force = false}) {
     // Skip if not enabled or no machines owned
     if (!_state.autoSellEnabled || _state.autoSellMachinesOwned <= 0) {
@@ -1739,26 +1766,35 @@ class ProductionGameService extends ChangeNotifier {
       return;
     }
 
-    // 1. Prioritize B2B Corporate Contract fulfillment if enabled
+    // 1. Prioritize B2B Corporate Contract fulfillment if enabled (bypasses min reserve)
     if (_state.autoSellFulfillContracts) {
       for (final contract in _state.corporateContracts) {
         if (contract.status != ContractStatus.available || contract.isExpired) {
           continue;
         }
         if (contract.canFulfill(_state.products)) {
-          shipContract(contract.id);
-          _lastAutoSellTick = now;
-          if (kDebugMode) {
-            GameLogger.info(
-              'Auto-sell tick: fulfilled contract ${contract.title}',
+          final shipped = shipContract(contract.id);
+          if (shipped) {
+            _lastAutoSellTick = now;
+            _recordAutoSellDispatch(
+              actionType: AutoSellActionType.b2bContract,
+              title: contract.title,
+              items: contract.requiredProducts,
+              totalRevenue: contract.cashReward,
+              clientOrBatchName: contract.title,
             );
+            if (kDebugMode) {
+              GameLogger.info(
+                'Auto-sell tick: fulfilled contract ${contract.title}',
+              );
+            }
+            return;
           }
-          return;
         }
       }
     }
 
-    // 2. Dispatch Storefront Batch if enabled
+    // 2. Dispatch Storefront Batch if enabled (strictly respects autoSellMinReserve)
     if (_state.autoSellBatchDispatch) {
       final fleet = currentFleetTier;
       int maxBatchUnits = math.min(
@@ -1767,7 +1803,7 @@ class ProductionGameService extends ChangeNotifier {
       );
 
       final eligibleProductIds = _state.autoSellWhitelistedProductIds
-          .where((id) => (_state.products[id] ?? 0) > 0)
+          .where((id) => ((_state.products[id] ?? 0) - _state.autoSellMinReserve) > 0)
           .toList();
 
       if (eligibleProductIds.isEmpty) {
@@ -1787,7 +1823,8 @@ class ProductionGameService extends ChangeNotifier {
         for (final prod in tierProds) {
           if (maxBatchUnits <= 0) break;
           if (!_state.autoSellWhitelistedProductIds.contains(prod.id)) continue;
-          final available = _state.products[prod.id] ?? 0;
+          final stock = _state.products[prod.id] ?? 0;
+          final available = math.max(0, stock - _state.autoSellMinReserve);
           if (available <= 0) continue;
           if (batch.length >= fleet.maxProductVarieties &&
               !batch.containsKey(prod.id)) {
@@ -1808,7 +1845,8 @@ class ProductionGameService extends ChangeNotifier {
         for (final id in _state.autoSellWhitelistedProductIds) {
           if (maxBatchUnits <= 0) break;
           if (batch.containsKey(id)) continue;
-          final available = _state.products[id] ?? 0;
+          final stock = _state.products[id] ?? 0;
+          final available = math.max(0, stock - _state.autoSellMinReserve);
           if (available <= 0) continue;
           if (batch.length >= fleet.maxProductVarieties) continue;
           final take = math.min(
@@ -1883,13 +1921,30 @@ class ProductionGameService extends ChangeNotifier {
       final newShippingOrders =
           List<ShippingOrder>.from(_state.activeShippingOrders)..add(shippingOrder);
 
+      // Prepend to autoSellRecentLog capped at 10
+      final logEntry = AutoSellLogEntry(
+        id: 'dispatch_$orderId',
+        timestamp: now,
+        actionType: AutoSellActionType.batchDispatch,
+        title: 'Storefront Batch #$orderId',
+        items: batch,
+        totalRevenue: totalRevenue,
+        clientOrBatchName: 'Storefront',
+      );
+      final updatedLog = [logEntry, ..._state.autoSellRecentLog];
+      if (updatedLog.length > 10) {
+        updatedLog.removeRange(10, updatedLog.length);
+      }
+
       _state = _state.copyWith(
         products: newProducts,
         activeShippingOrders: newShippingOrders,
+        autoSellRecentLog: updatedLog,
       );
 
       _persistenceService.markDirty('products');
       _persistenceService.markDirty('shipping');
+      _persistenceService.markDirty('auto_sell_log');
       notifyListeners();
       _saveGameStateOptimized();
       _startUpdateTimer();
@@ -1932,7 +1987,7 @@ class ProductionGameService extends ChangeNotifier {
       );
     }
 
-    // Check B2B corporate contracts if enabled
+    // Check B2B corporate contracts if enabled (bypasses min reserve)
     if (_state.autoSellFulfillContracts) {
       for (final contract in _state.corporateContracts) {
         if (contract.status == ContractStatus.available &&
@@ -1953,7 +2008,7 @@ class ProductionGameService extends ChangeNotifier {
       }
     }
 
-    // Check Storefront batch dispatch if enabled
+    // Check Storefront batch dispatch if enabled (strictly respects autoSellMinReserve)
     if (_state.autoSellBatchDispatch) {
       final fleet = currentFleetTier;
       int maxBatchUnits = math.min(
@@ -1962,7 +2017,7 @@ class ProductionGameService extends ChangeNotifier {
       );
 
       final eligibleProductIds = _state.autoSellWhitelistedProductIds
-          .where((id) => (_state.products[id] ?? 0) > 0)
+          .where((id) => ((_state.products[id] ?? 0) - _state.autoSellMinReserve) > 0)
           .toList();
 
       if (eligibleProductIds.isEmpty) {
@@ -1971,7 +2026,9 @@ class ProductionGameService extends ChangeNotifier {
           title: 'Waiting for Inventory',
           subtitle: _state.autoSellWhitelistedProductIds.isEmpty
               ? 'No products selected in whitelist'
-              : 'No whitelisted products currently in stock',
+              : _state.autoSellMinReserve > 0
+                  ? 'All whitelisted stock at or below reserve (${_state.autoSellMinReserve})'
+                  : 'No whitelisted products currently in stock',
           stagedItems: const {},
           estimatedRevenue: 0.0,
           estimatedTransitSeconds: 0.0,
@@ -1992,7 +2049,8 @@ class ProductionGameService extends ChangeNotifier {
         for (final prod in tierProds) {
           if (maxBatchUnits <= 0) break;
           if (!_state.autoSellWhitelistedProductIds.contains(prod.id)) continue;
-          final available = _state.products[prod.id] ?? 0;
+          final stock = _state.products[prod.id] ?? 0;
+          final available = math.max(0, stock - _state.autoSellMinReserve);
           if (available <= 0) continue;
           if (batch.length >= fleet.maxProductVarieties &&
               !batch.containsKey(prod.id)) {
@@ -2013,7 +2071,8 @@ class ProductionGameService extends ChangeNotifier {
         for (final id in _state.autoSellWhitelistedProductIds) {
           if (maxBatchUnits <= 0) break;
           if (batch.containsKey(id)) continue;
-          final available = _state.products[id] ?? 0;
+          final stock = _state.products[id] ?? 0;
+          final available = math.max(0, stock - _state.autoSellMinReserve);
           if (available <= 0) continue;
           if (batch.length >= fleet.maxProductVarieties) continue;
           final take = math.min(
@@ -3076,6 +3135,29 @@ class ProductionGameService extends ChangeNotifier {
 
   /// Alias for master toggle
   void toggleAutoSellMaster() => toggleAutoSell();
+
+  /// Set minimum inventory reserve threshold for auto-sell (Phase 14)
+  void setAutoSellMinReserve(int reserve) {
+    final newReserve = math.max(0, reserve);
+    _state = _state.copyWith(autoSellMinReserve: newReserve);
+    _persistenceService.markDirty('game_state');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Increment or decrement auto-sell minimum reserve threshold (Phase 14)
+  void incrementAutoSellMinReserve(int delta) {
+    final newReserve = math.max(0, _state.autoSellMinReserve + delta);
+    setAutoSellMinReserve(newReserve);
+  }
+
+  /// Clear recent auto-sell logs (dev/testing)
+  void clearAutoSellLog() {
+    _state = _state.copyWith(autoSellRecentLog: const []);
+    _persistenceService.markDirty('auto_sell_log');
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
 
   /// Set auto-buy intake level directly (for testing/dev)
   void setAutoBuyIntakeLevel(int level) {

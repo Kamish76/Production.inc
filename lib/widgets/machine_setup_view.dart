@@ -83,6 +83,8 @@ class _MachineSetupViewState extends State<MachineSetupView> {
                       children: [
                         _buildLiveQueueCard(nextAction, gameService),
                         const SizedBox(height: 16),
+                        _buildRecentAutoSoldLogCard(gameService),
+                        const SizedBox(height: 16),
                         _buildDispatchRulesSection(gameService),
                         const SizedBox(height: 16),
                         _buildWhitelistMatrixSection(gameService),
@@ -105,6 +107,10 @@ class _MachineSetupViewState extends State<MachineSetupView> {
 
             // Section 1: Live Queue & Next Dispatch Diagnostics Card
             _buildLiveQueueCard(nextAction, gameService),
+            const SizedBox(height: 16),
+
+            // Section 1B: Recent Automation Dispatches Activity Log
+            _buildRecentAutoSoldLogCard(gameService),
             const SizedBox(height: 16),
 
             // Section 2: Automation Dispatch Rules
@@ -648,7 +654,11 @@ class _MachineSetupViewState extends State<MachineSetupView> {
             fontSize: 11,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
+
+        // Global Minimum Reserve Safeguard
+        _buildMinimumReserveSubSection(gameService),
+        const SizedBox(height: 14),
 
         // Bulk action buttons
         SingleChildScrollView(
@@ -938,5 +948,389 @@ class _MachineSetupViewState extends State<MachineSetupView> {
         ),
       ),
     );
+  }
+
+  /// Global Minimum Stock Reserve Sub-Section
+  Widget _buildMinimumReserveSubSection(ProductionGameService gameService) {
+    final reserve = gameService.state.autoSellMinReserve;
+    const presets = [0, 5, 10, 25, 50, 100];
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E2338),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: reserve > 0
+              ? Colors.purple.withValues(alpha: 0.35)
+              : Colors.white12,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    reserve > 0 ? Icons.shield : Icons.shield_outlined,
+                    size: 16,
+                    color: reserve > 0 ? Colors.purpleAccent : Colors.white60,
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Global Stock Reserve',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: reserve > 0
+                      ? Colors.purple.withValues(alpha: 0.2)
+                      : Colors.white10,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: reserve > 0 ? Colors.purple[300]! : Colors.white24,
+                  ),
+                ),
+                child: Text(
+                  reserve > 0 ? 'Buffer: $reserve units' : 'Disabled (0)',
+                  style: TextStyle(
+                    color: reserve > 0 ? Colors.purple[200] : Colors.white60,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Keep this amount in stock across all items. Only surplus stock above this threshold is auto-sold. (B2B contracts bypass this to avoid penalties).',
+            style: TextStyle(
+              color: Colors.white54,
+              fontSize: 11,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              // Stepper controls
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF242A42),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove, size: 16, color: Colors.white70),
+                      onPressed: reserve > 0
+                          ? () => gameService.incrementAutoSellMinReserve(-1)
+                          : null,
+                      visualDensity: VisualDensity.compact,
+                      splashRadius: 18,
+                      tooltip: 'Decrease Reserve',
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        '$reserve',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add, size: 16, color: Colors.white70),
+                      onPressed: () => gameService.incrementAutoSellMinReserve(1),
+                      visualDensity: VisualDensity.compact,
+                      splashRadius: 18,
+                      tooltip: 'Increase Reserve',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Quick Presets
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: presets.map((val) {
+                      final isSelected = reserve == val;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: InkWell(
+                          onTap: () => gameService.setAutoSellMinReserve(val),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.purple.withValues(alpha: 0.3)
+                                  : const Color(0xFF242A42),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: isSelected ? Colors.purpleAccent : Colors.white12,
+                              ),
+                            ),
+                            child: Text(
+                              val == 0 ? '0 (Off)' : '$val',
+                              style: TextStyle(
+                                color: isSelected ? Colors.purple[100] : Colors.white70,
+                                fontSize: 11,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Recent Automation Dispatches Activity Log Card
+  Widget _buildRecentAutoSoldLogCard(ProductionGameService gameService) {
+    final logs = gameService.state.autoSellRecentLog;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E2338),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white12,
+          width: 1.2,
+        ),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(
+                    Icons.history,
+                    size: 16,
+                    color: Colors.purpleAccent,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    'RECENT AUTOMATION DISPATCHES',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
+              ),
+              if (logs.isNotEmpty)
+                Text(
+                  '${logs.length} Logged',
+                  style: TextStyle(
+                    color: Colors.purple[200],
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (logs.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: const Column(
+                children: [
+                  Icon(Icons.receipt_long_outlined, size: 28, color: Colors.white24),
+                  SizedBox(height: 8),
+                  Text(
+                    'No automated dispatches recorded yet',
+                    style: TextStyle(
+                      color: Colors.white60,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'When dispatchers run storefront batches or fulfill B2B contracts, the latest 10 sales appear here.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: logs.length,
+              separatorBuilder: (_, _) => const Divider(color: Colors.white10, height: 16),
+              itemBuilder: (context, index) {
+                final entry = logs[index];
+                final isContract = entry.actionType == AutoSellActionType.b2bContract;
+                final badgeColor = isContract ? Colors.orangeAccent : Colors.purpleAccent;
+                final badgeIcon =
+                    isContract ? Icons.handshake_outlined : Icons.inventory_2_outlined;
+                final badgeText = isContract ? 'B2B CONTRACT' : 'STOREFRONT';
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(badgeIcon, size: 10, color: badgeColor),
+                              const SizedBox(width: 4),
+                              Text(
+                                badgeText,
+                                style: TextStyle(
+                                  color: badgeColor,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            entry.clientOrBatchName ?? entry.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          '+ \$${entry.totalRevenue.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: entry.items.entries.map((item) {
+                              final product = GameData.getProduct(item.key);
+                              final name = product?.name ?? item.key;
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white10,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GameIcon.forProduct(
+                                      id: item.key,
+                                      fallbackEmoji: product?.emoji ?? '📦',
+                                      size: 12,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '$name x${item.value}',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatTimestamp(entry.timestamp),
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inSeconds < 45) {
+      return 'Just now';
+    } else if (diff.inMinutes < 60) {
+      return '${diff.inMinutes}m ago';
+    } else if (diff.inHours < 24) {
+      return '${diff.inHours}h ago';
+    } else {
+      final hour = dt.hour.toString().padLeft(2, '0');
+      final minute = dt.minute.toString().padLeft(2, '0');
+      return '$hour:$minute';
+    }
   }
 }

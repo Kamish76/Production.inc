@@ -6,6 +6,7 @@ import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../models/game_state.dart';
 import '../models/game_models.dart';
+import '../models/auto_sell_log_entry.dart';
 import '../constants/game_constants.dart';
 
 /// Service responsible for persisting and loading game state using SQLite
@@ -14,7 +15,7 @@ class GamePersistenceService {
     static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      15; // Updated for Phase 12: Sales Hub Selling Automation Setup
+      16; // Updated for Phase 14: Sales Hub Auto-Sell Reserve & Activity Log
 
   Database? _database;
 
@@ -205,6 +206,10 @@ class GamePersistenceService {
       case 15:
         // Phase 12 migrations - Sales Hub Selling Automation (Whitelist and modes)
         await _migrateToVersion15(db);
+        break;
+      case 16:
+        // Phase 14 migrations - Sales Hub Auto-Sell Reserve & Activity Log
+        await _migrateToVersion16(db);
         break;
       default:
         if (kDebugMode) {
@@ -950,6 +955,50 @@ class GamePersistenceService {
     }
   }
 
+  /// Migration to version 16 (Phase 14: Sales Hub Auto-Sell Reserve & Activity Log)
+  Future<void> _migrateToVersion16(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 16 (Auto-Sell Reserve & Activity Log)');
+    }
+
+    final tableInfo = await db.rawQuery('PRAGMA table_info(game_state)');
+    final existingColumns =
+        tableInfo.map((row) => row['name'] as String).toSet();
+
+    if (!existingColumns.contains('auto_sell_min_reserve')) {
+      try {
+        await db.execute('''
+          ALTER TABLE game_state ADD COLUMN 
+          auto_sell_min_reserve INTEGER NOT NULL DEFAULT 0
+        ''');
+        if (kDebugMode) print('Added column: auto_sell_min_reserve');
+      } catch (e) {
+        if (kDebugMode) print('Migration warning (auto_sell_min_reserve): $e');
+      }
+    }
+
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS auto_sell_log (
+          id TEXT PRIMARY KEY,
+          timestamp INTEGER NOT NULL,
+          action_type TEXT NOT NULL,
+          title TEXT NOT NULL,
+          items TEXT NOT NULL,
+          total_revenue REAL NOT NULL,
+          client_or_batch_name TEXT
+        )
+      ''');
+      if (kDebugMode) print('Created auto_sell_log table');
+    } catch (e) {
+      if (kDebugMode) print('Migration warning (auto_sell_log): $e');
+    }
+
+    if (kDebugMode) {
+      print('Migration to version 16 completed');
+    }
+  }
+
   /// Create backup of existing database before major operations
   Future<void> _createDatabaseBackup() async {
     if (_database == null) return;
@@ -1102,6 +1151,7 @@ class GamePersistenceService {
         auto_sell_throughput_level INTEGER NOT NULL DEFAULT 1,
         auto_sell_batch_dispatch INTEGER NOT NULL DEFAULT 1,
         auto_sell_fulfill_contracts INTEGER NOT NULL DEFAULT 1,
+        auto_sell_min_reserve INTEGER NOT NULL DEFAULT 0,
         factory_tier INTEGER NOT NULL DEFAULT 1,
         fleet_tier INTEGER NOT NULL DEFAULT 1,
         research_points INTEGER NOT NULL DEFAULT 0,
@@ -1315,6 +1365,19 @@ class GamePersistenceService {
       )
     ''');
 
+    // Auto-sell activity log table (Phase 14: Sales Hub Auto-Sell Reserve & Activity Log)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS auto_sell_log (
+        id TEXT PRIMARY KEY,
+        timestamp INTEGER NOT NULL,
+        action_type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        items TEXT NOT NULL,
+        total_revenue REAL NOT NULL,
+        client_or_batch_name TEXT
+      )
+    ''');
+
     // Insert initial game state record
     await db.insert('game_state', {
       'id': 1,
@@ -1327,6 +1390,7 @@ class GamePersistenceService {
       'auto_sell_throughput_level': 1,
       'auto_sell_batch_dispatch': 1,
       'auto_sell_fulfill_contracts': 1,
+      'auto_sell_min_reserve': 0,
       'research_points': 0,
       'overclock_active': 0,
       'maintenance_wear': 1.0,
@@ -1357,6 +1421,7 @@ class GamePersistenceService {
       await _savePrestigePerks(txn, state);
       await _saveRedeemedCodes(txn, state);
       await _saveAutoSellWhitelist(txn, state);
+      await _saveAutoSellLog(txn, state);
     });
   }
 
@@ -1379,6 +1444,7 @@ class GamePersistenceService {
         'auto_sell_throughput_level': state.autoSellThroughputLevel,
         'auto_sell_batch_dispatch': state.autoSellBatchDispatch ? 1 : 0,
         'auto_sell_fulfill_contracts': state.autoSellFulfillContracts ? 1 : 0,
+        'auto_sell_min_reserve': state.autoSellMinReserve,
         'factory_tier': state.factoryTier,
         'fleet_tier': state.fleetTier,
         'research_points': state.researchPoints,
@@ -1645,6 +1711,7 @@ class GamePersistenceService {
     final autoSellThroughputLevel = (row['auto_sell_throughput_level'] as int?) ?? 1;
     final autoSellBatchDispatch = ((row['auto_sell_batch_dispatch'] as int?) ?? 1) == 1;
     final autoSellFulfillContracts = ((row['auto_sell_fulfill_contracts'] as int?) ?? 1) == 1;
+    final autoSellMinReserve = (row['auto_sell_min_reserve'] as int?) ?? 0;
     final factoryTier = (row['factory_tier'] as int?) ?? 1;
     final fleetTier = (row['fleet_tier'] as int?) ?? 1;
     final researchPoints = (row['research_points'] as int?) ?? 0;
@@ -1671,6 +1738,7 @@ class GamePersistenceService {
     final unlockedPrestigePerks = await _loadPrestigePerks(db);
     final redeemedCodes = await _loadRedeemedCodes(db);
     final autoSellWhitelistedProductIds = await _loadAutoSellWhitelist(db);
+    final autoSellRecentLog = await _loadAutoSellLog(db);
 
     return GameState(
       money: money,
@@ -1701,6 +1769,8 @@ class GamePersistenceService {
       autoSellWhitelistedProductIds: autoSellWhitelistedProductIds,
       autoSellBatchDispatch: autoSellBatchDispatch,
       autoSellFulfillContracts: autoSellFulfillContracts,
+      autoSellMinReserve: autoSellMinReserve,
+      autoSellRecentLog: autoSellRecentLog,
       factoryTier: factoryTier,
       fleetTier: fleetTier,
       corporateContracts: corporateContracts,
@@ -2099,6 +2169,45 @@ class GamePersistenceService {
     }
   }
 
+  /// Save recent auto-sell activity log to database (Phase 14)
+  Future<void> _saveAutoSellLog(
+    DatabaseExecutor txn,
+    GameState state,
+  ) async {
+    try {
+      await txn.delete('auto_sell_log');
+      for (final entry in state.autoSellRecentLog.take(10)) {
+        await txn.insert('auto_sell_log', {
+          'id': entry.id,
+          'timestamp': entry.timestamp.millisecondsSinceEpoch,
+          'action_type': entry.actionType.name,
+          'title': entry.title,
+          'items': jsonEncode(entry.items),
+          'total_revenue': entry.totalRevenue,
+          'client_or_batch_name': entry.clientOrBatchName,
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error saving auto-sell log: $e');
+      }
+    }
+  }
+
+  /// Load recent auto-sell activity log from database (Phase 14, up to 10 entries)
+  Future<List<AutoSellLogEntry>> _loadAutoSellLog(Database db) async {
+    try {
+      final rows = await db.query(
+        'auto_sell_log',
+        orderBy: 'timestamp DESC',
+        limit: 10,
+      );
+      return rows.map((r) => AutoSellLogEntry.fromJson(r)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   /// Check if a save file exists
   Future<bool> hasSaveData() async {
     final db = await database;
@@ -2142,6 +2251,8 @@ class GamePersistenceService {
       await txn.delete('researched_technologies');
       await txn.delete('prestige_perks');
       await txn.delete('redeemed_codes');
+      await txn.delete('auto_sell_whitelist');
+      await txn.delete('auto_sell_log');
 
       // Reset game state to defaults
       await txn.update(
@@ -2149,6 +2260,7 @@ class GamePersistenceService {
         {
           'money': 100.0, // Starting money
           'last_saved': DateTime.now().millisecondsSinceEpoch,
+          'auto_sell_min_reserve': 0,
           'factory_tier': 1,
           'fleet_tier': 1,
           'research_points': 0,
@@ -2343,6 +2455,10 @@ class GamePersistenceService {
       if (_dirtyTables.contains('auto_sell_whitelist')) {
         await _saveAutoSellWhitelist(txn, state);
       }
+
+      if (_dirtyTables.contains('auto_sell_log')) {
+        await _saveAutoSellLog(txn, state);
+      }
     });
 
     if (kDebugMode) {
@@ -2366,6 +2482,7 @@ class GamePersistenceService {
           'auto_sell_throughput_level': state.autoSellThroughputLevel,
           'auto_sell_batch_dispatch': state.autoSellBatchDispatch ? 1 : 0,
           'auto_sell_fulfill_contracts': state.autoSellFulfillContracts ? 1 : 0,
+          'auto_sell_min_reserve': state.autoSellMinReserve,
           'factory_tier': state.factoryTier,
           'fleet_tier': state.fleetTier,
           'research_points': state.researchPoints,
@@ -2402,6 +2519,7 @@ class GamePersistenceService {
       await _savePrestigePerks(txn, state);
       await _saveRedeemedCodes(txn, state);
       await _saveAutoSellWhitelist(txn, state);
+      await _saveAutoSellLog(txn, state);
     });
   }
 

@@ -578,6 +578,11 @@ void main() {
       });
 
       testWidgets('AutoSellSetupSheet mounts and renders controls cleanly', (tester) async {
+        tester.view.physicalSize = const Size(800, 2000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
         gameService.setAutoSellMachineCount(3);
         gameService.setAutoSellEnabled(true);
         gameService.setProductAutoSellWhitelist('box', true);
@@ -626,6 +631,11 @@ void main() {
       });
 
       testWidgets('Tapping Machine Setup tab or header action pill navigates to MachineSetupView', (tester) async {
+        tester.view.physicalSize = const Size(800, 2000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
         gameService.setAutoSellMachineCount(2);
         gameService.setAutoSellEnabled(true);
 
@@ -666,6 +676,11 @@ void main() {
       });
 
       testWidgets('MachineSetupView full-page tab renders diagnostics and controls', (tester) async {
+        tester.view.physicalSize = const Size(800, 2000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
         gameService.setAutoSellMachineCount(4);
         gameService.setAutoSellEnabled(true);
 

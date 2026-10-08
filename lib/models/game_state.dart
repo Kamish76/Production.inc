@@ -2,6 +2,7 @@
 
 import 'game_models.dart';
 import 'game_data.dart';
+import 'auto_sell_log_entry.dart';
 import '../constants/game_constants.dart';
 
 // Represents a production task in progress
@@ -92,13 +93,15 @@ class GameState {
   final bool autoShipRetail; // Auto-ship retail B2B contracts when fulfillable
   final bool autoShipManufacturing; // Auto-ship manufacturing B2B contracts when fulfillable
 
-  // Phase 9B: Auto-Sell Dispatchers state
+  // Phase 9B & Phase 14: Auto-Sell Dispatchers state
   final int autoSellMachinesOwned; // Number of auto-sell dispatchers owned
   final bool autoSellEnabled; // Master on/off toggle for auto-sell dispatchers
   final int autoSellThroughputLevel; // Throughput level multiplier for auto-sell
   final Set<String> autoSellWhitelistedProductIds; // Product IDs permitted to be automatically sold
   final bool autoSellBatchDispatch; // Auto-dispatch assembled batches via shipping fleet
   final bool autoSellFulfillContracts; // Auto-fulfill eligible B2B corporate contracts
+  final int autoSellMinReserve; // Global minimum stock threshold preserved across whitelisted products
+  final List<AutoSellLogEntry> autoSellRecentLog; // Recent automated dispatches and contract fulfillments (max 10)
 
   // Factory Tier progression state (Phase 1)
   final int factoryTier; // Current factory license tier (1: Garage, 2: Light Assembly, 3: Precision, 4: Megafactory)
@@ -154,6 +157,8 @@ class GameState {
     this.autoSellWhitelistedProductIds = const {},
     this.autoSellBatchDispatch = true,
     this.autoSellFulfillContracts = true,
+    this.autoSellMinReserve = 0,
+    this.autoSellRecentLog = const [],
     this.factoryTier = 1, // Default to Tier 1: Garage Workshop
     this.fleetTier = 1, // Default to Tier 1: Courier Bikes
     this.clientReputation = const {},
@@ -202,6 +207,8 @@ class GameState {
     Set<String>? autoSellWhitelistedProductIds,
     bool? autoSellBatchDispatch,
     bool? autoSellFulfillContracts,
+    int? autoSellMinReserve,
+    List<AutoSellLogEntry>? autoSellRecentLog,
     int? factoryTier,
     int? fleetTier,
     Map<String, int>? clientReputation,
@@ -257,6 +264,8 @@ class GameState {
           autoSellBatchDispatch ?? this.autoSellBatchDispatch,
       autoSellFulfillContracts:
           autoSellFulfillContracts ?? this.autoSellFulfillContracts,
+      autoSellMinReserve: autoSellMinReserve ?? this.autoSellMinReserve,
+      autoSellRecentLog: autoSellRecentLog ?? this.autoSellRecentLog,
       factoryTier: factoryTier ?? this.factoryTier,
       fleetTier: fleetTier ?? this.fleetTier,
       clientReputation: clientReputation ?? this.clientReputation,
@@ -598,6 +607,8 @@ class GameState {
       'autoSellWhitelistedProductIds': autoSellWhitelistedProductIds.toList(),
       'autoSellBatchDispatch': autoSellBatchDispatch,
       'autoSellFulfillContracts': autoSellFulfillContracts,
+      'autoSellMinReserve': autoSellMinReserve,
+      'autoSellRecentLog': autoSellRecentLog.map((e) => e.toJson()).toList(),
       'factoryTier': factoryTier,
       'fleetTier': fleetTier,
       'clientReputation': clientReputation,
@@ -725,6 +736,14 @@ class GameState {
       autoSellFulfillContracts: json['autoSellFulfillContracts'] as bool? ??
           json['auto_sell_fulfill_contracts'] as bool? ??
           true,
+      autoSellMinReserve: json['autoSellMinReserve'] as int? ??
+          json['auto_sell_min_reserve'] as int? ??
+          0,
+      autoSellRecentLog: (json['autoSellRecentLog'] as List<dynamic>? ??
+              json['auto_sell_recent_log'] as List<dynamic>?)
+          ?.map((e) => AutoSellLogEntry.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+          const [],
       factoryTier: json['factoryTier'] as int? ??
           json['factory_tier'] as int? ??
           1,
