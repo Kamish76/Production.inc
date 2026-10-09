@@ -1344,9 +1344,7 @@ class ProductionGameService extends ChangeNotifier {
 
     // Perform auto-buy tick using pooled-capacity model with money constraints
     final materialsCopy = Map<String, int>.from(_state.materials);
-    final currentBuysPerTick = (AutoBuyConstants.buysPerMachinePerTick *
-            getAutoBuyIntakeMultiplier(_state.autoBuyIntakeLevel))
-        .floor();
+    final currentBuysPerTick = getAutoBuyBuysPerMachinePerTick();
     final result = machine_buyer.performAutoBuyTick(
       inventory: materialsCopy,
       currentMoney: _state.money,
@@ -1395,7 +1393,7 @@ class ProductionGameService extends ChangeNotifier {
     // Process each tier independently
     for (final tierEntry in AutoBuildConstants.productOrderByTier.entries) {
       final tier = tierEntry.key;
-      final productOrder = tierEntry.value;
+      final productOrder = getEffectiveProductOrder(tier);
       
       if (productOrder.isEmpty) continue; // Skip tiers with no products defined
       
@@ -2863,6 +2861,17 @@ class ProductionGameService extends ChangeNotifier {
   double getAutoBuyIntakeMultiplier(int level) =>
       1.0 + (math.max(1, level) - 1) * 0.25;
 
+  /// Get effective materials bought per machine per tick taking intake multiplier into account
+  int getAutoBuyBuysPerMachinePerTick([int? level]) {
+    final lvl = level ?? _state.autoBuyIntakeLevel;
+    return (AutoBuyConstants.buysPerMachinePerTick * getAutoBuyIntakeMultiplier(lvl)).floor();
+  }
+
+  /// Get total materials bought per tick across all active auto-buy machines
+  int getAutoBuyTotalThroughput([int? level]) {
+    return _state.autoBuyMachinesOwned * getAutoBuyBuysPerMachinePerTick(level);
+  }
+
   /// Calculate upgrade cost for auto-buy intake: 1000 * 1.15^(level - 1)
   double getAutoBuyIntakeUpgradeCost() =>
       1000.0 * math.pow(1.15, _state.autoBuyIntakeLevel - 1).toDouble();
@@ -3479,8 +3488,8 @@ class ProductionGameService extends ChangeNotifier {
       return null;
     }
     
-    // Get product order for this tier
-    final productOrder = AutoBuildConstants.productOrderByTier[tier] ?? [];
+    // Get product order for this tier (respecting pinned priority queue)
+    final productOrder = getEffectiveProductOrder(tier);
     final capacity = _state.autoBuildProductCapacity[tier] ?? AutoBuildConstants.defaultProductCapacity;
     
     // Check each product in order to find the first one below cap and unlocked
@@ -3510,6 +3519,165 @@ class ProductionGameService extends ChangeNotifier {
     
     
     return 'All at cap'; // All products at cap
+  }
+
+  /// Map a productId to its auto-build tier key ('basicParts', 'intermediate', 'complex', 'retail')
+  String? getTierKeyForProduct(String productId) {
+    try {
+      final product = GameData.products.firstWhere((p) => p.id == productId);
+      switch (product.levelId) {
+        case ProductLevel.basicParts:
+          return 'basicParts';
+        case ProductLevel.intermediate:
+          return 'intermediate';
+        case ProductLevel.complex:
+          return 'complex';
+        case ProductLevel.retail:
+          return 'retail';
+        default:
+          return null;
+      }
+    } catch (_) {
+      for (final entry in AutoBuildConstants.productOrderByTier.entries) {
+        if (entry.value.contains(productId)) {
+          return entry.key;
+        }
+      }
+      return null;
+    }
+  }
+
+  /// Get list of pinned product IDs for a tier (in priority order)
+  List<String> getPinnedProducts(String tier) {
+    return List<String>.unmodifiable(_state.autoBuildPriorityOrder[tier] ?? const []);
+  }
+
+  /// Check if a product is pinned in its tier priority queue
+  bool isProductPinned(String productId) {
+    final tier = getTierKeyForProduct(productId);
+    if (tier == null) return false;
+    final list = _state.autoBuildPriorityOrder[tier];
+    return list != null && list.contains(productId);
+  }
+
+  /// Get 1-based priority rank of a product (1 = highest priority), or null if unpinned
+  int? getProductPriorityRank(String productId) {
+    final tier = getTierKeyForProduct(productId);
+    if (tier == null) return null;
+    final list = _state.autoBuildPriorityOrder[tier];
+    if (list == null) return null;
+    final index = list.indexOf(productId);
+    return index >= 0 ? index + 1 : null;
+  }
+
+  /// Pin a product to the priority build queue for its tier
+  void pinProduct(String productId) {
+    final tier = getTierKeyForProduct(productId);
+    if (tier == null) return;
+
+    final currentMap = Map<String, List<String>>.from(_state.autoBuildPriorityOrder);
+    final currentList = List<String>.from(currentMap[tier] ?? const []);
+
+    if (!currentList.contains(productId)) {
+      currentList.add(productId);
+      currentMap[tier] = currentList;
+      _state = _state.copyWith(autoBuildPriorityOrder: currentMap);
+      notifyListeners();
+      _saveGameStateOptimized();
+      if (kDebugMode) {
+        GameLogger.info('Auto-build ($tier): Pinned product $productId (Rank #${currentList.length})');
+      }
+    }
+  }
+
+  /// Unpin a product from the priority build queue
+  void unpinProduct(String productId) {
+    final tier = getTierKeyForProduct(productId);
+    if (tier == null) return;
+
+    final currentMap = Map<String, List<String>>.from(_state.autoBuildPriorityOrder);
+    final currentList = List<String>.from(currentMap[tier] ?? const []);
+
+    if (currentList.remove(productId)) {
+      currentMap[tier] = currentList;
+      _state = _state.copyWith(autoBuildPriorityOrder: currentMap);
+      notifyListeners();
+      _saveGameStateOptimized();
+      if (kDebugMode) {
+        GameLogger.info('Auto-build ($tier): Unpinned product $productId');
+      }
+    }
+  }
+
+  /// Toggle pin status for a product
+  void togglePinProduct(String productId) {
+    if (isProductPinned(productId)) {
+      unpinProduct(productId);
+    } else {
+      pinProduct(productId);
+    }
+  }
+
+  /// Reorder pinned products for a tier
+  void reorderPinnedProducts(String tier, int oldIndex, int newIndex) {
+    final currentMap = Map<String, List<String>>.from(_state.autoBuildPriorityOrder);
+    final currentList = List<String>.from(currentMap[tier] ?? const []);
+
+    if (oldIndex < 0 || oldIndex >= currentList.length) return;
+    if (newIndex < 0 || newIndex > currentList.length) return;
+
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final item = currentList.removeAt(oldIndex);
+    currentList.insert(newIndex, item);
+    currentMap[tier] = currentList;
+
+    _state = _state.copyWith(autoBuildPriorityOrder: currentMap);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Move a pinned product up or down in priority rank
+  void movePinnedProductPriority(String tier, int index, bool moveUp) {
+    final currentList = List<String>.from(_state.autoBuildPriorityOrder[tier] ?? const []);
+    if (index < 0 || index >= currentList.length) return;
+    final targetIndex = moveUp ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= currentList.length) return;
+
+    final item = currentList.removeAt(index);
+    currentList.insert(targetIndex, item);
+
+    final currentMap = Map<String, List<String>>.from(_state.autoBuildPriorityOrder);
+    currentMap[tier] = currentList;
+    _state = _state.copyWith(autoBuildPriorityOrder: currentMap);
+    notifyListeners();
+    _saveGameStateOptimized();
+  }
+
+  /// Clear all pinned products for a tier
+  void clearPinnedProducts(String tier) {
+    final currentMap = Map<String, List<String>>.from(_state.autoBuildPriorityOrder);
+    if (currentMap.containsKey(tier) && currentMap[tier]!.isNotEmpty) {
+      currentMap[tier] = const [];
+      _state = _state.copyWith(autoBuildPriorityOrder: currentMap);
+      notifyListeners();
+      _saveGameStateOptimized();
+      if (kDebugMode) {
+        GameLogger.info('Auto-build ($tier): Cleared all pinned products');
+      }
+    }
+  }
+
+  /// Get effective product order for a tier (pinned products first in priority order, then remaining default)
+  List<String> getEffectiveProductOrder(String tier) {
+    final defaultOrder = AutoBuildConstants.productOrderByTier[tier] ?? const [];
+    final pinned = _state.autoBuildPriorityOrder[tier] ?? const [];
+
+    final validPinned = pinned.where((id) => defaultOrder.contains(id)).toList();
+    final unpinned = defaultOrder.where((id) => !validPinned.contains(id)).toList();
+
+    return [...validPinned, ...unpinned];
   }
 
   /// Set auto-buy machine count directly (for testing)

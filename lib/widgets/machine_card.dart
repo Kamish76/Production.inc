@@ -98,11 +98,14 @@ class MachineCard extends StatelessWidget {
     final throughputLabel =
         '${gameService.getAutoBuyIntakeMultiplier(throughputLevel)}x Intake';
 
+    final totalThroughput =
+        gameService.getAutoBuyTotalThroughput(throughputLevel);
+
     String telemetry;
     if (machineCount > 0) {
       if (isEnabled) {
-        final throughput = machineCount * AutoBuyConstants.buysPerMachinePerTick;
-        telemetry = 'Buying $throughput materials every ${AutoBuyConstants.tickIntervalSeconds}s (active)';
+        telemetry =
+            'Buying $totalThroughput materials every ${AutoBuyConstants.tickIntervalSeconds}s (active)';
       } else {
         telemetry = 'Offline - Auto-buy is paused';
       }
@@ -742,6 +745,24 @@ class MachineCard extends StatelessWidget {
                       color: Colors.white70,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: Colors.amberAccent.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Text(
+                      'Lv.$throughputLevel',
+                      style: const TextStyle(
+                        color: Colors.amberAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   if (throughputLabel.isNotEmpty)

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/production_game_service.dart';
 import '../constants/game_constants.dart';
 import '../models/game_models.dart' as game;
+import '../models/game_data.dart';
 import '../widgets/production_status_panel.dart';
 import '../widgets/message_display.dart';
 import '../widgets/tier_expansion_panel.dart';
@@ -561,8 +562,16 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
             ],
           ),
           
+          const SizedBox(height: 10),
+          const Divider(color: Colors.white24, height: 1),
+          const SizedBox(height: 10),
+
+          // Priority Queue Controls & Strip
+          _buildPriorityQueueSection(gameService, tier, tierName, capacity),
+
+          const SizedBox(height: 10),
+
           // Info text
-          const SizedBox(height: 8),
           Text(
             'Building $itemsPerTick product${itemsPerTick == 1 ? "" : "s"} every ${AutoBuildConstants.tickIntervalSeconds}s${enabled ? " (active)" : " (paused)"}',
             style: TextStyle(
@@ -572,6 +581,635 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Build the priority queue strip inside the tier status card
+  Widget _buildPriorityQueueSection(
+    ProductionGameService gameService,
+    String tier,
+    String tierName,
+    int capacity,
+  ) {
+    final pinned = gameService.getPinnedProducts(tier);
+    final hasPinned = pinned.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.push_pin,
+              color: hasPinned ? Colors.amberAccent : Colors.white54,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Priority Queue:',
+              style: TextStyle(
+                color: hasPinned ? Colors.amberAccent : Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (hasPinned)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.amberAccent, width: 0.8),
+                ),
+                child: Text(
+                  '${pinned.length} pinned',
+                  style: const TextStyle(
+                    color: Colors.amberAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            const Spacer(),
+            InkWell(
+              onTap: () => _showPriorityQueueModal(
+                context,
+                gameService,
+                tier,
+                tierName,
+                capacity,
+              ),
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      hasPinned ? Icons.tune : Icons.add_circle_outline,
+                      size: 14,
+                      color: Colors.cyanAccent,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      hasPinned ? 'Manage' : 'Prioritize',
+                      style: const TextStyle(
+                        color: Colors.cyanAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (hasPinned)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (int i = 0; i < pinned.length; i++) ...[
+                  _buildPinnedProductChip(
+                    gameService,
+                    tier,
+                    pinned[i],
+                    i + 1,
+                    capacity,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ],
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 14, color: Colors.white38),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Standard order. Tap 📌 on products below to prioritize them.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Build a compact chip representing a pinned product
+  Widget _buildPinnedProductChip(
+    ProductionGameService gameService,
+    String tier,
+    String productId,
+    int rank,
+    int capacity,
+  ) {
+    final product = GameData.products.firstWhere(
+      (p) => p.id == productId,
+      orElse: () => game.Product(
+        id: productId,
+        name: productId,
+        description: '',
+        sellPrice: 0,
+        emoji: '📦',
+        requiredMaterials: const {},
+        productionTimeSeconds: 1,
+        baseShippingTimeSeconds: 0,
+        levelId: game.ProductLevel.basicParts,
+      ),
+    );
+
+    final currentCount = (gameService.state.products[productId] ?? 0) +
+        gameService.state.activeProductions
+            .where((t) => t.productId == productId)
+            .fold(0, (sum, t) => sum + t.quantity);
+    final isAtCap = currentCount >= capacity;
+
+    return Container(
+      padding: const EdgeInsets.only(left: 6, right: 4, top: 4, bottom: 4),
+      decoration: BoxDecoration(
+        color: isAtCap
+            ? Colors.green.withValues(alpha: 0.15)
+            : Colors.amber.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isAtCap ? Colors.greenAccent : Colors.amberAccent,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: isAtCap ? Colors.green : Colors.amber,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '#$rank',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            product.emoji,
+            style: const TextStyle(fontSize: 12),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            product.name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '$currentCount/$capacity',
+            style: TextStyle(
+              color: isAtCap ? Colors.greenAccent : Colors.white70,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: () => gameService.unpinProduct(productId),
+            borderRadius: BorderRadius.circular(12),
+            child: const Padding(
+              padding: EdgeInsets.all(2),
+              child: Icon(Icons.close, size: 14, color: Colors.white54),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show modal bottom sheet to manage, reorder, or add to tier priority queue
+  void _showPriorityQueueModal(
+    BuildContext context,
+    ProductionGameService gameService,
+    String tier,
+    String tierName,
+    int capacity,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final pinned = gameService.getPinnedProducts(tier);
+            final defaultOrder = AutoBuildConstants.productOrderByTier[tier] ?? [];
+            final unlockedInTier = defaultOrder
+                .where((id) => gameService.isProductUnlocked(id))
+                .toList();
+            final unpinnedUnlocked = unlockedInTier
+                .where((id) => !pinned.contains(id))
+                .toList();
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
+              ),
+              decoration: const BoxDecoration(
+                color: Color(0xFF181B2C),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black54,
+                    blurRadius: 16,
+                    offset: Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Handle
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white24,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Header
+                      Row(
+                        children: [
+                          const Icon(Icons.push_pin, color: Colors.amberAccent, size: 22),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '$tierName Queue Priority',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'Top items build until capacity is filled first',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (pinned.isNotEmpty)
+                            TextButton.icon(
+                              onPressed: () {
+                                gameService.clearPinnedProducts(tier);
+                                setSheetState(() {});
+                              },
+                              icon: const Icon(Icons.clear_all, size: 16, color: Colors.redAccent),
+                              label: const Text(
+                                'Clear All',
+                                style: TextStyle(color: Colors.redAccent, fontSize: 12),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(color: Colors.white12, height: 1),
+                      const SizedBox(height: 12),
+
+                      // Section 1: Active Priority Queue
+                      Expanded(
+                        child: ListView(
+                          children: [
+                            Text(
+                              'PRIORITY QUEUE (${pinned.length})',
+                              style: TextStyle(
+                                color: Colors.amberAccent.withValues(alpha: 0.9),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (pinned.isEmpty)
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.04),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white10),
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.low_priority, size: 32, color: Colors.white30),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'No Products Pinned',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Machines build using standard order. Tap + below to add products to the top of the queue.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.5),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              for (int i = 0; i < pinned.length; i++) ...[
+                                _buildModalPriorityItem(
+                                  gameService: gameService,
+                                  tier: tier,
+                                  productId: pinned[i],
+                                  rank: i + 1,
+                                  capacity: capacity,
+                                  isFirst: i == 0,
+                                  isLast: i == pinned.length - 1,
+                                  onMoveUp: () {
+                                    gameService.movePinnedProductPriority(tier, i, true);
+                                    setSheetState(() {});
+                                  },
+                                  onMoveDown: () {
+                                    gameService.movePinnedProductPriority(tier, i, false);
+                                    setSheetState(() {});
+                                  },
+                                  onRemove: () {
+                                    gameService.unpinProduct(pinned[i]);
+                                    setSheetState(() {});
+                                  },
+                                ),
+                                const SizedBox(height: 6),
+                              ],
+
+                            const SizedBox(height: 16),
+
+                            // Section 2: Add Unpinned Products
+                            if (unpinnedUnlocked.isNotEmpty) ...[
+                              Text(
+                                'ADD UNLOCKED PRODUCTS TO QUEUE',
+                                style: TextStyle(
+                                  color: Colors.cyanAccent.withValues(alpha: 0.9),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  for (final productId in unpinnedUnlocked) ...[
+                                    _buildModalAddProductChip(
+                                      productId: productId,
+                                      onAdd: () {
+                                        gameService.pinProduct(productId);
+                                        setSheetState(() {});
+                                      },
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(modalContext).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[600],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildModalPriorityItem({
+    required ProductionGameService gameService,
+    required String tier,
+    required String productId,
+    required int rank,
+    required int capacity,
+    required bool isFirst,
+    required bool isLast,
+    required VoidCallback onMoveUp,
+    required VoidCallback onMoveDown,
+    required VoidCallback onRemove,
+  }) {
+    final product = GameData.products.firstWhere(
+      (p) => p.id == productId,
+      orElse: () => game.Product(
+        id: productId,
+        name: productId,
+        description: '',
+        sellPrice: 0,
+        emoji: '📦',
+        requiredMaterials: const {},
+        productionTimeSeconds: 1,
+        baseShippingTimeSeconds: 0,
+        levelId: game.ProductLevel.basicParts,
+      ),
+    );
+
+    final currentCount = (gameService.state.products[productId] ?? 0) +
+        gameService.state.activeProductions
+            .where((t) => t.productId == productId)
+            .fold(0, (sum, t) => sum + t.quantity);
+    final isAtCap = currentCount >= capacity;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF22283C),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isAtCap
+              ? Colors.greenAccent.withValues(alpha: 0.4)
+              : Colors.amberAccent.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: isAtCap ? Colors.green : Colors.amber,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              '#$rank',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(product.emoji, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  isAtCap
+                      ? 'At capacity ($currentCount/$capacity)'
+                      : '$currentCount/$capacity items',
+                  style: TextStyle(
+                    color: isAtCap ? Colors.greenAccent : Colors.white60,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.arrow_upward, size: 18),
+            color: isFirst ? Colors.white24 : Colors.cyanAccent,
+            onPressed: isFirst ? null : onMoveUp,
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(),
+            tooltip: 'Move up in priority',
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.arrow_downward, size: 18),
+            color: isLast ? Colors.white24 : Colors.cyanAccent,
+            onPressed: isLast ? null : onMoveDown,
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(),
+            tooltip: 'Move down in priority',
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 18),
+            color: Colors.redAccent,
+            onPressed: onRemove,
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(),
+            tooltip: 'Remove from priority',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModalAddProductChip({
+    required String productId,
+    required VoidCallback onAdd,
+  }) {
+    final product = GameData.products.firstWhere(
+      (p) => p.id == productId,
+      orElse: () => game.Product(
+        id: productId,
+        name: productId,
+        description: '',
+        sellPrice: 0,
+        emoji: '📦',
+        requiredMaterials: const {},
+        productionTimeSeconds: 1,
+        baseShippingTimeSeconds: 0,
+        levelId: game.ProductLevel.basicParts,
+      ),
+    );
+
+    return InkWell(
+      onTap: onAdd,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.add, size: 14, color: Colors.cyanAccent),
+            const SizedBox(width: 4),
+            Text(product.emoji, style: const TextStyle(fontSize: 12)),
+            const SizedBox(width: 4),
+            Text(
+              product.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

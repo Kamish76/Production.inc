@@ -35,6 +35,9 @@ class ItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isHighlighted = _isInProduction;
+    final bool isPinned = mode == ItemCardMode.build &&
+        _isProduct &&
+        gameService.isProductPinned(_product.id);
     final Color baseCardColor = Colors.grey[850]!;
     final Color cardColor =
         isHighlighted
@@ -42,18 +45,27 @@ class ItemCard extends StatelessWidget {
                 AppColors.productionActive.withValues(alpha: 0.22),
                 baseCardColor,
               )
-            : baseCardColor;
+            : (isPinned
+                ? Color.alphaBlend(
+                    Colors.amber.withValues(alpha: 0.08),
+                    baseCardColor,
+                  )
+                : baseCardColor);
     final Color borderColor =
         isHighlighted
             ? AppColors.productionActive
-            : _getBorderColor();
-    final double borderOpacity = isHighlighted ? 0.85 : 0.3;
-    final double borderWidth = isHighlighted ? 2.0 : 1.0;
-    final double elevation = isHighlighted ? 12 : 8;
+            : (isPinned
+                ? Colors.amberAccent
+                : _getBorderColor());
+    final double borderOpacity = isHighlighted ? 0.85 : (isPinned ? 0.7 : 0.3);
+    final double borderWidth = (isHighlighted || isPinned) ? 1.5 : 1.0;
+    final double elevation = isHighlighted ? 12 : (isPinned ? 9 : 8);
     final Color shadowColor =
     isHighlighted
       ? AppColors.productionActive.withValues(alpha: 0.45)
-      : Colors.black.withValues(alpha: 0.3);
+      : (isPinned
+          ? Colors.amber.withValues(alpha: 0.25)
+          : Colors.black.withValues(alpha: 0.3));
 
     return RepaintBoundary(
       child: Card(
@@ -97,6 +109,12 @@ class ItemCard extends StatelessWidget {
   }
 
   Widget _buildHeader() {
+    final bool isPinned = mode == ItemCardMode.build &&
+        _isProduct &&
+        gameService.isProductPinned(_product.id);
+    final int? priorityRank =
+        isPinned ? gameService.getProductPriorityRank(_product.id) : null;
+
     return Row(
       children: [
         SizedBox(
@@ -158,8 +176,7 @@ class ItemCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Flexible(
-          fit: FlexFit.loose,
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -184,7 +201,67 @@ class ItemCard extends StatelessWidget {
             ],
           ),
         ),
+        if (mode == ItemCardMode.build &&
+            _isProduct &&
+            gameService.isProductUnlocked(_product.id))
+          _buildPinButton(isPinned, priorityRank),
       ],
+    );
+  }
+
+  Widget _buildPinButton(bool isPinned, int? priorityRank) {
+    return Material(
+      color: Colors.transparent,
+      child: Tooltip(
+        message: isPinned
+            ? 'Priority #$priorityRank in auto-build queue (tap to unpin)'
+            : 'Pin to top of auto-build queue',
+        child: InkWell(
+          onTap: () => gameService.togglePinProduct(_product.id),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+            decoration: isPinned
+                ? BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amberAccent, width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.withValues(alpha: 0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  )
+                : BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                  size: 14,
+                  color: isPinned ? Colors.amberAccent : Colors.white38,
+                ),
+                if (isPinned && priorityRank != null) ...[
+                  const SizedBox(width: 2),
+                  Text(
+                    '#$priorityRank',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amberAccent,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

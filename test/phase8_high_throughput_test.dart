@@ -64,6 +64,19 @@ void main() {
           1.50,
         );
       });
+
+      test('getAutoBuyBuysPerMachinePerTick and getAutoBuyTotalThroughput scale correctly', () {
+        // Level 1: 5 buys per machine
+        expect(gameService.getAutoBuyBuysPerMachinePerTick(1), 5);
+        // Level 2: floor(5 * 1.25) = 6
+        expect(gameService.getAutoBuyBuysPerMachinePerTick(2), 6);
+        // Level 3: floor(5 * 1.50) = 7
+        expect(gameService.getAutoBuyBuysPerMachinePerTick(3), 7);
+        // Level 4: floor(5 * 1.75) = 8
+        expect(gameService.getAutoBuyBuysPerMachinePerTick(4), 8);
+        // Level 5: floor(5 * 2.00) = 10
+        expect(gameService.getAutoBuyBuysPerMachinePerTick(5), 10);
+      });
     });
 
     group('2. Upgrade Cost Scaling (1000 * 1.15^(level-1))', () {
@@ -320,7 +333,8 @@ void main() {
           ),
         );
 
-        // Default level 1 shows 1.0x Intake
+        // Default level 1 shows 1.0x Intake and Lv.1
+        expect(find.text('Lv.1'), findsOneWidget);
         expect(find.text('1.0x Intake'), findsOneWidget);
         expect(find.widgetWithText(ElevatedButton, 'Upgrade (\$1000.00)'), findsOneWidget);
 
@@ -330,6 +344,44 @@ void main() {
 
         // Level incremented to 2
         expect(gameService.getAutoBuyIntakeLevel(), 2);
+      });
+
+      testWidgets('MachineCard.autoBuy dynamically updates telemetry and level badge on upgrade', (WidgetTester tester) async {
+        gameService.addMoney(10000.0);
+        await gameService.buyAutoBuyMachine(); // 1 machine owned
+        gameService.toggleAutoBuy(); // Enable auto-buy to make telemetry active
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: StatefulBuilder(
+                builder: (context, setState) {
+                  return ListenableBuilder(
+                    listenable: gameService,
+                    builder: (context, _) => MachineCard.autoBuy(
+                      context: context,
+                      gameService: gameService,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Level 1: 5 materials per tick
+        expect(find.text('Lv.1'), findsOneWidget);
+        expect(find.text('1.0x Intake'), findsOneWidget);
+        expect(find.text('Buying 5 materials every 5s (active)'), findsOneWidget);
+
+        // Tap upgrade
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Upgrade (\$1000.00)'));
+        await tester.pumpAndSettle();
+
+        // Level 2: 6 materials per tick (floor(5 * 1.25) = 6)
+        expect(find.text('Lv.2'), findsOneWidget);
+        expect(find.text('1.25x Intake'), findsOneWidget);
+        expect(find.text('Buying 6 materials every 5s (active)'), findsOneWidget);
       });
 
       testWidgets('MachineCard.autoBuild integrates throughput values and triggers upgrade', (WidgetTester tester) async {

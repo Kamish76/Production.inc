@@ -201,6 +201,16 @@ class _AutoBuyStatusWidgetState extends State<_AutoBuyStatusWidget> {
                 ),
               ),
 
+              // Throughput
+              Expanded(
+                child: _buildStatusItem(
+                  icon: Icons.bolt,
+                  label: 'Throughput',
+                  value: 'Lv.${gameService.state.autoBuyIntakeLevel}',
+                  valueColor: Colors.amberAccent,
+                ),
+              ),
+
               // Next tick countdown
               Expanded(
                 child: _buildStatusItem(
@@ -308,7 +318,7 @@ class _AutoBuyStatusWidgetState extends State<_AutoBuyStatusWidget> {
           // Info text
           const SizedBox(height: 8),
           Text(
-            'Buying ${gameService.state.autoBuyMachinesOwned * 5} materials every 5s${isActive ? " (active)" : " (paused)"}',
+            'Buying ${gameService.getAutoBuyTotalThroughput()} materials every 5s${isActive ? " (active)" : " (paused)"}',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.5),
               fontSize: 11,

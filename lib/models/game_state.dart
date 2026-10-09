@@ -88,6 +88,7 @@ class GameState {
   final Map<String, DateTime?> lastAutoBuildTick; // tier -> last tick time
   final Map<String, int> autoBuildProductCapacity; // tier -> capacity setting (e.g., 'basicParts' -> 10)
   final Map<String, int> autoBuildThroughputLevel; // tier -> throughput level (Phase 8: High-Throughput Automation)
+  final Map<String, List<String>> autoBuildPriorityOrder; // tier -> prioritized product IDs in building order
 
   // Phase 9A: Auto-Ship toggles for B2B contracts
   final bool autoShipRetail; // Auto-ship retail B2B contracts when fulfillable
@@ -149,6 +150,7 @@ class GameState {
     required this.lastAutoBuildTick, // Required - default to empty map
     required this.autoBuildProductCapacity, // Required - default to empty map
     this.autoBuildThroughputLevel = const {},
+    this.autoBuildPriorityOrder = const {},
     this.autoShipRetail = false,
     this.autoShipManufacturing = false,
     this.autoSellMachinesOwned = 0,
@@ -199,6 +201,7 @@ class GameState {
     Map<String, DateTime?>? lastAutoBuildTick,
     Map<String, int>? autoBuildProductCapacity,
     Map<String, int>? autoBuildThroughputLevel,
+    Map<String, List<String>>? autoBuildPriorityOrder,
     bool? autoShipRetail,
     bool? autoShipManufacturing,
     int? autoSellMachinesOwned,
@@ -251,6 +254,7 @@ class GameState {
       lastAutoBuildTick: lastAutoBuildTick ?? this.lastAutoBuildTick,
       autoBuildProductCapacity: autoBuildProductCapacity ?? this.autoBuildProductCapacity,
       autoBuildThroughputLevel: autoBuildThroughputLevel ?? this.autoBuildThroughputLevel,
+      autoBuildPriorityOrder: autoBuildPriorityOrder ?? this.autoBuildPriorityOrder,
       autoShipRetail: autoShipRetail ?? this.autoShipRetail,
       autoShipManufacturing: autoShipManufacturing ?? this.autoShipManufacturing,
       autoSellMachinesOwned:
@@ -577,6 +581,7 @@ class GameState {
           .map((k, v) => MapEntry(k, v?.toIso8601String())),
       'autoBuildProductCapacity': autoBuildProductCapacity,
       'autoBuildThroughputLevel': autoBuildThroughputLevel,
+      'autoBuildPriorityOrder': autoBuildPriorityOrder,
       'autoShipRetail': autoShipRetail,
       'autoShipManufacturing': autoShipManufacturing,
       'autoSellMachinesOwned': autoSellMachinesOwned,
@@ -685,6 +690,16 @@ class GameState {
                   json['auto_build_throughput_level'] as Map<String, dynamic>?)
               ?.map(
                 (k, v) => MapEntry(k, (v as num).toInt()),
+              ) ??
+              const {},
+      autoBuildPriorityOrder:
+          (json['autoBuildPriorityOrder'] as Map<String, dynamic>? ??
+                  json['auto_build_priority_order'] as Map<String, dynamic>?)
+              ?.map(
+                (k, v) => MapEntry(
+                  k,
+                  (v as List<dynamic>).map((e) => e.toString()).toList(),
+                ),
               ) ??
               const {},
       autoShipRetail: json['autoShipRetail'] as bool? ??

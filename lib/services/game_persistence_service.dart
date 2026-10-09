@@ -15,7 +15,7 @@ class GamePersistenceService {
     static String _databaseName = 'production_inc_save.db';
   static const String _backupDatabaseName = 'production_inc_backup.db';
   static const int _databaseVersion =
-      16; // Updated for Phase 14: Sales Hub Auto-Sell Reserve & Activity Log
+      17; // Updated for Auto-Build Queue Priority & Product Pinning
 
   Database? _database;
 
@@ -210,6 +210,10 @@ class GamePersistenceService {
       case 16:
         // Phase 14 migrations - Sales Hub Auto-Sell Reserve & Activity Log
         await _migrateToVersion16(db);
+        break;
+      case 17:
+        // Auto-Build Queue Priority & Product Pinning
+        await _migrateToVersion17(db);
         break;
       default:
         if (kDebugMode) {
@@ -1006,6 +1010,30 @@ class GamePersistenceService {
     }
   }
 
+  /// Migration to version 17 (Auto-Build Queue Priority & Product Pinning)
+  Future<void> _migrateToVersion17(Database db) async {
+    if (kDebugMode) {
+      print('Starting migration to version 17 (Auto-Build Queue Priority)');
+    }
+    try {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS auto_build_priority (
+          tier TEXT NOT NULL,
+          product_id TEXT NOT NULL,
+          priority_order INTEGER NOT NULL,
+          PRIMARY KEY (tier, product_id)
+        )
+      ''');
+      if (kDebugMode) print('Created auto_build_priority table');
+    } catch (e) {
+      if (kDebugMode) print('Migration warning (auto_build_priority): $e');
+    }
+
+    if (kDebugMode) {
+      print('Migration to version 17 completed');
+    }
+  }
+
   /// Create backup of existing database before major operations
   Future<void> _createDatabaseBackup() async {
     if (_database == null) return;
@@ -1312,6 +1340,16 @@ class GamePersistenceService {
       )
     ''');
 
+    // Auto-build priority table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS auto_build_priority (
+        tier TEXT NOT NULL,
+        product_id TEXT NOT NULL,
+        priority_order INTEGER NOT NULL,
+        PRIMARY KEY (tier, product_id)
+      )
+    ''');
+
     // Corporate contracts table (Phase 2)
     await db.execute('''
       CREATE TABLE corporate_contracts (
@@ -1610,6 +1648,19 @@ class GamePersistenceService {
         'level': entry.value,
       });
     }
+
+    // Save priority queue order
+    await txn.delete('auto_build_priority');
+    for (final entry in state.autoBuildPriorityOrder.entries) {
+      final tier = entry.key;
+      for (int i = 0; i < entry.value.length; i++) {
+        await txn.insert('auto_build_priority', {
+          'tier': tier,
+          'product_id': entry.value[i],
+          'priority_order': i,
+        });
+      }
+    }
   }
 
   /// Save shipping data (active orders and history)
@@ -1769,6 +1820,7 @@ class GamePersistenceService {
       lastAutoBuildTick: autoBuildData.lastTick,
       autoBuildProductCapacity: autoBuildData.capacity,
       autoBuildThroughputLevel: autoBuildData.throughput,
+      autoBuildPriorityOrder: autoBuildData.priorityOrder,
       autoShipRetail: autoShipRetail,
       autoShipManufacturing: autoShipManufacturing,
       autoSellMachinesOwned: autoSellMachinesOwned,
@@ -1891,6 +1943,7 @@ class GamePersistenceService {
     Map<String, DateTime?> lastTick,
     Map<String, int> capacity,
     Map<String, int> throughput,
+    Map<String, List<String>> priorityOrder,
   })> _loadAutoBuildData(Database db) async {
     final machines = <String, int>{};
     final enabled = <String, bool>{};
@@ -1933,12 +1986,27 @@ class GamePersistenceService {
       }
     } catch (_) {}
 
+    // Load priority queue order
+    final priorityOrder = <String, List<String>>{};
+    try {
+      final priorityResult = await db.query(
+        'auto_build_priority',
+        orderBy: 'priority_order ASC',
+      );
+      for (final row in priorityResult) {
+        final tier = row['tier'] as String;
+        final productId = row['product_id'] as String;
+        priorityOrder.putIfAbsent(tier, () => []).add(productId);
+      }
+    } catch (_) {}
+
     return (
       machines: machines,
       enabled: enabled,
       lastTick: lastTick,
       capacity: capacity,
       throughput: throughput,
+      priorityOrder: priorityOrder,
     );
   }
 
@@ -2735,6 +2803,19 @@ class GamePersistenceService {
         'level': entry.value,
       });
     }
+
+    // Save auto-build priority queue settings
+    await txn.delete('auto_build_priority');
+    for (final entry in state.autoBuildPriorityOrder.entries) {
+      final tier = entry.key;
+      for (int i = 0; i < entry.value.length; i++) {
+        await txn.insert('auto_build_priority', {
+          'tier': tier,
+          'product_id': entry.value[i],
+          'priority_order': i,
+        });
+      }
+    }
   }
 
   /// Manually verify and fix database schema (for debugging)
@@ -2799,6 +2880,7 @@ class GamePersistenceService {
         'auto_build_last_tick',
         'auto_build_capacity',
         'auto_build_throughput',
+        'auto_build_priority',
         'redeemed_codes',
       ];
       
@@ -2809,6 +2891,8 @@ class GamePersistenceService {
           }
           if (table == 'redeemed_codes') {
             await _migrateToVersion14(db);
+          } else if (table == 'auto_build_priority') {
+            await _migrateToVersion17(db);
           }
         }
       }
