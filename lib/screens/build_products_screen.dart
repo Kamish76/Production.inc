@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/production_game_service.dart';
+import '../constants/game_constants.dart';
 import '../models/game_models.dart' as game;
 import '../widgets/production_status_panel.dart';
 import '../widgets/message_display.dart';
