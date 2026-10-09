@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'auto_sell_preview.dart';
+export 'auto_sell_preview.dart';
 
 /// Represents a single historical record of an automated sales dispatch or contract fulfillment.
 class AutoSellLogEntry {

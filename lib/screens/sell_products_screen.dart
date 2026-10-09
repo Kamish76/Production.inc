@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
 import '../models/auto_sell_log_entry.dart';
+import '../models/auto_sell_preview.dart';
 import '../utils/responsive_utils.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/financial_status_display.dart';
