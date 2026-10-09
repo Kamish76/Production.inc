@@ -1257,7 +1257,7 @@ class ProductionGameService extends ChangeNotifier {
       final autoBuildEnabled = _state.autoBuildEnabled[tier] ?? false;
       final machinesOwned = _state.autoBuildMachinesOwned[tier] ?? 0;
       if (autoBuildEnabled && machinesOwned > 0) {
-        maxParallel = getAutoBuildThroughputLevel(tier);
+        maxParallel = machinesOwned * getAutoBuildThroughputLevel(tier);
       }
     }
 
@@ -1525,44 +1525,59 @@ class ProductionGameService extends ChangeNotifier {
             );
             
             // Check if there's already an active production of this product
-            // Queue individual items across parallel tracks based on throughput
-            int maxParallel = getAutoBuildThroughputLevel(tier);
-            
-            for (int i = 0; i < builtCount; i++) {
-              final productTasks = newProductions.where((t) => t.productId == productId).toList();
-              productTasks.sort((a, b) => a.startTime.compareTo(b.startTime));
-              
-              final endTimes = productTasks.map((t) => t.startTime.add(Duration(seconds: t.durationSeconds.round()))).toList();
-              endTimes.sort((a, b) => b.compareTo(a)); // Descending order (latest first)
-              
-              DateTime startTime = DateTime.now();
-              bool shouldQueue = false;
-              
-              if (endTimes.length >= maxParallel) {
-                shouldQueue = true;
-                startTime = endTimes[maxParallel - 1];
-                if (startTime.isBefore(DateTime.now())) {
-                  startTime = DateTime.now();
-                  shouldQueue = false;
-                }
+            // Queue individual items across parallel tracks based on throughput and machine count
+            final maxParallel = (machineCount > 0 ? machineCount : 1) * getAutoBuildThroughputLevel(tier);
+            final existingTasks = newProductions.where((t) => t.productId == productId).toList();
+            existingTasks.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+            // Track end times across parallel lanes
+            final trackEndTimes = <DateTime>[];
+            for (final t in existingTasks) {
+              if (t.isCompleted) continue;
+              final endTime = t.startTime.add(Duration(milliseconds: (t.durationSeconds * 1000).round()));
+              if (trackEndTimes.length < maxParallel) {
+                trackEndTimes.add(endTime.isBefore(now) ? now : endTime);
+              } else {
+                trackEndTimes.sort();
+                final nextAvailable = trackEndTimes[0].isBefore(now) ? now : trackEndTimes[0];
+                trackEndTimes[0] = nextAvailable.add(Duration(milliseconds: (t.durationSeconds * 1000).round()));
               }
-              
-              final adjustedTime = getAdjustedProductionTime(
-                productId,
-                product.productionTimeSeconds,
-              );
-              
+            }
+
+            final adjustedTime = getAdjustedProductionTime(
+              productId,
+              product.productionTimeSeconds,
+            );
+
+            for (int i = 0; i < builtCount; i++) {
+              DateTime startTime;
+              bool shouldQueue;
+
+              if (trackEndTimes.length < maxParallel) {
+                startTime = now;
+                shouldQueue = false;
+                final endTime = now.add(Duration(milliseconds: (adjustedTime * 1000).round()));
+                trackEndTimes.add(endTime);
+              } else {
+                trackEndTimes.sort();
+                final nextAvailable = trackEndTimes[0].isBefore(now) ? now : trackEndTimes[0];
+                startTime = nextAvailable;
+                shouldQueue = nextAvailable.isAfter(now);
+                final endTime = nextAvailable.add(Duration(milliseconds: (adjustedTime * 1000).round()));
+                trackEndTimes[0] = endTime;
+              }
+
               final task = ProductionTask(
-                id: '${DateTime.now().microsecondsSinceEpoch}_autobuild_${tier}_$i',
+                id: '${now.microsecondsSinceEpoch}_autobuild_${tier}_${productId}_$i',
                 productId: productId,
                 startTime: startTime,
                 durationSeconds: adjustedTime,
                 quantity: 1, // Single unit for UI visibility
                 isQueued: shouldQueue,
               );
-              
+
               newProductions.add(task);
-              
+
               if (kDebugMode && i == 0 && (product.productionTimeSeconds - adjustedTime).abs() > 0.01) {
                 final speedMultiplier = product.productionTimeSeconds / adjustedTime;
                 GameLogger.info('⚡ Auto-build speed bonus: $productId - ${product.productionTimeSeconds}s → ${adjustedTime.toStringAsFixed(1)}s (${speedMultiplier.toStringAsFixed(2)}x faster)');
@@ -2775,6 +2790,7 @@ class ProductionGameService extends ChangeNotifier {
         money: newMoney,
         autoBuildMachinesOwned: newMachines,
       );
+      _recalculateQueueStartTimes(category);
     }
 
     notifyListeners();
@@ -2857,7 +2873,7 @@ class ProductionGameService extends ChangeNotifier {
     final machinesOwned = _state.autoBuildMachinesOwned[tier] ?? 0;
     int maxParallel = 1;
     if (autoBuildEnabled && machinesOwned > 0) {
-      maxParallel = getAutoBuildThroughputLevel(tier);
+      maxParallel = machinesOwned * getAutoBuildThroughputLevel(tier);
     }
 
     for (final productId in tierProducts) {
@@ -2882,16 +2898,17 @@ class ProductionGameService extends ChangeNotifier {
           }
         }
         
-        final newEndTime = newStartTime.add(Duration(seconds: task.durationSeconds.round()));
+        final newEndTime = newStartTime.add(Duration(milliseconds: (task.durationSeconds * 1000).round()));
         
-        if (newStartTime != task.startTime) {
+        final shouldQueue = newStartTime.isAfter(now);
+        if (newStartTime != task.startTime || task.isQueued != shouldQueue) {
           final updatedTask = ProductionTask(
             id: task.id,
             productId: task.productId,
             startTime: newStartTime,
             durationSeconds: task.durationSeconds,
             quantity: task.quantity,
-            isQueued: newStartTime.isAfter(now),
+            isQueued: shouldQueue,
           );
           
           final index = newProductions.indexWhere((t) => t.id == task.id);
@@ -3341,6 +3358,7 @@ class ProductionGameService extends ChangeNotifier {
       money: newMoney,
       autoBuildMachinesOwned: newMachines,
     );
+    _recalculateQueueStartTimes(tier);
     notifyListeners();
     
     // Mark automation data as dirty for incremental save

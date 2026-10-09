@@ -356,6 +356,8 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
     final capacity = gameService.state.autoBuildProductCapacity[tier] ?? 10;
     final nextProduct = gameService.getNextProductToBuild(tier);
     final secondsRemaining = gameService.getSecondsUntilNextAutoBuildTick(tier);
+    final throughputLevel = gameService.getAutoBuildThroughputLevel(tier);
+    final itemsPerTick = machineCount * throughputLevel;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -447,6 +449,16 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
                 ),
               ),
               
+              // Throughput
+              Expanded(
+                child: _buildTierStatusItem(
+                  icon: Icons.bolt,
+                  label: 'Throughput',
+                  value: 'Lv.$throughputLevel',
+                  valueColor: Colors.amberAccent,
+                ),
+              ),
+
               // Next tick countdown
               Expanded(
                 child: _buildTierStatusItem(
@@ -551,7 +563,7 @@ class _BuildProductsScreenState extends State<BuildProductsScreen> {
           // Info text
           const SizedBox(height: 8),
           Text(
-            'Building ${machineCount * 2} products every 5s${enabled ? " (active)" : " (paused)"}',
+            'Building $itemsPerTick product${itemsPerTick == 1 ? "" : "s"} every ${AutoBuildConstants.tickIntervalSeconds}s${enabled ? " (active)" : " (paused)"}',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.5),
               fontSize: 11,

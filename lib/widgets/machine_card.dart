@@ -195,11 +195,12 @@ class MachineCard extends StatelessWidget {
     final effectiveIcon = icon ?? _defaultIconForTier(tier);
     final effectiveSubtitle = subtitle ?? _defaultSubtitleForTier(tier);
 
+    final totalThroughput = machineCount * throughputLevel;
+
     String telemetry;
     if (machineCount > 0) {
       if (isEnabled) {
-        final throughput = machineCount * AutoBuildConstants.buildsPerMachinePerTick;
-        telemetry = 'Building $throughput products every ${AutoBuildConstants.tickIntervalSeconds}s (active)';
+        telemetry = 'Building $totalThroughput products every ${AutoBuildConstants.tickIntervalSeconds}s (active)';
       } else {
         telemetry = 'Offline - Auto-build is paused';
       }

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../services/production_game_service.dart';
 import 'grouped_production_item.dart';
@@ -10,6 +11,11 @@ class GroupedProduction {
   final double currentProgress; // Progress of the currently active item
   final bool isQueued;
   final DateTime earliestStartTime;
+  final int activeCount;
+  final int queuedCount;
+  final int throughputLevel;
+  final String tierName;
+  final double remainingSeconds;
 
   GroupedProduction({
     required this.productId,
@@ -18,6 +24,11 @@ class GroupedProduction {
     required this.currentProgress,
     required this.isQueued,
     required this.earliestStartTime,
+    this.activeCount = 0,
+    this.queuedCount = 0,
+    this.throughputLevel = 1,
+    this.tierName = '',
+    this.remainingSeconds = 0.0,
   });
 }
 
@@ -144,25 +155,48 @@ class _ProductionStatusPanelState extends State<ProductionStatusPanel> {
       grouped.putIfAbsent(productId, () => []).add(production);
     }
 
+    final now = DateTime.now();
+
     // Convert to GroupedProduction objects
     return grouped.entries.map((entry) {
       final productId = entry.key;
       final tasks = entry.value;
 
-      // Calculate consolidated information
       final quantity = tasks.length;
+      final activeCount = tasks.where((t) => !t.isQueued).length;
+      final queuedCount = tasks.where((t) => t.isQueued).length;
+
+      final product = widget.gameService.getProduct(productId);
+      final tier = product?.levelId.name ?? 'basicParts';
+      final tierName = product != null
+          ? widget.gameService.getTierName(product.levelId)
+          : 'Basic Parts';
+      final throughputLevel = widget.gameService.getAutoBuildThroughputLevel(tier);
+
+      // Calculate consolidated information
       final totalDuration = tasks.fold<double>(
         0,
         (sum, task) => sum + task.durationSeconds,
       );
       // Show progress of the currently active item (highest progress), not average
       final currentProgress = tasks
-          .map((task) => task.progress)
+          .map((task) => task.progress as double)
           .reduce((a, b) => a > b ? a : b);
       final isQueued = tasks.any((task) => task.isQueued);
       final earliestStartTime = tasks
-          .map((task) => task.startTime)
+          .map((task) => task.startTime as DateTime)
           .reduce((a, b) => a.isBefore(b) ? a : b);
+
+      // Calculate accurate parallel-aware remaining time
+      final latestEndTime = tasks.map((t) {
+        final st = t.startTime as DateTime;
+        final dur = t.durationSeconds as double;
+        return st.add(Duration(milliseconds: (dur * 1000).round()));
+      }).reduce((a, b) => a.isAfter(b) ? a : b);
+      final remainingSeconds = math.max(
+        0.0,
+        latestEndTime.difference(now).inMilliseconds / 1000.0,
+      );
 
       return GroupedProduction(
         productId: productId,
@@ -171,6 +205,11 @@ class _ProductionStatusPanelState extends State<ProductionStatusPanel> {
         currentProgress: currentProgress,
         isQueued: isQueued,
         earliestStartTime: earliestStartTime,
+        activeCount: activeCount,
+        queuedCount: queuedCount,
+        throughputLevel: throughputLevel,
+        tierName: tierName,
+        remainingSeconds: remainingSeconds,
       );
     }).toList();
   }
