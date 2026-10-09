@@ -292,6 +292,7 @@ class CorporateContract {
   final ContractStatus status;
   final DateTime createdAt;
   final String? shippingOrderId; // Links to ShippingOrder.id when in shipping status
+  final DateTime? completedAt; // Timestamp when delivery finished and contract was fulfilled
 
   const CorporateContract({
     required this.id,
@@ -306,9 +307,11 @@ class CorporateContract {
     this.status = ContractStatus.available,
     required this.createdAt,
     this.shippingOrderId,
+    this.completedAt,
   });
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
+  bool get isCompleted => status == ContractStatus.completed;
 
   Duration get remainingDuration {
     final diff = expiresAt.difference(DateTime.now());
@@ -343,6 +346,7 @@ class CorporateContract {
     ContractStatus? status,
     DateTime? createdAt,
     String? shippingOrderId,
+    DateTime? completedAt,
   }) {
     return CorporateContract(
       id: id ?? this.id,
@@ -357,6 +361,7 @@ class CorporateContract {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       shippingOrderId: shippingOrderId ?? this.shippingOrderId,
+      completedAt: completedAt ?? this.completedAt,
     );
   }
 
@@ -374,6 +379,7 @@ class CorporateContract {
       'status': status.name,
       'created_at': createdAt.millisecondsSinceEpoch,
       'shipping_order_id': shippingOrderId,
+      'completed_at': completedAt?.millisecondsSinceEpoch,
     };
   }
 
@@ -421,6 +427,9 @@ class CorporateContract {
         (map['created_at'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
       ),
       shippingOrderId: map['shipping_order_id'] as String?,
+      completedAt: map['completed_at'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['completed_at'] as int)
+          : null,
     );
   }
 }

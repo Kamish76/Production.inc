@@ -55,8 +55,15 @@ class _OperationResults {
 class _MoneyAndHistory {
   final double money;
   final List<ShippingHistory> history;
+  final List<CorporateContract> contracts;
+  final Map<String, int> reputation;
 
-  _MoneyAndHistory({required this.money, required this.history});
+  _MoneyAndHistory({
+    required this.money,
+    required this.history,
+    required this.contracts,
+    required this.reputation,
+  });
 }
 
 /// Result category for code redemption
@@ -1734,7 +1741,25 @@ class ProductionGameService extends ChangeNotifier {
 
   DateTime? _lastAutoSellTick;
 
-  /// Records an automated sales dispatch or contract fulfillment in the recent activity log (Phase 14)
+  /// Queue of scheduled contract refill timestamps (3-second buffer per open slot)
+  final List<DateTime> _scheduledContractRefills = [];
+
+  /// Number of contracts currently scheduled for replenishment after the 3-second buffer
+  int get pendingContractRefillCount => _scheduledContractRefills.length;
+
+  /// Approximate seconds until the next contract is generated, or null if none scheduled
+  double? get nextContractRefillSeconds {
+    if (_scheduledContractRefills.isEmpty) return null;
+    final now = DateTime.now();
+    DateTime earliest = _scheduledContractRefills.first;
+    for (final t in _scheduledContractRefills) {
+      if (t.isBefore(earliest)) earliest = t;
+    }
+    final diff = earliest.difference(now).inMilliseconds / 1000.0;
+    return diff <= 0 ? 0.0 : diff;
+  }
+
+  /// Records an automated sales dispatch or contract fulfillment in the activity log (Phase 14, retains up to 50)
   void _recordAutoSellDispatch({
     required AutoSellActionType actionType,
     required String title,
@@ -1752,8 +1777,8 @@ class ProductionGameService extends ChangeNotifier {
       clientOrBatchName: clientOrBatchName,
     );
     final updatedLog = [entry, ..._state.autoSellRecentLog];
-    if (updatedLog.length > 10) {
-      updatedLog.removeRange(10, updatedLog.length);
+    if (updatedLog.length > 50) {
+      updatedLog.removeRange(50, updatedLog.length);
     }
     _state = _state.copyWith(autoSellRecentLog: updatedLog);
     _persistenceService.markDirty('auto_sell_log');
@@ -1936,7 +1961,7 @@ class ProductionGameService extends ChangeNotifier {
       final newShippingOrders =
           List<ShippingOrder>.from(_state.activeShippingOrders)..add(shippingOrder);
 
-      // Prepend to autoSellRecentLog capped at 10
+      // Prepend to autoSellRecentLog capped at 50
       final logEntry = AutoSellLogEntry(
         id: 'dispatch_$orderId',
         timestamp: now,
@@ -1947,8 +1972,8 @@ class ProductionGameService extends ChangeNotifier {
         clientOrBatchName: 'Storefront',
       );
       final updatedLog = [logEntry, ..._state.autoSellRecentLog];
-      if (updatedLog.length > 10) {
-        updatedLog.removeRange(10, updatedLog.length);
+      if (updatedLog.length > 50) {
+        updatedLog.removeRange(50, updatedLog.length);
       }
 
       _state = _state.copyWith(
@@ -2217,8 +2242,23 @@ class ProductionGameService extends ChangeNotifier {
   }
 
   @visibleForTesting
-  void processContractsTickForTest() {
+  void processContractsTickForTest({bool instantRefill = false}) {
+    if (instantRefill) {
+      for (int i = 0; i < _scheduledContractRefills.length; i++) {
+        _scheduledContractRefills[i] = DateTime.now().subtract(const Duration(seconds: 1));
+      }
+    }
     _processContractsTick();
+  }
+
+  @visibleForTesting
+  List<DateTime> get scheduledContractRefillsForTest => List.unmodifiable(_scheduledContractRefills);
+
+  @visibleForTesting
+  void fastForwardScheduledContractRefills([Duration duration = const Duration(seconds: 4)]) {
+    for (int i = 0; i < _scheduledContractRefills.length; i++) {
+      _scheduledContractRefills[i] = _scheduledContractRefills[i].subtract(duration);
+    }
   }
 
   @visibleForTesting
@@ -2243,15 +2283,17 @@ class ProductionGameService extends ChangeNotifier {
       results.completedTasks,
     );
 
-    // Process completed shipping and add revenue/history
+    // Process completed shipping and add revenue/history/contracts
     final moneyAndHistory = _processCompletedShipping(
       results.completedShipping,
     );
 
-    // Update game state with all changes
+    // Update game state atomically with all changes
     _state = _state.copyWith(
       money: moneyAndHistory.money,
       products: newProducts,
+      corporateContracts: moneyAndHistory.contracts,
+      clientReputation: moneyAndHistory.reputation,
       activeProductions: results.activeTasks,
       activeShippingOrders: results.activeShipping,
       shippingHistory: moneyAndHistory.history,
@@ -2337,9 +2379,11 @@ class ProductionGameService extends ChangeNotifier {
         newHistory.add(historyEntry);
 
         // Phase 9A: If this is a B2B contract shipment, complete the contract
-        if (order.contractId != null) {
-          final contractIndex = updatedContracts
-              .indexWhere((c) => c.id == order.contractId);
+        if (order.contractId != null || order.id.isNotEmpty) {
+          final contractIndex = updatedContracts.indexWhere(
+            (c) => (order.contractId != null && c.id == order.contractId) ||
+                   (c.shippingOrderId != null && c.shippingOrderId == order.id),
+          );
           if (contractIndex != -1) {
             final contract = updatedContracts[contractIndex];
             // Award reputation
@@ -2348,6 +2392,7 @@ class ProductionGameService extends ChangeNotifier {
             // Update contract to completed
             updatedContracts[contractIndex] = contract.copyWith(
               status: ContractStatus.completed,
+              completedAt: DateTime.now(),
             );
             contractsChanged = true;
           }
@@ -2359,17 +2404,18 @@ class ProductionGameService extends ChangeNotifier {
       }
     }
 
-    // Update contracts and reputation if any B2B shipments completed
+    // Mark dirty if contracts or reputation changed
     if (contractsChanged) {
-      _state = _state.copyWith(
-        corporateContracts: updatedContracts,
-        clientReputation: newReputation,
-      );
       _persistenceService.markDirty('contracts');
       _persistenceService.markDirty('reputation');
     }
 
-    return _MoneyAndHistory(money: newMoney, history: newHistory);
+    return _MoneyAndHistory(
+      money: newMoney,
+      history: newHistory,
+      contracts: updatedContracts,
+      reputation: newReputation,
+    );
   }
 
   /// Add revenue to player money with overflow protection
@@ -3879,19 +3925,41 @@ class ProductionGameService extends ChangeNotifier {
     final now = DateTime.now();
     final updatedContracts = <CorporateContract>[];
 
-    // Check existing contracts for expiration
+    // 1. Reconcile shipping contracts & check existing contracts for expiration
     for (final contract in _state.corporateContracts) {
+      // Reconcile orphaned shipping contracts: if linked shipping order is no longer active,
+      // it means delivery finished while offline/autosaving or link was lost. Transition to completed!
+      if (contract.status == ContractStatus.shipping) {
+        final hasActiveOrder = _state.activeShippingOrders.any(
+          (o) =>
+              o.contractId == contract.id ||
+              (contract.shippingOrderId != null && o.id == contract.shippingOrderId),
+        );
+        if (!hasActiveOrder) {
+          stateChanged = true;
+          updatedContracts.add(contract.copyWith(
+            status: ContractStatus.completed,
+            completedAt: contract.completedAt ?? now,
+          ));
+          continue;
+        }
+      }
+
+      // Check available/active contracts for expiration
       if (contract.status == ContractStatus.available ||
           contract.status == ContractStatus.active) {
         if (now.isAfter(contract.expiresAt)) {
           // Expired contracts get purged to open up slots for new contracts
           stateChanged = true;
+          // Schedule 3-second refill buffer for this opened slot
+          _scheduledContractRefills.add(now.add(const Duration(seconds: 3)));
           continue;
         }
       }
-      // Retain completed contracts up to 5 minutes
+
+      // Retain completed contracts up to 2 hours
       if (contract.status == ContractStatus.completed) {
-        if (now.difference(contract.expiresAt).inMinutes > 5) {
+        if (contract.completedAt != null && now.difference(contract.completedAt!).inHours > 2) {
           stateChanged = true;
           continue;
         }
@@ -3899,23 +3967,53 @@ class ProductionGameService extends ChangeNotifier {
       updatedContracts.add(contract);
     }
 
-    // Refill contracts based on tier-scaled max slots
+    // Retain at most 25 completed contracts to avoid unbounded memory growth
+    final completedContracts =
+        updatedContracts.where((c) => c.status == ContractStatus.completed).toList();
+    if (completedContracts.length > 25) {
+      final excess = completedContracts.length - 25;
+      int removed = 0;
+      updatedContracts.removeWhere((c) {
+        if (c.status == ContractStatus.completed && removed < excess) {
+          removed++;
+          stateChanged = true;
+          return true;
+        }
+        return false;
+      });
+    }
+
+    // 2. Refill available contracts based on tier-scaled max slots with 3-second buffer
     final maxSlots = _state.maxContractSlots;
-    final openCount = updatedContracts
+    // Current available count (only available and active; SHIPPING DOES NOT CONSUME ACTIVE SLOTS)
+    int currentAvailable = updatedContracts
         .where((c) =>
             c.status == ContractStatus.available ||
-            c.status == ContractStatus.active ||
-            c.status == ContractStatus.shipping)
+            c.status == ContractStatus.active)
         .length;
 
-    if (openCount < maxSlots) {
-      final needed = maxSlots - openCount;
-      for (int i = 0; i < needed; i++) {
-        final newContract = _generateNewContract(updatedContracts);
-        if (newContract != null) {
-          updatedContracts.add(newContract);
-          stateChanged = true;
+    // Process ready scheduled refills
+    _scheduledContractRefills.removeWhere((refillTime) {
+      if (now.isAfter(refillTime) || now.isAtSameMomentAs(refillTime)) {
+        if (currentAvailable < maxSlots) {
+          final newContract = _generateNewContract(updatedContracts);
+          if (newContract != null) {
+            updatedContracts.add(newContract);
+            currentAvailable++;
+            stateChanged = true;
+          }
         }
+        return true; // Refill consumed
+      }
+      return false;
+    });
+
+    // If available slots + pending scheduled refills is less than maxSlots, schedule refills
+    final missingRefills =
+        maxSlots - (currentAvailable + _scheduledContractRefills.length);
+    if (missingRefills > 0) {
+      for (int i = 0; i < missingRefills; i++) {
+        _scheduledContractRefills.add(now.add(const Duration(seconds: 3)));
       }
     }
 
@@ -3932,16 +4030,15 @@ class ProductionGameService extends ChangeNotifier {
   /// Initial contracts generation helper
   void _checkAndGenerateInitialContracts() {
     final maxSlots = _state.maxContractSlots;
-    final openCount = _state.corporateContracts
+    final availableCount = _state.corporateContracts
         .where((c) =>
             c.status == ContractStatus.available ||
-            c.status == ContractStatus.active ||
-            c.status == ContractStatus.shipping)
+            c.status == ContractStatus.active)
         .length;
 
-    if (openCount < maxSlots) {
+    if (availableCount < maxSlots) {
       final list = List<CorporateContract>.from(_state.corporateContracts);
-      final needed = maxSlots - openCount;
+      final needed = maxSlots - availableCount;
       for (int i = 0; i < needed; i++) {
         final c = _generateNewContract(list);
         if (c != null) list.add(c);
@@ -4264,6 +4361,9 @@ class ProductionGameService extends ChangeNotifier {
       final newShippingOrders =
           List<ShippingOrder>.from(_state.activeShippingOrders)
             ..add(shippingOrder);
+
+      // Schedule a 3-second buffer to generate a replacement contract
+      _scheduledContractRefills.add(DateTime.now().add(const Duration(seconds: 3)));
 
       _state = _state.copyWith(
         products: newProducts,

@@ -1,8 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/production_game_service.dart';
 import '../models/game_models.dart' as game;
+import '../models/auto_sell_log_entry.dart';
 import '../utils/responsive_utils.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/financial_status_display.dart';
@@ -15,6 +17,7 @@ import '../widgets/shipping_manifest_tray.dart';
 import '../widgets/auto_sell_status_card.dart';
 import '../widgets/machine_setup_view.dart';
 import '../widgets/lazy_tab_loader.dart';
+import '../widgets/game_icon.dart';
 import '../models/game_data.dart';
 
 class SellProductsScreen extends StatefulWidget {
@@ -619,30 +622,34 @@ class _SellProductsScreenState extends State<SellProductsScreen>
         ? contracts
         : contracts.where((c) => c.contractType == filterType).toList();
 
-    // Sort: available first (by expiry), then shipping, then completed
-    final sorted = List<game.CorporateContract>.from(filtered)
-      ..sort((a, b) {
-        final statusOrder = {
-          game.ContractStatus.available: 0,
-          game.ContractStatus.active: 1,
-          game.ContractStatus.shipping: 2,
-          game.ContractStatus.completed: 3,
-          game.ContractStatus.expired: 4,
-        };
-        final aOrder = statusOrder[a.status] ?? 5;
-        final bOrder = statusOrder[b.status] ?? 5;
-        if (aOrder != bOrder) return aOrder.compareTo(bOrder);
-        return a.expiresAt.compareTo(b.expiresAt);
-      });
+    // Available contracts (Available to review and ship)
+    final available = filtered
+        .where((c) =>
+            c.status == game.ContractStatus.available ||
+            c.status == game.ContractStatus.active)
+        .toList()
+      ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
 
-    final active = sorted
-        .where((c) => c.status != game.ContractStatus.completed)
+    // Shipping contracts (Currently in transit on fleet couriers)
+    final shipping = filtered
+        .where((c) => c.status == game.ContractStatus.shipping)
         .toList();
-    final completed = sorted
+
+    // Completed contracts
+    final completed = filtered
         .where((c) => c.status == game.ContractStatus.completed)
-        .toList();
+        .toList()
+      ..sort((a, b) =>
+          (b.completedAt ?? b.expiresAt).compareTo(a.completedAt ?? a.expiresAt));
 
-    if (sorted.isEmpty) {
+    // Older automation dispatches (overflow beyond the top 3 shown in Machine Setup)
+    final olderAutoDispatches = gameService.state.autoSellRecentLog.length > 3
+        ? gameService.state.autoSellRecentLog.sublist(3)
+        : <AutoSellLogEntry>[];
+
+    final totalCompletedCount = completed.length + olderAutoDispatches.length;
+
+    if (available.isEmpty && shipping.isEmpty && totalCompletedCount == 0) {
       return const MessageDisplay.empty(
         icon: Icons.handshake_outlined,
         title: 'No Contracts Available',
@@ -650,12 +657,15 @@ class _SellProductsScreenState extends State<SellProductsScreen>
       );
     }
 
+    final maxSlots = gameService.state.maxContractSlots;
+    final emptySlots = math.max(0, maxSlots - available.length);
+
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       addAutomaticKeepAlives: false,
       addRepaintBoundaries: true,
       children: [
-        // Slot info
+        // Slot info & Active Contracts Header
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Row(
@@ -663,7 +673,7 @@ class _SellProductsScreenState extends State<SellProductsScreen>
               Icon(Icons.assignment, color: Colors.purple[300], size: 16),
               const SizedBox(width: 6),
               Text(
-                'Active Contracts (${active.length} / ${gameService.state.maxContractSlots})',
+                'Active Contracts (${available.length} / $maxSlots)',
                 style: TextStyle(
                   color: Colors.purple[300],
                   fontSize: 13,
@@ -680,31 +690,464 @@ class _SellProductsScreenState extends State<SellProductsScreen>
         ),
 
         // Active contracts
-        ...active.map(
+        ...available.map(
           (contract) => _buildContractCard(context, contract, gameService),
         ),
 
+        // Replenishment buffer slot cards (generating new contract in 3s)
+        if (emptySlots > 0)
+          ...List.generate(emptySlots, (index) {
+            final seconds = gameService.nextContractRefillSeconds;
+            final timeLabel = seconds != null && seconds > 0
+                ? '${seconds.toStringAsFixed(1)}s'
+                : '3.0s';
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161B2E),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.purpleAccent.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: Colors.purpleAccent.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.purpleAccent),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Acquiring New B2B Contract...',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Client requisition incoming in $timeLabel',
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      timeLabel,
+                      style: TextStyle(
+                        color: Colors.purple[200],
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+
+        // In Transit / Shipping contracts (PULLED DOWN BELOW ACTIVE CONTRACTS)
+        if (shipping.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.local_shipping,
+                    color: Colors.orangeAccent, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  'In Transit (${shipping.length})',
+                  style: const TextStyle(
+                    color: Colors.orangeAccent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                const Text(
+                  'Couriers En Route',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          ...shipping.map(
+            (contract) =>
+                _buildShippingContractCard(context, contract, gameService),
+          ),
+        ],
+
         // Completed contracts accordion
-        if (completed.isNotEmpty) ...[
-          const SizedBox(height: 8),
+        if (totalCompletedCount > 0) ...[
+          const SizedBox(height: 10),
           ExpansionTile(
             initiallyExpanded: false,
             maintainState: false,
             title: Text(
-              'Completed Requisitions (${completed.length})',
+              'Completed Requisitions ($totalCompletedCount)',
               style: const TextStyle(color: Colors.white70, fontSize: 13),
             ),
+            subtitle: olderAutoDispatches.isNotEmpty
+                ? Text(
+                    '${completed.length} corporate contracts • ${olderAutoDispatches.length} auto dispatches',
+                    style: const TextStyle(color: Colors.white38, fontSize: 11),
+                  )
+                : null,
             iconColor: Colors.white54,
             collapsedIconColor: Colors.white38,
-            children: completed
-                .map(
-                  (contract) =>
-                      _buildContractCard(context, contract, gameService),
-                )
-                .toList(),
+            children: [
+              ...completed.map(
+                (contract) =>
+                    _buildContractCard(context, contract, gameService),
+              ),
+              ...olderAutoDispatches.map(
+                (dispatch) => _buildCompletedDispatchCard(context, dispatch),
+              ),
+            ],
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildShippingContractCard(
+    BuildContext context,
+    game.CorporateContract contract,
+    ProductionGameService gameService,
+  ) {
+    final client = GameData.getCorporateClient(contract.clientId);
+    final isRetail = contract.contractType == game.ContractType.retail;
+    final badgeLabel = isRetail ? '🏷️ RETAIL' : '🏭 MFG';
+
+    // Look up active shipping order for live delivery progress
+    final matchingOrder = gameService.state.activeShippingOrders
+        .cast<game.ShippingOrder?>()
+        .firstWhere(
+          (o) =>
+              o?.contractId == contract.id ||
+              (contract.shippingOrderId != null && o?.id == contract.shippingOrderId),
+          orElse: () => null,
+        );
+
+    final progress = matchingOrder?.progress ?? 0.0;
+    final remainingSeconds = matchingOrder?.remainingTime ?? 0.0;
+    final remainingText = remainingSeconds > 60
+        ? '${(remainingSeconds / 60).ceil()}m remaining'
+        : '${remainingSeconds.toStringAsFixed(1)}s remaining';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E243A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.orange.withValues(alpha: 0.6),
+          width: 1.2,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: Client + Badge + Transit pill
+            Row(
+              children: [
+                Text(client?.emoji ?? '📋', style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        contract.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        client?.name ?? '',
+                        style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.local_shipping, color: Colors.orange, size: 12),
+                      const SizedBox(width: 4),
+                      Text(
+                        'In Transit',
+                        style: TextStyle(
+                          color: Colors.orange[300],
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // Shipped products summary
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: contract.requiredProducts.entries.map((entry) {
+                final product = GameData.getProduct(entry.key);
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${product?.emoji ?? "📦"} ${product?.name ?? entry.key} x${entry.value}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Live Courier Progress Bar
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Delivery Transit',
+                      style: TextStyle(color: Colors.grey[400], fontSize: 10),
+                    ),
+                    Text(
+                      remainingText,
+                      style: const TextStyle(
+                        color: Colors.orangeAccent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress.clamp(0.0, 1.0),
+                    minHeight: 6,
+                    backgroundColor: Colors.white10,
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.orangeAccent),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // Reward preview
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Reward: +\$${contract.cashReward.toStringAsFixed(0)}',
+                    style: TextStyle(
+                      color: Colors.green[300],
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '+${contract.repReward} Rep',
+                    style: TextStyle(
+                      color: Colors.purple[300],
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  badgeLabel,
+                  style: const TextStyle(color: Colors.white38, fontSize: 10),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompletedDispatchCard(
+    BuildContext context,
+    AutoSellLogEntry dispatch,
+  ) {
+    final isContract = dispatch.actionType == AutoSellActionType.b2bContract;
+    final badgeColor = isContract ? Colors.orangeAccent : Colors.purpleAccent;
+    final badgeText = isContract ? 'B2B CONTRACT' : 'STOREFRONT';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B2238),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: badgeColor.withValues(alpha: 0.4), width: 0.8),
+                ),
+                child: Text(
+                  badgeText,
+                  style: TextStyle(
+                    color: badgeColor,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  dispatch.clientOrBatchName ?? dispatch.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                '+\$${dispatch.totalRevenue.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  color: Colors.greenAccent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: dispatch.items.entries.map((item) {
+                    final product = GameData.getProduct(item.key);
+                    final name = product?.name ?? item.key;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white10,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GameIcon.forProduct(
+                            id: item.key,
+                            fallbackEmoji: product?.emoji ?? '📦',
+                            size: 11,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$name x${item.value}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${dispatch.timestamp.hour.toString().padLeft(2, "0")}:${dispatch.timestamp.minute.toString().padLeft(2, "0")}',
+                style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

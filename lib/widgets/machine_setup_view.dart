@@ -1323,7 +1323,8 @@ class _MachineSetupViewState extends State<MachineSetupView> {
 
   /// Recent Automation Dispatches Activity Log Card
   Widget _buildRecentAutoSoldLogCard(ProductionGameService gameService) {
-    final logs = gameService.state.autoSellRecentLog;
+    final allLogs = gameService.state.autoSellRecentLog;
+    final logs = allLogs.take(3).toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -1362,7 +1363,7 @@ class _MachineSetupViewState extends State<MachineSetupView> {
               ),
               if (logs.isNotEmpty)
                 Text(
-                  '${logs.length} Logged',
+                  '${logs.length} / 3 Recent',
                   style: TextStyle(
                     color: Colors.purple[200],
                     fontSize: 11,
@@ -1395,7 +1396,7 @@ class _MachineSetupViewState extends State<MachineSetupView> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'When dispatchers run storefront batches or fulfill B2B contracts, the latest 10 sales appear here.',
+                    'When dispatchers run storefront batches or fulfill B2B contracts, the 3 most recent sales appear here. Older dispatches are archived under Completed Requisitions in B2B Contracts.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white38,
@@ -1524,6 +1525,28 @@ class _MachineSetupViewState extends State<MachineSetupView> {
                 );
               },
             ),
+          if (allLogs.length > 3) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.archive_outlined, size: 13, color: Colors.white54),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${allLogs.length - 3} older dispatches archived under B2B Completed Requisitions',
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

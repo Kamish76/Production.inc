@@ -994,6 +994,13 @@ class GamePersistenceService {
       if (kDebugMode) print('Migration warning (auto_sell_log): $e');
     }
 
+    try {
+      await db.execute('ALTER TABLE corporate_contracts ADD COLUMN completed_at INTEGER');
+      if (kDebugMode) print('Added column: completed_at to corporate_contracts');
+    } catch (e) {
+      if (kDebugMode) print('Migration warning (corporate_contracts completed_at): $e');
+    }
+
     if (kDebugMode) {
       print('Migration to version 16 completed');
     }
@@ -1322,7 +1329,8 @@ class GamePersistenceService {
         expires_at INTEGER NOT NULL,
         status TEXT NOT NULL,
         created_at INTEGER NOT NULL,
-        shipping_order_id TEXT
+        shipping_order_id TEXT,
+        completed_at INTEGER
       )
     ''');
 
@@ -2176,7 +2184,7 @@ class GamePersistenceService {
   ) async {
     try {
       await txn.delete('auto_sell_log');
-      for (final entry in state.autoSellRecentLog.take(10)) {
+      for (final entry in state.autoSellRecentLog.take(50)) {
         await txn.insert('auto_sell_log', {
           'id': entry.id,
           'timestamp': entry.timestamp.millisecondsSinceEpoch,
@@ -2194,13 +2202,13 @@ class GamePersistenceService {
     }
   }
 
-  /// Load recent auto-sell activity log from database (Phase 14, up to 10 entries)
+  /// Load recent auto-sell activity log from database (up to 50 entries)
   Future<List<AutoSellLogEntry>> _loadAutoSellLog(Database db) async {
     try {
       final rows = await db.query(
         'auto_sell_log',
         orderBy: 'timestamp DESC',
-        limit: 10,
+        limit: 50,
       );
       return rows.map((r) => AutoSellLogEntry.fromJson(r)).toList();
     } catch (_) {
@@ -2588,6 +2596,7 @@ class GamePersistenceService {
         'start_time': order.startTime.millisecondsSinceEpoch,
         'total_shipping_time': order.totalShippingTime,
         'total_revenue': order.totalRevenue,
+        'contract_id': order.contractId,
       });
 
       // Save order items
